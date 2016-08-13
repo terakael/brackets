@@ -8,6 +8,8 @@
         currentType: "walkdown",
         currentFrame: 0,
         anchor: {x: 0, y: 0},
+        w: 32,
+        h: 32,
         process: function(dt) {
             if (!this.types)// types is added by the object that wants the sprite frames
                 return;
@@ -60,7 +62,7 @@
             if (!this.types)
                 return;
             var frame = this.types[this.currentType].frames[this.currentFrame];
-            c.drawImage(img, frame.x, frame.y, frame.w, frame.h, x - this.anchor.x, y - this.anchor.y, 32, 32);
+            c.drawImage(img, frame.x, frame.y, frame.w, frame.h, x - (this.anchor.x * this.w), y - (this.anchor.y * this.h), this.w, this.h);
         }
     };
     

@@ -16,7 +16,9 @@
             
             
             this.sprite = new Game.Sprite();
-            this.sprite.anchor = {x: this.width/2, y: this.height};
+            this.sprite.anchor = {x: 0.5, y: 1};
+            this.sprite.width = this.width;
+            this.sprite.height = this.height;
             this.sprite.types = {
                 walkdown: {
                     loop: "pingpong", 
