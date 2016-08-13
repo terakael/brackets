@@ -2,6 +2,12 @@ $(function(){
      // prepare our game canvas
     var canvas = document.getElementById("game");
     var context = canvas.getContext("2d");
+    
+    var clickpoints = [];
+    canvas.addEventListener("mousedown", function(e) {
+        clickpoints.push(Game.mousePos);
+    }, false);
+    
     Game.isometric = true;
     Game.boundingRect = canvas.getBoundingClientRect();
 
@@ -24,11 +30,29 @@ $(function(){
                 ctx.rotate(45 * Math.PI / 180);
                 ctx.translate(-(this.player.x - xview), -(this.player.y - yview));
             }
+//            var isopos = Game.mousePos;
+//            isopos.y *= 1/1.5;
+//            var dir = {x: isopos.x - this.player.x, y: isopos.y - this.player.y};
+//            var len = Math.getVectorMagnitude(dir);
+//            var diff = Math.getVectorNormal(dir);
+//            var rotRad = Math.atan2(diff.y, diff.x);
+//            
+//            var rotated = {
+//                x: diff.x * Math.cos(rotRad) - diff.y * Math.sin(rotRad),
+//                y: diff.x * Math.sin(rotRad) + diff.y * Math.cos(rotRad)
+//            };
+//            
+//            cursor.setPos({x: ~~(rotated.x * len), y: ~~(rotated.y * len)});
             this.map.draw(ctx, xview, yview);
+            for (var i = 0; i < clickpoints.length; ++i) {
+                ctx.fillRect(clickpoints[i].x - xview, clickpoints[i].y - yview, 32, 32);
+            }
+            
+            cursor.draw(ctx, xview, yview);
+            
             if (Game.isometric)
                 ctx.restore();        
             this.player.draw(ctx, xview, yview);
-            
         },
         process: function(dt) {
             this.player.process(dt, this.width, this.height);
@@ -62,7 +86,7 @@ $(function(){
 	
 	room.player.inventory = new Game.Inventory();
     
-    //var cursor = new Game.Cursor((hudcamera.xView + hudcamera.wView) - 10, hudcamera.yView + 20);
+    var cursor = new Game.Cursor((hudcamera.xView + hudcamera.wView) - 10, hudcamera.yView + 20);
     
     var grid = new Game.Grid();
     grid.createGridLines(camera.viewportRect.width, camera.viewportRect.height);
@@ -189,6 +213,8 @@ Game.getMousePos = function(e) {
 window.addEventListener("mousemove", function(e) {
     Game.mousePos = Game.getMousePos(e);
 });
+
+
 
 // -->
 

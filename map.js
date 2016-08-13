@@ -73,6 +73,14 @@
         context.fillStyle = this.image.activePattern || "red";
         context.drawImage(this.image, Math.floor(sx), Math.floor(sy), sWidth, sHeight, dx, dy, dWidth, dHeight);	*/	
     }
+    
+    // this will use the A* algorithm to return a list of waypoints between the first and second point
+    // this would really be the server's job though - you pass the server a position to move to
+    // and the server takes the playerPos and the passed in pos, returning a list of waypoints.
+    Map.prototype.detectPath = function(first, second) {
+        var points = [];
+        return points;        
+    }
 
     // add "class" Map to our Game object
     Game.Map = Map;

@@ -16,4 +16,21 @@
 	Math.getRandomI = function(min, max) {
 		return ~~Math.getRandom(min, max);
 	}
+    
+    Math.getVectorMagnitude = function(v) {
+        return Math.sqrt((v.x * v.x) + (v.y * v.y));
+    }
+    
+    Math.getVectorNormal = function(v) {
+        var mag = Math.getVectorMagnitude(v);
+        return {x: v.x / mag, y: v.y / mag};
+    }
+    
+    Math.radToDeg = function(rad) {
+        return rad * 180/Math.PI;
+    }
+    
+    Math.degToRad = function(deg) {
+        return Math.PI/180 * deg;
+    }
 }());
