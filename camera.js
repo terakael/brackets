@@ -73,17 +73,18 @@
         this.viewportRect.set(this.xView, this.yView);
 
         // don't let camera leaves the world's boundary
-        if (!this.viewportRect.within(this.worldRect)) {
-            if(this.viewportRect.left < this.worldRect.left)
-                this.xView = this.worldRect.left;
-            if(this.viewportRect.top < this.worldRect.top)					
-                this.yView = this.worldRect.top;
-            if(this.viewportRect.right > this.worldRect.right)
-                this.xView = this.worldRect.right - this.wView;
-            if(this.viewportRect.bottom > this.worldRect.bottom)					
-                this.yView = this.worldRect.bottom - this.hView;
+        if (!Game.isometric) {
+            if (!this.viewportRect.within(this.worldRect)) {
+                if(this.viewportRect.left < this.worldRect.left)
+                    this.xView = this.worldRect.left;
+                if(this.viewportRect.top < this.worldRect.top)					
+                    this.yView = this.worldRect.top;
+                if(this.viewportRect.right > this.worldRect.right)
+                    this.xView = this.worldRect.right - this.wView;
+                if(this.viewportRect.bottom > this.worldRect.bottom)					
+                    this.yView = this.worldRect.bottom - this.hView;
+            }
         }
-
     };
 
     // add "class" Camera to our Game object

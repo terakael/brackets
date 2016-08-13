@@ -21,14 +21,20 @@
 			// check controls and move the player accordingly
 			if(Game.controls.left) {
 				this.x -= this.speed * step;
-                this.stats.gainExp("str", 1);
+                this.stats.gainExp("str", 3);
             }
-			if(Game.controls.up)
+			if(Game.controls.up) {
 				this.y -= this.speed * step;
-			if(Game.controls.right)
+                this.stats.gainExp("def", 3);
+            }
+			if(Game.controls.right) {
 				this.x += this.speed * step;
-			if(Game.controls.down)
-				this.y += this.speed * step;		
+                this.stats.gainExp("agil", 3);
+            }
+			if(Game.controls.down) {
+				this.y += this.speed * step;	
+                this.stats.gainExp("acc", 3);
+            }
 			
 			// don't let player leaves the world's boundary
 			if(this.x - this.width/2 < 0){
@@ -62,7 +68,9 @@
             } else {
 			     
 			     // before draw we need to convert player world's position to canvas position			
-			     context.fillRect((this.x-this.width/2) - xView, (this.y-this.height) - yView, this.width, this.height);
+			     context.fillRect(this.x- (this.width/2) - xView, (this.y-this.height) - yView, this.width, this.height);
+                context.fillStyle = "white";
+                context.fillRect(this.x - xView, this.y - yView, 2, 2);
             }
             context.fillText("pos: {x: {0}, y: {1}}".format(~~this.x, ~~this.y), 10, 20);
 			context.restore();			

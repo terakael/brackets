@@ -16,21 +16,19 @@ $(function(){
         height: 3000,
         map: new Game.Map(3000, 3000, canvas.width, canvas.height),
         player: new Game.Player(1000, 1000),
-        draw: function(context, xview, yview) {
+        draw: function(ctx, xview, yview) {
             if (Game.isometric) {
-                context.save();
-                context.scale(1, 1/1.4);
-                context.translate((this.player.x + this.player.width/2) - xview, ((this.player.y + this.player.height/2) - yview));
-                context.rotate(45 * Math.PI / 180);
-                context.translate(-((this.player.x + this.player.width/2) - xview), -((this.player.y + this.player.height/2) - yview));
+                ctx.save();
+                ctx.translate(this.player.x - xview, this.player.y - yview);
+                ctx.scale(1, 1/1.5);
+                ctx.rotate(45 * Math.PI / 180);
+                ctx.translate(-(this.player.x - xview), -(this.player.y - yview));
             }
-            this.map.draw(context, xview, yview);
-//            cursor.setPos(Game.mousePos || {x: 0, y: 0});
-//            cursor.draw(context, camera.xView, camera.yView);
-
+            this.map.draw(ctx, xview, yview);
             if (Game.isometric)
-                context.restore();        
-            this.player.draw(context, xview, yview);
+                ctx.restore();        
+            this.player.draw(ctx, xview, yview);
+            
         },
         process: function(dt) {
             this.player.process(dt, this.width, this.height);
@@ -84,7 +82,6 @@ $(function(){
         //context.clearRect(0, 0, camera.viewportRect.width, camera.viewportRect.height);
         context.fillRect(0, 0, camera.viewportRect.width, camera.viewportRect.height);
         room.draw(context, camera.xView, camera.yView);
-        
         
         // redraw all hud objects
         context.fillStyle = hudcamera.pat || "black";
