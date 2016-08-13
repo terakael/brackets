@@ -16,6 +16,7 @@
             
             
             this.sprite = new Game.Sprite();
+            this.sprite.anchor = {x: this.width/2, y: this.height};
             this.sprite.types = {
                 walkdown: {
                     loop: "pingpong", 
@@ -112,7 +113,7 @@
 			context.save();
             context.fillStyle = "red";
             if (this.image) {
-                this.sprite.draw(context, (this.x - this.width/2) - xView, (this.y - this.height) - yView, this.image);
+                this.sprite.draw(context, this.x - xView, this.y - yView, this.image);
             } else {
 			     
 			     // before draw we need to convert player world's position to canvas position			
