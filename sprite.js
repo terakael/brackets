@@ -5,7 +5,7 @@
     Sprite.prototype = {
         constructor: Sprite,
         speed: 0,
-        currentType: "walkdown",
+        currentType: "idle",
         currentFrame: 0,
         anchor: {x: 0, y: 0},
         w: 32,
@@ -59,10 +59,10 @@
             }
         },
         draw: function(c, x, y, img) {
-            if (!this.types)
+            if (!this.types || !img)
                 return;
             var frame = this.types[this.currentType].frames[this.currentFrame];
-            c.drawImage(img, frame.x, frame.y, frame.w, frame.h, x - (this.anchor.x * this.w), y - (this.anchor.y * this.h), this.w, this.h);
+            c.drawImage(img, ~~frame.x, ~~frame.y, frame.w, frame.h, x - (this.anchor.x * this.w), y - (this.anchor.y * this.h), this.w, this.h);
         }
     };
     

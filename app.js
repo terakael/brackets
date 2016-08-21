@@ -1,63 +1,86 @@
 $(function(){
      // prepare our game canvas
-    var canvas = document.getElementById("game");
-    var context = canvas.getContext("2d");
+    var canvas = document.getElementById("game"),
+        context = canvas.getContext("2d"),
+        matrix = [1,0,0,1,0,0];
     
-    var clickpoints = [];
-    canvas.addEventListener("mousedown", function(e) {
-        clickpoints.push(Game.mousePos);
-    }, false);
     
-    Game.isometric = true;
+    var ip = "127.0.0.1"
+        port = "45555";
+    Game.ws = new Game.WebSocket("ws://{0}:{1}".format(ip, port));
+    
+    Game.isometric = 1;
     Game.boundingRect = canvas.getBoundingClientRect();
 
     // game settings:	
-    var FPS = 50;
-    var INTERVAL = 1000/FPS; // milliseconds
-    var STEP = INTERVAL/1000 // seconds
-
+    var FPS = 50,
+        INTERVAL = 1000/FPS, // milliseconds
+        STEP = INTERVAL/1000; // seconds
+    
     // setup an object that represents the room
     var room = {
-        width: 3000,
-        height: 3000,
-        map: new Game.Map(3000, 3000, canvas.width, canvas.height),
-        player: new Game.Player(1000, 1000),
+        offset: Game.viewScale,
+        width: 640,
+        height: 640,
+        map: new Game.Map(640, 640, canvas.width-250, canvas.height),
+        player: new Game.Player(320, 320),
+        walls: [
+            new Game.Wall(1024, 987),
+            new Game.Wall(1024-48, 987),
+            new Game.Wall(1000, 1000)
+        ],
+        t: new Game.Transform(),
         draw: function(ctx, xview, yview) {
+            this.t.reset();
             if (Game.isometric) {
                 ctx.save();
-                ctx.translate(this.player.x - xview, this.player.y - yview);
-                ctx.scale(1, 1/1.5);
-                ctx.rotate(45 * Math.PI / 180);
-                ctx.translate(-(this.player.x - xview), -(this.player.y - yview));
+                this.t.translate(this.player.x - xview, this.player.y - yview);
+                this.t.scale(1, 1/this.offset);
+                this.t.rotate(45 * Math.PI / 180);
+                this.t.translate(-(this.player.x - xview), -(this.player.y - yview));
+                ctx.setTransform.apply(ctx, this.t.m);
             }
-//            var isopos = Game.mousePos;
-//            isopos.y *= 1/1.5;
-//            var dir = {x: isopos.x - this.player.x, y: isopos.y - this.player.y};
-//            var len = Math.getVectorMagnitude(dir);
-//            var diff = Math.getVectorNormal(dir);
-//            var rotRad = Math.atan2(diff.y, diff.x);
-//            
-//            var rotated = {
-//                x: diff.x * Math.cos(rotRad) - diff.y * Math.sin(rotRad),
-//                y: diff.x * Math.sin(rotRad) + diff.y * Math.cos(rotRad)
-//            };
-//            
-//            cursor.setPos({x: ~~(rotated.x * len), y: ~~(rotated.y * len)});
+            
             this.map.draw(ctx, xview, yview);
-            for (var i = 0; i < clickpoints.length; ++i) {
-                ctx.fillRect(clickpoints[i].x - xview, clickpoints[i].y - yview, 32, 32);
-            }
+            
+            var mp = Game.mousePos || {x: 0, y: 0};
+            var transformed = this.t.transformPoint(mp.x, mp.y);
+            cursor.setPos({x: transformed.x + xview, y: transformed.y + yview});
             
             cursor.draw(ctx, xview, yview);
+            for (var i = 0; i < this.walls.length; ++i) {
+                this.walls[i].draw(ctx, xview, yview);
+            }
             
             if (Game.isometric)
-                ctx.restore();        
+                ctx.restore();
+            
             this.player.draw(ctx, xview, yview);
+            for (var i = 0; i < this.walls.length; ++i) {
+                this.walls[i].draw(ctx, xview, yview);
+            }
         },
         process: function(dt) {
             this.player.process(dt, this.width, this.height);
+            
+            
+            
+            if (this.offset < Game.viewScale) {
+                this.offset += dt;
+                if (this.offset > Game.viewScale)
+                    this.offset = Game.viewScale;
+            } else if (this.offset > Game.viewScale) {
+                this.offset -= dt;
+                if (this.offset < Game.viewScale)
+                    this.offset = Game.viewScale;
+            }
         }
     };
+    
+    canvas.addEventListener("mousedown", function(e) {
+        room.player.setDestPos(cursor.mousePos);
+        Game.ws.send({action: "newpos", pos: cursor.mousePos});
+    }, false);
 	
     // generate a large image texture for the room
     var grass = new Image();
@@ -76,6 +99,7 @@ $(function(){
     playerspritemap.src = "img/kanakospritemap.png";
     playerspritemap.onload = function() {
         room.player.image = playerspritemap;
+        Game.Wall.prototype.image = playerspritemap;
     }
 
     // setup the magic camera !!!
@@ -102,7 +126,7 @@ $(function(){
     // Game draw function
     var draw = function(){        
         // redraw all room objects
-        context.fillStyle = "#050";
+        context.fillStyle = "#000";
         //context.clearRect(0, 0, camera.viewportRect.width, camera.viewportRect.height);
         context.fillRect(0, 0, camera.viewportRect.width, camera.viewportRect.height);
         room.draw(context, camera.xView, camera.yView);
@@ -213,12 +237,26 @@ Game.getMousePos = function(e) {
 window.addEventListener("mousemove", function(e) {
     Game.mousePos = Game.getMousePos(e);
 });
+window.addEventListener("keydown", function(e) {
+    var event = window.event ? window.event : e;
+    switch (event.keyCode) {
+        case 38:// up
+            Game.viewScale += 0.2;
+            if (Game.viewScale > 1.7)
+                Game.viewScale = 1.7;
+            break;
+        case 40:// down
+            Game.viewScale -= 0.2;
+            if (Game.viewScale < 1.3)
+                Game.viewScale = 1.3;
+            break;
+    }
+});
 
 
 
 // -->
-
 // start the game when page is loaded
-window.onload = function(){	
+window.onload = function() {	
     Game.play();
 }

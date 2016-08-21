@@ -16,16 +16,28 @@
         ctx.canvas.width = this.width;
         ctx.canvas.height = this.height;		
 
+        var slowload = 1;
         var rows = ~~(this.width/32) + 1;
         var columns = ~~(this.height/32) + 1;
         //var color = "red";				
         ctx.save();			
         for (var x = 0, i = 0; i < rows; x+=32, i++) {	
             for (var y = 0, j=0; j < columns; y+=32, j++) {
-				ctx.fillStyle = "rgb({0}, {1}, {2})".format(Math.getRandomI(0, 100), Math.getRandomI(100, 255), Math.getRandomI(0, 100));
-                ctx.fillRect (x, y, 30, 30);
+                if (slowload) {
+                    for (var z = 0; z < 32; z += 8) {
+                        for (var w = 0; w < 32; w += 8) {
+                            var val = Math.getRandom(50, 100);
+                            ctx.fillStyle = "rgb({0}, {1}, {2})".format(~~(val/5), ~~val, ~~(val/5));
+                            ctx.fillRect (x + z, y + w, 8, 8);
+                        }
+                    }
+                } else {
+                    var val = Math.getRandom(50, 100);
+                    ctx.fillStyle = "rgb({0}, {1}, {2})".format(~~(val/5), ~~val, ~~(val/5));
+                    ctx.fillRect (x, y, 31, 31);
+                }
             }		
-        }		
+        }
         ctx.restore();	
 
         // store the generate map as this image texture

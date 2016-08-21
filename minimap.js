@@ -11,7 +11,7 @@
 			context.strokeStyle = "#666";
 			context.lineWidth = 3;
 			context.fillRect(xview + 10, yview + 10, this.width, this.height);
-			context.strokeRect(xview + 10, yview + 10, this.width, this.height);
+			context.strokeRect(~~(xview + 10.5), ~~(yview + 10.5), this.width, this.height);
 			context.restore();
 		},
 		process: function(dt) {

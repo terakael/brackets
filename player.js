@@ -5,6 +5,7 @@
 			// it represents the player position on the world(room), not the canvas position
 			this.x = x;
 			this.y = y;				
+            this.destPos = {x: x, y: y};
 			
 			// move speed in pixels per second
 			this.speed = 200;		
@@ -16,9 +17,10 @@
             
             
             this.sprite = new Game.Sprite();
-            this.sprite.anchor = {x: 0.5, y: 1};
+            this.sprite.anchor = {x: 0.5, y: 0.9};
             this.sprite.width = this.width;
             this.sprite.height = this.height;
+            this.sprite.currentType = "walkdown";
             this.sprite.types = {
                 walkdown: {
                     loop: "pingpong", 
@@ -66,28 +68,61 @@
 		Player.prototype.process = function(step, worldWidth, worldHeight){
 			// parameter step is the time between frames ( in seconds )
 			var moving = false;
+            
+            var diffx = this.destPos.x - this.x;
+            var diffy = this.destPos.y - this.y;
+            
+            if (Math.abs(diffx) > 1 || Math.abs(diffy) > 1) {
+                var n = Math.getVectorNormal({x: diffx, y: diffy});
+                if (Math.abs(n.x * step * this.speed) > Math.abs(diffx))
+                    this.x = this.destPos.x;
+                else
+                    this.x += n.x * step * this.speed;
+                
+                if (Math.abs(n.y * step * this.speed) > Math.abs(diffy))
+                    this.y = this.destPos.y;
+                else
+                    this.y += n.y * step * this.speed;
+                
+                var atan = Math.atan2(n.y, n.x);
+                var d = (atan > 0 ? atan : (2*Math.PI + atan)) * 360 / (2*Math.PI);
+                
+                if (d >= 0 && d < 90) {
+                    this.sprite.switchType("walkdown");
+                } else if (d >= 90 && d < 180) {
+                    this.sprite.switchType("walkleft");
+                } else if (d >= 180 && d < 270) {
+                    this.sprite.switchType("walkup");
+                } else {
+                    this.sprite.switchType("walkright");
+                }
+                moving = true;
+            }
+//            
+//            this.x += diffx * this.speed * step;
+//            this.y += diffy * this.speed * step;
 			// check controls and move the player accordingly
 			if(Game.controls.left) {
 				this.x -= this.speed * step;
-                this.stats.gainExp("str", 3);
+                this.stats.gainExp("str", 1);
                 this.sprite.switchType("walkleft");
                 moving = true;
             }
 			if(Game.controls.up) {
 				this.y -= this.speed * step;
-                this.stats.gainExp("def", 3);
+                this.stats.gainExp("def", 1);
                 this.sprite.switchType("walkup");
                 moving = true;
             }
 			if(Game.controls.right) {
 				this.x += this.speed * step;
-                this.stats.gainExp("agil", 3);
+                this.stats.gainExp("agil", 1);
                 this.sprite.switchType("walkright");
                 moving = true;
             }
 			if(Game.controls.down) {
 				this.y += this.speed * step;	
-                this.stats.gainExp("acc", 3);
+                this.stats.gainExp("acc", 1);
                 this.sprite.switchType("walkdown");
                 moving = true;
             }
@@ -126,6 +161,11 @@
             context.fillText("pos: {x: {0}, y: {1}}".format(~~this.x, ~~this.y), 10, 20);
 			context.restore();			
 		}
+        
+        Player.prototype.setDestPos = function(pos) {
+            this.destPos.x = ~~pos.x - (pos.x % 32) + 16;
+            this.destPos.y = ~~pos.y - (pos.y % 32) + 16;
+        }
 		
 		// add "class" Player to our Game object
 		Game.Player = Player;
