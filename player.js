@@ -162,6 +162,14 @@
 			context.restore();			
 		}
         
+        Player.prototype.loadStats = function(obj) {
+            this.stats.setExp("str", obj["strength"]);
+            this.stats.setExp("acc", obj["accuracy"]);
+            this.stats.setExp("def", obj["defence"]);
+            this.stats.setExp("agil", obj["agility"]);
+            this.stats.setExp("hp", obj["hitpoints"]);
+        }
+        
         Player.prototype.setDestPos = function(pos) {
             this.destPos.x = ~~pos.x - (pos.x % 32) + 16;
             this.destPos.y = ~~pos.y - (pos.y % 32) + 16;

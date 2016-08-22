@@ -7,7 +7,15 @@ $(function(){
     
     var ip = "127.0.0.1"
         port = "45555";
-    Game.ws = new Game.WebSocket("ws://{0}:{1}".format(ip, port));
+    Game.ws = new Game.WebSocket("ws://{0}:{1}".format(ip, port), function(obj) {
+        if (obj["action"] === "logon") {
+            var data = obj["data"];
+            room.player.loadStats(data["stats"]);
+            room.player.id = data["id"];
+            
+            Game.ChatBox.add("welcome to the game, {0}.".format(data["name"]));
+        }
+    });
     
     Game.isometric = 1;
     Game.boundingRect = canvas.getBoundingClientRect();
@@ -62,9 +70,6 @@ $(function(){
         },
         process: function(dt) {
             this.player.process(dt, this.width, this.height);
-            
-            
-            
             if (this.offset < Game.viewScale) {
                 this.offset += dt;
                 if (this.offset > Game.viewScale)
@@ -79,7 +84,7 @@ $(function(){
     
     canvas.addEventListener("mousedown", function(e) {
         room.player.setDestPos(cursor.mousePos);
-        Game.ws.send({action: "newpos", pos: cursor.mousePos});
+        Game.ws.send({action: "newpos", id: room.player.id, pos: cursor.mousePos});
     }, false);
 	
     // generate a large image texture for the room
@@ -258,5 +263,10 @@ window.addEventListener("keydown", function(e) {
 // -->
 // start the game when page is loaded
 window.onload = function() {	
+    Game.ws.send({
+        action: "logon",
+        username: "dmk",
+        password: "Password12"
+    });
     Game.play();
 }

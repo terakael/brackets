@@ -1,11 +1,11 @@
 (function() {
     function Stats() {
         this.stats = [
-            { name: "str", exp: 2218 },
-            { name: "acc", exp: 1596 },
-            { name: "def", exp: 562 },
-            { name: "agil", exp: 1026 },
-            { name: "hp", exp: 1909 }            
+            { name: "str", exp: 0 },
+            { name: "acc", exp: 0 },
+            { name: "def", exp: 0 },
+            { name: "agil", exp: 0 },
+            { name: "hp", exp: 10 }            
         ];
         for (var i = 0; i < this.stats.length; ++i) {
             this.stats[i].lvl = this.exp2lvl(this.stats[i].exp);
@@ -53,6 +53,14 @@
 					Game.ChatBox.add("Your {0} level is now {1}!".format(this.stats[i].name, this.stats[i].lvl));
 				}
                 return;
+            }
+        }
+    }
+    Stats.prototype.setExp = function(stat, exp) {
+        for (var i = 0; i < this.stats.length; ++i) {
+            if (this.stats[i].name === stat) {
+                this.stats[i].exp = exp;
+                this.stats[i].lvl = this.exp2lvl(this.stats[i].exp);
             }
         }
     }

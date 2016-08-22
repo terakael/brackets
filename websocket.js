@@ -1,5 +1,5 @@
 (function() {
-    function myWebSocket(addr) {
+    function myWebSocket(addr, callback) {
         this.ws = new WebSocket(addr);
         this.ws.onopen = function() {
             console.log("connected");
@@ -7,8 +7,8 @@
         };
         
         this.ws.onmessage = function(evt) {
-            console.log("onmessage: " + evt.data);
-            Game.ChatBox.add("onmessage: " + evt.data);
+            console.log("onmessage: " + JSON.stringify(JSON.parse(evt.data)));
+            callback(JSON.parse(evt.data));
         };
         
         this.ws.onclose = function() {
@@ -24,6 +24,8 @@
         this.send = function(obj) {
             this.ws.send(JSON.stringify(obj));
         };
+        
+        
     };
     
     Game.WebSocket = myWebSocket;
