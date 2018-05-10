@@ -14,6 +14,7 @@
 			this.width = 32;
 			this.height = 32;
             this.stats = new Game.Stats();
+            this.inventory = new Game.Inventory();
             
             
             this.sprite = new Game.Sprite();
@@ -98,34 +99,6 @@
                 }
                 moving = true;
             }
-//            
-//            this.x += diffx * this.speed * step;
-//            this.y += diffy * this.speed * step;
-			// check controls and move the player accordingly
-			if(Game.controls.left) {
-				this.x -= this.speed * step;
-                this.stats.gainExp("str", 1);
-                this.sprite.switchType("walkleft");
-                moving = true;
-            }
-			if(Game.controls.up) {
-				this.y -= this.speed * step;
-                this.stats.gainExp("def", 1);
-                this.sprite.switchType("walkup");
-                moving = true;
-            }
-			if(Game.controls.right) {
-				this.x += this.speed * step;
-                this.stats.gainExp("agil", 1);
-                this.sprite.switchType("walkright");
-                moving = true;
-            }
-			if(Game.controls.down) {
-				this.y += this.speed * step;	
-                this.stats.gainExp("acc", 1);
-                this.sprite.switchType("walkdown");
-                moving = true;
-            }
 			
 			// don't let player leaves the world's boundary
 			if(this.x - this.width/2 < 0){
@@ -146,19 +119,17 @@
 		}
 		
 		Player.prototype.draw = function(context, xView, yView){		
-			// draw a simple rectangle shape as our player model
 			context.save();
-            context.fillStyle = "red";
+            context.fillStyle = "pink";
             if (this.image) {
                 this.sprite.draw(context, this.x - xView, this.y - yView, this.image);
             } else {
 			     
 			     // before draw we need to convert player world's position to canvas position			
-			     context.fillRect(this.x- (this.width/2) - xView, (this.y-this.height) - yView, this.width, this.height);
+			    context.fillRect(this.x- (this.width/2) - xView, (this.y-this.height) - yView, this.width, this.height);
                 context.fillStyle = "white";
                 context.fillRect(this.x - xView, this.y - yView, 2, 2);
             }
-            context.fillText("pos: {x: {0}, y: {1}}".format(~~this.x, ~~this.y), 10, 20);
 			context.restore();			
 		}
         
@@ -168,6 +139,10 @@
             this.stats.setExp("def", obj["defence"]);
             this.stats.setExp("agil", obj["agility"]);
             this.stats.setExp("hp", obj["hitpoints"]);
+			this.stats.setExp("mage", obj["magic"]);
+			this.stats.setExp("mine", obj["mining"]);
+			this.stats.setExp("smith", obj["smithing"]);
+			this.stats.setExp("herb", obj["herblore"]);
         }
         
         Player.prototype.setDestPos = function(pos) {

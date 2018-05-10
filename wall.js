@@ -18,6 +18,9 @@
         image: null,
         draw: function(c, xview, yview) {
             this.sprite.draw(c, this.x - xview, this.y - yview, this.image);
+        },
+        draw2: function(c, x, y) {
+            this.sprite.draw(c, x, y);
         }
     };
     Game.Wall = Wall;

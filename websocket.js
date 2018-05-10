@@ -18,10 +18,11 @@
         
         this.ws.onerror = function(evt) {
             console.log("onerror");
-            Game.ChatBox.add("onerror: {0}".format(evt.data));
+            Game.ChatBox.add("onerror: " + evt);
         };
         
         this.send = function(obj) {
+			//Game.ChatBox.add("sending: {0}".format(JSON.stringify(obj)));
             this.ws.send(JSON.stringify(obj));
         };
         

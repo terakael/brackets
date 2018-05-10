@@ -5,7 +5,11 @@
             { name: "acc", exp: 0 },
             { name: "def", exp: 0 },
             { name: "agil", exp: 0 },
-            { name: "hp", exp: 10 }            
+            { name: "hp", exp: 10 },
+			{ name: "mage", exp: 0 },
+			{ name: "mine", exp: 0 },
+			{ name: "smith", exp: 0 },
+			{ name: "herb", exp: 0 },
         ];
         for (var i = 0; i < this.stats.length; ++i) {
             this.stats[i].lvl = this.exp2lvl(this.stats[i].exp);
@@ -19,6 +23,20 @@
     Stats.prototype.lvl2exp = function(lvl) {
         return lvl * lvl;
     }
+	Stats.prototype.totalExp = function() {
+		var exp = 0;
+		for (var i = 0; i < this.stats.length; ++i) {
+			exp += this.stats[i].exp;
+		}
+		return exp;
+	}
+	Stats.prototype.totalLvl = function() {
+		var total = 0;
+		for (var i = 0; i < this.stats.length; ++i) {
+			total += this.exp2lvl(this.stats[i].exp);
+		}
+		return total;
+	}
     Stats.prototype.draw = function(ctx, xview, yview) {
         ctx.font = "15px Consolas";
         ctx.fillStyle = "#555";
@@ -41,6 +59,7 @@
             ctx.fillStyle = "red";
             ctx.fillText("{0}: {1} / {1} ({2}xp)".format(name, this.stats[i].lvl, exp), this.x + xview + 10, this.y + yview + (this.y * i));
         }
+		ctx.fillText("total: {0} ({1}xp)".format(this.totalLvl(), this.totalExp()), this.x + xview + 10, this.y + yview + (this.y * this.stats.length));
     }
     Stats.prototype.gainExp = function(stat, exp) {
         exp = exp || 0;
@@ -50,7 +69,7 @@
                 this.stats[i].exp += exp;
 				this.stats[i].lvl = this.exp2lvl(this.stats[i].exp);
 				if (this.stats[i].lvl > oldLevel) {
-					Game.ChatBox.add("Your {0} level is now {1}!".format(this.stats[i].name, this.stats[i].lvl));
+					Game.ChatBox.add("Your {0} level is now {1}!".format(this.stats[i].name, this.stats[i].lvl), '#0f0');
 				}
                 return;
             }

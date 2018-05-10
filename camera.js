@@ -10,7 +10,7 @@
 
     // Camera constructor
     function Camera(xView, yView, canvasWidth, canvasHeight, worldWidth, worldHeight) {
-        // position of camera (left-top coordinate)
+        // position of camera in the world (left-top coordinate)
         this.xView = xView || 0;
         this.yView = yView || 0;
         
