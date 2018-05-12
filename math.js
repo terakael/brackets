@@ -17,6 +17,17 @@
         this.bottom = (this.top + this.height);
     };
 
+    Rectangle.prototype.setPos = function(x, y) {
+        this.left = x;
+        this.top = y;
+        this.right = this.left + this.width;
+        this.bottom = this.top + this.height;
+    };
+
+    Rectangle.prototype.pointWithin = function(p) {
+        return p.x >= this.left && p.x <= this.right && p.y >= this.top && p.y <= this.bottom;
+    };
+
     Rectangle.prototype.within = function (r) {
         return (r.left <= this.left && r.right >= this.right && r.top <= this.top && r.bottom >= this.bottom);
     };

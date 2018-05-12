@@ -59,7 +59,7 @@
 				// quick login for dmk
 				Game.ws.send({
 					action: "logon",
-					username: "dmk",
+					name: "dmk",
 					password: "Password12"
 				});
 				break;
@@ -69,7 +69,7 @@
 				} else if (this.logonState === 'password') {
 					Game.ws.send({
 						action: "logon",
-						username: this.username,
+						name: this.username,
 						password: this.password
 					});
 				}

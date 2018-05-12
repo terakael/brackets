@@ -6,6 +6,7 @@
 			this.x = x;
 			this.y = y;				
             this.destPos = {x: x, y: y};
+            this.name = "null";
 			
 			// move speed in pixels per second
 			this.speed = 200;		
@@ -15,7 +16,10 @@
 			this.height = 32;
             this.stats = new Game.Stats();
             this.inventory = new Game.Inventory();
-            
+            this.chatMessage = "";// the text over the player's head
+            this.chatMessageTimer = 0;// counter until the chat message is cleared
+            this.clickBox = new Game.Rectangle(0, 0, this.width, this.height);
+            this.contextActions = ["follow", "trade", "duel"];
             
             this.sprite = new Game.Sprite();
             this.sprite.anchor = {x: 0.5, y: 0.9};
@@ -88,6 +92,8 @@
                 var atan = Math.atan2(n.y, n.x);
                 var d = (atan > 0 ? atan : (2*Math.PI + atan)) * 360 / (2*Math.PI);
                 
+                if (!Game.isometric)
+                    d -= 45;// offset the angle slightly to adhere to non-isometric camera
                 if (d >= 0 && d < 90) {
                     this.sprite.switchType("walkdown");
                 } else if (d >= 90 && d < 180) {
@@ -113,9 +119,19 @@
 			if(this.y > worldHeight){
 				this.y = worldHeight;
 			}
+
+            if (this.chatMessageTimer > 0) {
+                this.chatMessageTimer -= step;
+                if (this.chatMessageTimer < 0) {
+                    this.chatMessageTimer = 0;
+                    this.chatMessage = "";
+                }
+            }
             
             if (moving)
                 this.sprite.process(step);
+
+            this.clickBox.setPos(this.x - this.width/2, this.y - this.height);
 		}
 		
 		Player.prototype.draw = function(context, xView, yView){		
@@ -130,6 +146,13 @@
                 context.fillStyle = "white";
                 context.fillRect(this.x - xView, this.y - yView, 2, 2);
             }
+
+            if (this.chatMessage != "") {
+                context.textAlign = "center";
+                context.fillStyle = "yellow"
+                context.fillText(this.chatMessage, this.x - xView, this.y - yView - this.height);
+            }
+
 			context.restore();			
 		}
         
@@ -148,6 +171,21 @@
         Player.prototype.setDestPos = function(pos) {
             this.destPos.x = ~~pos.x - (pos.x % 32) + 16;
             this.destPos.y = ~~pos.y - (pos.y % 32) + 16;
+        }
+
+        Player.prototype.setChatMessage = function(msg) {
+            this.chatMessage = msg;
+            this.chatMessageTimer = 3;
+        }
+
+        Player.prototype.contextMenuOptions = function() {
+            var options = [];
+
+            for (var i in this.contextActions) {
+                options.push({action: this.contextActions[i], objectId: this.id, objectName: this.name});
+            }
+
+            return options;
         }
 		
 		// add "class" Player to our Game object

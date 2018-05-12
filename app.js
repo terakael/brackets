@@ -9,18 +9,16 @@ $(function(){
         port = "45555";
     Game.ws = new Game.WebSocket("ws://{0}:{1}/ws/game".format(ip, port), function(obj) {
         if (obj["action"] === "logon") {
-			Game.logonstate = 'username';
-			Game.username = '';
-			Game.password = '';
 			if (obj["success"] === 0) {
-				Game.logonErrorTimer = 10;
-				Game.logonError = obj["responseText"];
+				Game.LogonScreen.logonErrorTimer = 10;
+				Game.LogonScreen.logonError = obj["responseText"];
 				return;
 			}
 
 			room.player = new Game.Player(obj["x"], obj["y"]);
             room.player.loadStats(obj["stats"]);
-            room.player.id = obj["userId"];
+            room.player.id = obj["id"];
+            room.player.name = obj["name"];
 			camera.follow(room.player, (canvas.width-250-(room.player.width/2))/2, (canvas.height)/2);
 			camera.xView = obj["x"] - camera.xDeadZone;
 			camera.yView = obj["y"] - camera.yDeadZone;
@@ -31,7 +29,7 @@ $(function(){
 			
 			room.show = 1.0;
             
-            Game.ChatBox.add("welcome to the game, {0}.".format(obj["username"]));
+            Game.ChatBox.add("welcome to the game, {0}.".format(obj["name"]));
 			Game.state = 'game';
         } else if (obj["action"] === "logoff") {
         	// clean up and change state to logon screen
@@ -51,17 +49,41 @@ $(function(){
 				}
 			}
 		} else if (obj["action"] === "message") {
-			if (obj["message"])
-				Game.ChatBox.add(obj["message"], obj["colour"] == null ? 'yellow' : obj["colour"]);
+			if (obj["message"]) {
+				Game.ChatBox.add("{0}: {1}".format(obj["name"], obj["message"]), obj["colour"] == null ? 'yellow' : obj["colour"]);
+
+                if (obj["id"] == room.player.id) {
+                    room.player.setChatMessage(obj["message"]);
+                } else {
+                    for (var i in room.otherPlayers) {
+                        if (obj["id"] == room.otherPlayers[i].id) {
+                            room.otherPlayers[i].setChatMessage(obj["message"]);
+                        }
+                    }
+                }
+            }
 		} else if (obj["action"] === "playerEnter") {
 			var p = obj["player"];
 			room.addPlayer(p);
 			Game.ChatBox.add(p["name"] + " has logged in.", "#0ff");
 		} else if (obj["action"] === "playerLeave") {
-
-		}
+            room.removePlayer(obj["id"]);// TODO should be session id; this is dangerous
+            Game.ChatBox.add(obj["name"] + " has logged out.", "#0ff");
+		} else if (obj["action"] === "addexp") {
+            if (obj["id"] == room.player.id)
+                room.player.stats.gainExp(obj["statShortName"], obj["exp"]);
+        } else if (obj["action"] === "unknown") {
+            Game.ChatBox.add("invalid action.", "#fff");
+        } else if (obj["action"] === "duel" || obj["action"] === "trade") {
+            if (obj["accepted"] === 0) {
+                Game.ChatBox.add("{0} wishes to {1} with you.".format(obj["opponentName"], obj["action"]), "white");
+            } else {
+                Game.ChatBox.add("{0} accepted the {1}.".format(obj["opponentName"], obj["action"]), "white");
+            }
+        }
     });
     
+    Game.mousePos = {x: 0, y: 0};
     Game.isometric = 0;
     Game.boundingRect = canvas.getBoundingClientRect();
 	Game.state = 'logonscreen';
@@ -91,6 +113,7 @@ $(function(){
         	if (obj["id"] !== this.player.id) {
         		var player = new Game.Player(obj["x"], obj["y"]); 
         		player.id = obj["id"];
+                player.name = obj["name"];
         		//player.image = playerspritemap;
 				this.otherPlayers.push(player);
 			}
@@ -115,7 +138,8 @@ $(function(){
             var transformed = this.t.transformPoint(mp.x, mp.y);
             cursor.setPos({x: transformed.x + xview, y: transformed.y + yview});
             
-            cursor.draw(ctx, xview, yview);
+            if (!Game.ContextMenu.active)
+                cursor.draw(ctx, xview, yview);
             for (var i = 0; i < this.walls.length; ++i) {
                 this.walls[i].draw(ctx, xview, yview);
             }
@@ -151,12 +175,68 @@ $(function(){
                 if (this.offset < Game.viewScale)
                     this.offset = Game.viewScale;
             }
+        },
+        removePlayer: function(id) {
+            for (var i in this.otherPlayers) {
+                if (this.otherPlayers[i].id == id) {
+                    this.otherPlayers.splice(i, 1);
+                    return;
+                }
+            }
         }
     };
     
     canvas.addEventListener("mousedown", function(e) {
-        //room.player.setDestPos(cursor.mousePos);
-        Game.ws.send({action: "move", id: room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y});
+        if (Game.state === 'game') {
+            switch (e.button) {
+                case 0:// left
+                    if (Game.ContextMenu.active) {
+                        // send action based on context menu selection
+                        var menuItem = Game.ContextMenu.getSelectedAction();
+                        if (menuItem.action !== "cancel") {
+                            Game.ws.send(menuItem);
+                        }
+                        Game.ContextMenu.hide();
+                    } else {
+                        Game.ws.send({action: "move", id: room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y});
+                    }
+                    break;
+                case 1:// wheel
+                    break;
+                case 2:// right
+                    // take all the things that are at this position and add them to the context menu
+                    if (Game.ContextMenu.active)
+                        break;
+
+                    for (var i in room.otherPlayers) {
+                        var p = room.otherPlayers[i];
+                        if (p.clickBox.pointWithin(cursor.mousePos)) {
+                            var tradeOption = {
+                                action: "trade",
+                                objectId: p.id,
+                                objectName: p.name
+                            };
+                            var followOption = {
+                                action: "follow",
+                                objectId: p.id,
+                                objectName: p.name
+                            };
+                            var duelOption = {
+                                action: "duel",
+                                objectId: p.id,
+                                objectName: p.name
+                            };
+/*                            Game.ContextMenu.push(followOption);
+                            Game.ContextMenu.push(tradeOption);
+                            Game.ContextMenu.push(duelOption);
+*/
+                            Game.ContextMenu.push(room.otherPlayers[i].contextMenuOptions());
+                        }
+                    }
+                    Game.ContextMenu.show(~~cursor.mousePos.x, ~~cursor.mousePos.y, ~~camera.xView, ~~camera.yView);
+                    break;
+            }
+        }
     }, false);
 	
     // generate a large image texture for the room
@@ -180,9 +260,11 @@ $(function(){
     }
 
     // setup the magic camera !!!
-    var camera = new Game.Camera(room.player.x, room.player.y, canvas.width-250, canvas.height, room.width, room.height);		
+    var camera = new Game.Camera(room.player.x, room.player.y, canvas.width-250, canvas.height, room.width, room.height);
+    Game.worldCameraRect = new Game.Rectangle(0, 0, canvas.width-250, canvas.height);
     
     var hudcamera = new Game.Camera(camera.viewportRect.width, 0, canvas.width - camera.viewportRect.width, canvas.height);
+    Game.hudCameraRect = new Game.Rectangle(camera.viewportRect.width, 0, canvas.width - camera.viewportRect.width, canvas.height);
     
     var cursor = new Game.Cursor((hudcamera.xView + hudcamera.wView) - 10, hudcamera.yView + 20);
     
@@ -195,6 +277,7 @@ $(function(){
 			room.process(STEP);
 			camera.update(STEP);
 			Game.ChatBox.process(STEP);
+            Game.ContextMenu.process(STEP);
 		} else if (Game.state === 'logonscreen') {
 			Game.LogonScreen.process(STEP);
 		}
@@ -217,12 +300,13 @@ $(function(){
 			room.player.inventory.draw(context, hudcamera.xView, hudcamera.yView + Game.Minimap.height + 20);
 			room.player.stats.draw(context, hudcamera.xView, hudcamera.viewportRect.height - ((room.player.stats.stats.length + 2) * room.player.stats.y));
 			
+            
+            if (room.currentShow <= 0.98) {
+                context.fillStyle = "rgba(0, 0, 0, "+(1-room.currentShow)+")";
+                context.fillRect(0, 0, canvas.width, canvas.height);
+            }
 			Game.ChatBox.draw(context, 0, canvas.height);
-			
-			if (room.currentShow <= 0.98) {
-				context.fillStyle = "rgba(0, 0, 0, "+(1-room.currentShow)+")";
-				context.fillRect(0, 0, canvas.width, canvas.height);
-			}
+            Game.ContextMenu.draw(context);
 		} else if (Game.state === 'logonscreen') {
 			Game.LogonScreen.draw(context, canvas.width, canvas.height);
 		}
@@ -268,15 +352,6 @@ $(function(){
 
 });
 
-function isPrintableChar(keycode) {
-	return (keycode > 47 && keycode < 58)   || // number keys
-        keycode == 32   || // spacebar
-        (keycode > 64 && keycode < 91)   || // letter keys
-        (keycode > 95 && keycode < 112)  || // numpad keys
-        (keycode > 185 && keycode < 193) || // ;=,-./` (in order)
-        (keycode > 218 && keycode < 223);   // [\]' (in order)
-}
-
 Game.getMousePos = function(e) {
     return {x: e.clientX - Game.boundingRect.left, y: e.clientY - Game.boundingRect.top};
 }
@@ -314,16 +389,13 @@ window.addEventListener("keydown", function(e) {
 				break;
 			case 13://enter
 				if (Game.ChatBox.userMessage.length > 0) {
+                    console.log("sending message: ", Game.ChatBox.userMessage);
 					Game.ws.send({
 						action: "message",
 						id: Game.getPlayer().id,
 						message: Game.ChatBox.userMessage
 					});
 
-					var matches = Game.ChatBox.userMessage.match(/^::(att|str|def|hp|agil|acc|mage|herb|mine|smith) (-?\d+)$/);
-					if (matches != null) {
-						Game.getPlayer().stats.gainExp(matches[1], parseInt(matches[2]));
-					}
 					Game.ChatBox.userMessage = '';
 				}
 				break;
