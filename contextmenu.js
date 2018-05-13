@@ -18,12 +18,12 @@
 	    		return;
 
 	    	ctx.save();
-	    	ctx.fillStyle = "black";
+	    	ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
 	    	ctx.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 
 	    	var selectedOption = this.getSelectedOption();
 
-	    	ctx.fillStyle = "#333";
+	    	ctx.fillStyle = "rgba(100, 100, 100, 0.5)";
 	    	ctx.fillRect(this.rect.left, this.rect.top + (this.menuOptionHeight * selectedOption), this.rect.width, this.menuOptionHeight);
 
 	    	ctx.strokeStyle = "red";
@@ -51,9 +51,6 @@
     		if (this.active)
     			return;
 
-    		//this.menuOptions.push("follow shouko");
-    		//this.menuOptions.push("trade with shouko");
-    		//this.menuOptions.push("duel with shouko");
     		this.menuOptions.push({label: "walk here", id: Game.getPlayer().id, action: "move", x: x, y: y});
     		this.menuOptions.push({label: "cancel", action: "cancel"});
 
@@ -67,11 +64,11 @@
 	    	this.rect.height = this.menuOptions.length * this.menuOptionHeight;
 
     		this.active = true;
-	    	this.rect.left = x - xview;
+	    	this.rect.left = (x - xview) * Game.scale;
 	    	if (this.rect.left + this.rect.width > Game.boundingRect.right)
 	    		this.rect.left = Game.boundingRect.right - this.rect.width - this.toleranceMargin;
 
-	    	this.rect.top = y - yview;
+	    	this.rect.top = (y - yview) * Game.scale;
 	    	if (this.rect.top + this.rect.height > Game.boundingRect.bottom)
 	    		this.rect.top = Game.boundingRect.bottom - this.rect.height - this.toleranceMargin;
     	},

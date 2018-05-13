@@ -22,7 +22,7 @@
 				context.fillText(this.messages[i].text, xview + 10, yview - (20 * (this.messages.length - i)) - 20);
 			}
 			context.fillStyle = 'yellow';
-			context.fillText(this.userMessage + '*', xview + 10, yview - 20);
+			context.fillText(Game.getPlayer().name + ": " + this.userMessage + '*', xview + 10, yview - 20);
 			context.restore();
 		},
 		process: function(dt) {

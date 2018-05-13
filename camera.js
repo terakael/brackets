@@ -54,7 +54,7 @@
                 //    this.xView = this.followed.x - (this.wView - this.xDeadZone);
                 //else if(this.followed.x  - this.xDeadZone < this.xView)
                     //this.xView = this.followed.x - this.xDeadZone;
-                this.targetxView = this.followed.x - this.xDeadZone;
+                this.targetxView = this.followed.x - this.xDeadZone * (1/Game.scale);
             }
             if (this.axis === AXIS.VERTICAL || this.axis === AXIS.BOTH) {
                 // moves camera on vertical axis based on followed object position
@@ -62,7 +62,7 @@
                 //    this.yView = this.followed.y - (this.hView - this.yDeadZone);
                 //else if(this.followed.y - this.yDeadZone < this.yView)
                     //this.yView = this.followed.y - this.yDeadZone;
-                this.targetyView = this.followed.y - this.yDeadZone;
+                this.targetyView = this.followed.y - this.yDeadZone * (1/Game.scale);
             }
             
             this.xView += (this.targetxView - this.xView) * (dt * 5);

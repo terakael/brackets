@@ -20,6 +20,13 @@
             this.chatMessageTimer = 0;// counter until the chat message is cleared
             this.clickBox = new Game.Rectangle(0, 0, this.width, this.height);
             this.contextActions = ["follow", "trade", "duel"];
+            this.hitSplat = 0;
+            this.hitSplatTimer = 0;
+            this.currentHp = 1;
+            this.maxHp = 1;
+            this.respawnPos = {x: 0, y: 0};
+            this.deathsCurtain = 1;
+            this.deathSequence = false;
             
             this.sprite = new Game.Sprite();
             this.sprite.anchor = {x: 0.5, y: 0.9};
@@ -127,33 +134,94 @@
                     this.chatMessage = "";
                 }
             }
+
+            if (this.hitSplatTimer > 0) {
+                this.hitSplatTimer -= step;
+                if (this.hitSplatTimer < 0) {
+                    this.hitSplatTimer = 0;
+                }
+            }
+
+            if (this.deathSequence === true) {
+                this.deathsCurtain -= step;
+                if (this.deathsCurtain < 0) {
+                    this.deathsCurtain = 0;
+                    this.deathSequence = false;
+                    this.x = this.respawnPos.x;
+                    this.y = this.respawnPos.y;
+                    this.destPos.x = this.respawnPos.x;
+                    this.destPos.y = this.respawnPos.y;
+                }
+            } else {
+                if (this.deathsCurtainMaxTimer > 0) {
+                    this.deathsCurtainMaxTimer -= step;
+                    if (this.deathsCurtainMaxTimer < 0) {
+                        this.deathsCurtainMaxTimer = 0;
+                        Game.ChatBox.add("You've been granted another life; use it wisely.", "white");
+                    }
+                } else {
+                    if (this.deathsCurtain < 1) {
+                        this.deathsCurtain += step;
+                        if (this.deathsCurtain > 1)
+                            this.deathsCurtain = 1;
+                    }
+                }
+            }
             
             if (moving)
                 this.sprite.process(step);
 
+            this.stats.process(step);
+
             this.clickBox.setPos(this.x - this.width/2, this.y - this.height);
 		}
 		
-		Player.prototype.draw = function(context, xView, yView){		
-			context.save();
-            context.fillStyle = "pink";
-            if (this.image) {
-                this.sprite.draw(context, this.x - xView, this.y - yView, this.image);
-            } else {
-			     
-			     // before draw we need to convert player world's position to canvas position			
-			    context.fillRect(this.x- (this.width/2) - xView, (this.y-this.height) - yView, this.width, this.height);
-                context.fillStyle = "white";
-                context.fillRect(this.x - xView, this.y - yView, 2, 2);
+		Player.prototype.draw = function(context, xView, yView) {
+            if (this.deathSequence != true) {
+                context.fillStyle = "pink";
+                if (this.image) {
+                    this.sprite.draw(context, this.x - xView, this.y - yView, this.image);
+                } else {
+    			     
+    			     // before draw we need to convert player world's position to canvas position			
+    			    context.fillRect(this.x- (this.width/2) - xView, (this.y-this.height) - yView, this.width, this.height);
+                    context.fillStyle = "white";
+                    context.fillRect(this.x - xView, this.y - yView, 2, 2);
+                }
+
+                context.save()
+                context.setTransform(1, 0, 0, 1, 0, 0);
+                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.maxHp);
+                if (this.chatMessage != "") {
+                    context.font = "12pt Consolas";
+                    context.textAlign = "center";
+                    context.fillStyle = "yellow"
+                    context.fillText(this.chatMessage, (this.x - xView) * Game.scale, (this.y - yView - this.height - (showingHealthBar ? 15 : 0)) * Game.scale);
+                }
+                
+
+                if (this.hitSplatTimer > 0) {
+
+                    context.fillStyle = this.hitSplat == "0" ? "rgba(0, 200, 200, 0.5)" : "rgba(200, 0, 0, 0.5)";
+                    context.fillRect(((this.x - xView) * Game.scale) - 16, ((this.y - yView) * Game.scale) - 16 - 10, 32, 32);
+
+                    context.font = "bold 20pt Consolas";
+                    context.fillStyle = "white";
+                    context.textAlign = "center";
+                    context.fillText(this.hitSplat, (this.x - xView) * Game.scale, (this.y - yView) * Game.scale);
+                }
+
+
+                context.restore();
             }
 
-            if (this.chatMessage != "") {
-                context.textAlign = "center";
-                context.fillStyle = "yellow"
-                context.fillText(this.chatMessage, this.x - xView, this.y - yView - this.height);
-            }
+            context.fillStyle = "rgba(0, 0, 0, "+ (1-this.deathsCurtain) + ")";
+            context.fillRect(0, 0, Game.worldCameraRect.width, Game.worldCameraRect.height);
 
-			context.restore();			
+            context.fillStyle = "rgba(255, 0, 0, "+ (1-this.deathsCurtain) + ")";
+            context.textAlign = "center";
+            context.font = "bold 40pt Consolas";
+            context.fillText("You died!", ~~(Game.worldCameraRect.width/2) * (1/Game.scale), ~~(Game.worldCameraRect.height/2) * (1/Game.scale));
 		}
         
         Player.prototype.loadStats = function(obj) {
@@ -187,7 +255,33 @@
 
             return options;
         }
+
+        Player.prototype.damage = function(dmg) {
+            this.hitSplat = dmg;
+            this.hitSplatTimer = 1;
+            this.stats.showHealthBar();
+            this.currentHp -= dmg;
+
+            if (this.currentHp <= 0) {
+                this.currentHp = this.maxHp;
+            }
+
+            this.stats.currentHp = this.currentHp;// for drawing it in the stat bar
+        }
+
+        Player.prototype.respawn = function(x, y, hp) {
+            this.respawnPos.x = x;
+            this.respawnPos.y = y;
+            this.currentHp = hp;
+            this.maxHp = hp;
+            this.stats.currentHp = hp;
+        }
 		
+        Player.prototype.setDeathSequence = function() {
+            this.deathSequence = true;
+            this.deathsCurtainMaxTimer = 1;
+        }
+
 		// add "class" Player to our Game object
 		Game.Player = Player;
 		

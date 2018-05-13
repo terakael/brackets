@@ -14,9 +14,12 @@ $(function(){
 				Game.LogonScreen.logonError = obj["responseText"];
 				return;
 			}
-
+            document.title = obj["name"];
 			room.player = new Game.Player(obj["x"], obj["y"]);
             room.player.loadStats(obj["stats"]);
+            room.player.currentHp = obj["currentHp"];
+            room.player.stats.currentHp = room.player.currentHp;
+            room.player.maxHp = obj["maxHp"];
             room.player.id = obj["id"];
             room.player.name = obj["name"];
 			camera.follow(room.player, (canvas.width-250-(room.player.width/2))/2, (canvas.height)/2);
@@ -29,7 +32,7 @@ $(function(){
 			
 			room.show = 1.0;
             
-            Game.ChatBox.add("welcome to the game, {0}.".format(obj["name"]));
+            Game.ChatBox.add("Welcome to the game, {0}.".format(obj["name"]));
 			Game.state = 'game';
         } else if (obj["action"] === "logoff") {
         	// clean up and change state to logon screen
@@ -70,15 +73,48 @@ $(function(){
             room.removePlayer(obj["id"]);// TODO should be session id; this is dangerous
             Game.ChatBox.add(obj["name"] + " has logged out.", "#0ff");
 		} else if (obj["action"] === "addexp") {
-            if (obj["id"] == room.player.id)
+            if (obj["id"] == room.player.id) {
                 room.player.stats.gainExp(obj["statShortName"], obj["exp"]);
+                if (obj["statShortName"] === "hp") {
+                    room.player.maxHp = room.player.stats.exp2lvl(obj["exp"]);
+                }
+            }
         } else if (obj["action"] === "unknown") {
             Game.ChatBox.add("invalid action.", "#fff");
         } else if (obj["action"] === "duel" || obj["action"] === "trade") {
             if (obj["accepted"] === 0) {
-                Game.ChatBox.add("{0} wishes to {1} with you.".format(obj["opponentName"], obj["action"]), "white");
+                Game.ChatBox.add("{0} wishes to {1} with you.".format(obj["opponentName"], obj["action"]), "#f0f");
             } else {
-                Game.ChatBox.add("{0} accepted the {1}.".format(obj["opponentName"], obj["action"]), "white");
+                Game.ChatBox.add("{0} accepted the {1}.".format(obj["opponentName"], obj["action"]), "#f0f");
+            }
+        } else if (obj["action"] === "damage") {
+            if (obj["id"] == room.player.id) {
+                room.player.damage(obj["damage"]);
+            } else {
+                for (var i in room.otherPlayers) {
+                    if (obj["id"] == room.otherPlayers[i].id) {
+                        room.otherPlayers[i].damage(obj["damage"]);
+                        break;
+                    }
+                }
+            }
+        } else if (obj["action"] === "dead") {
+            if (obj["id"] == room.player.id) {
+                // you died lmfao
+                room.player.respawn(obj["x"], obj["y"], obj["currentHp"]);
+                room.player.setDeathSequence();
+            } else {
+                for (var i in room.otherPlayers) {
+                    if (obj["id"] == room.otherPlayers[i].id) {
+                        // they died
+                        room.otherPlayers[i].respawn(obj["x"], obj["y"], obj["currentHp"]);
+                        room.otherPlayers[i].x = obj["x"];
+                        room.otherPlayers[i].y = obj["y"];
+                        room.otherPlayers[i].destPos.x = obj["x"];
+                        room.otherPlayers[i].destPos.y = obj["y"];
+                        break;
+                    }
+                }
             }
         }
     });
@@ -87,6 +123,8 @@ $(function(){
     Game.isometric = 0;
     Game.boundingRect = canvas.getBoundingClientRect();
 	Game.state = 'logonscreen';
+    Game.scale = 1.5;
+    Game.targetScale = 1.5
 
     // game settings:	
     var FPS = 50,
@@ -112,6 +150,8 @@ $(function(){
         addPlayer: function(obj) {
         	if (obj["id"] !== this.player.id) {
         		var player = new Game.Player(obj["x"], obj["y"]); 
+                player.currentHp = obj["currentHp"];
+                player.maxHp = obj["maxHp"];
         		player.id = obj["id"];
                 player.name = obj["name"];
         		//player.image = playerspritemap;
@@ -131,6 +171,10 @@ $(function(){
                 this.t.translate(-(this.player.x - xview), -(this.player.y - yview));
                 ctx.setTransform.apply(ctx, this.t.m);
             }
+
+            ctx.save();
+            this.t.scale(Game.scale, Game.scale);
+            ctx.setTransform.apply(ctx, this.t.m);
             
             this.map.draw(ctx, xview, yview);
             
@@ -152,10 +196,12 @@ $(function(){
             if (Game.isometric)
                 ctx.restore();
             
-            this.player.draw(ctx, xview, yview);
             for (var i = 0; i < this.walls.length; ++i) {
                 this.walls[i].draw(ctx, xview, yview);
             }
+
+            this.player.draw(ctx, xview, yview);
+            ctx.restore();
         },
         process: function(dt) {
 			this.currentShow += (this.show - this.currentShow) * dt;
@@ -201,8 +247,6 @@ $(function(){
                         Game.ws.send({action: "move", id: room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y});
                     }
                     break;
-                case 1:// wheel
-                    break;
                 case 2:// right
                     // take all the things that are at this position and add them to the context menu
                     if (Game.ContextMenu.active)
@@ -211,25 +255,6 @@ $(function(){
                     for (var i in room.otherPlayers) {
                         var p = room.otherPlayers[i];
                         if (p.clickBox.pointWithin(cursor.mousePos)) {
-                            var tradeOption = {
-                                action: "trade",
-                                objectId: p.id,
-                                objectName: p.name
-                            };
-                            var followOption = {
-                                action: "follow",
-                                objectId: p.id,
-                                objectName: p.name
-                            };
-                            var duelOption = {
-                                action: "duel",
-                                objectId: p.id,
-                                objectName: p.name
-                            };
-/*                            Game.ContextMenu.push(followOption);
-                            Game.ContextMenu.push(tradeOption);
-                            Game.ContextMenu.push(duelOption);
-*/
                             Game.ContextMenu.push(room.otherPlayers[i].contextMenuOptions());
                         }
                     }
@@ -237,6 +262,15 @@ $(function(){
                     break;
             }
         }
+    }, false);
+
+    canvas.addEventListener("mousewheel", function(e) {
+        var e = window.event || e; // old IE support
+        Game.targetScale += Math.max(-0.1, Math.min(0.1, (e.wheelDelta || -e.detail)));
+        if (Game.targetScale < 1)
+            Game.targetScale = 1;
+        else if (Game.targetScale > 2)
+            Game.targetScale = 2;
     }, false);
 	
     // generate a large image texture for the room
@@ -274,6 +308,8 @@ $(function(){
     // Game update function
     var update = function() {
 		if (Game.state === 'game') {
+            Game.scale += (Game.targetScale - Game.scale) * STEP * 10;
+
 			room.process(STEP);
 			camera.update(STEP);
 			Game.ChatBox.process(STEP);
@@ -378,14 +414,14 @@ window.addEventListener("keydown", function(e) {
 	} else if (Game.state === 'game') {
 		switch (event.keyCode) {
 			case 38:// up
-				Game.viewScale += 0.2;
-				if (Game.viewScale > 1.7)
-					Game.viewScale = 1.7;
+				Game.targetScale += 0.1;
+                if (Game.targetScale > 2)
+                    Game.targetScale = 2;
 				break;
 			case 40:// down
-				Game.viewScale -= 0.2;
-				if (Game.viewScale < 1.3)
-					Game.viewScale = 1.3;
+				Game.targetScale -= 0.1;
+				if (Game.targetScale < 1)
+                    Game.targetScale = 1;
 				break;
 			case 13://enter
 				if (Game.ChatBox.userMessage.length > 0) {

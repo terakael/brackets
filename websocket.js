@@ -3,7 +3,6 @@
         this.ws = new WebSocket(addr);
         this.ws.onopen = function() {
             console.log("connected");
-            Game.ChatBox.add("connected");
         };
         
         this.ws.onmessage = function(evt) {
@@ -13,12 +12,10 @@
         
         this.ws.onclose = function() {
             console.log("onclose");
-            Game.ChatBox.add("onclose");
         };
         
         this.ws.onerror = function(evt) {
             console.log("onerror");
-            Game.ChatBox.add("onerror: " + evt);
         };
         
         this.send = function(obj) {
