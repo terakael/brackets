@@ -1,24 +1,149 @@
 (function() {
+	function InventorySlot(x, y, w, h, id) {
+		this.rect = new Game.Rectangle(x, y, w, h);
+		this.fillColor = "#222";
+		this.selectedColor = "#444";
+		this.selected = false;
+		this.id = id;
+
+		// there will be an item instead of a sprite here.
+		// for the list of actions, we will have a bit-packed int in the item database
+		// eg:
+		// 1 = use
+		// 2 = drop
+		// 4 = eat
+		// 8 = equip
+		// 16 = examine
+		// etc.  The item will have a combination of these.
+	};
+	InventorySlot.prototype = {
+		constructor: InventorySlot,
+		draw: function(context, xview, yview) {
+			context.fillStyle = this.selected ? this.selectedColor : this.fillColor;
+			context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
+			if (this.item) {
+				this.item.draw(context, this.rect.left + (this.rect.width/2), this.rect.top + (this.rect.height/2));
+			}
+		}
+	};
+
 	function Inventory() {
-		this.slots = 20;
+		this.slotCount = 20;
 		this.slotSize = 46;
 		this.columns = 5;
+		this.rect = new Game.Rectangle(Game.hudCameraRect.left + 9, 270, this.slotSize * this.columns + 2, ~~(this.slotCount / this.columns) * this.slotSize + 2);
+
+		this.mousePosOnClick = {x: 0, y: 0};
+		this.selectedItem = null;
+		this.selectedSlotId = 0;
+		this.dragging = false;// dragging an item
+
+		this.slots = [];
+		for (var i = 0; i < this.slotCount; ++i) {
+			this.slots.push(new InventorySlot(Game.hudCameraRect.left + 11 + (i % this.columns) * this.slotSize, this.rect.top + 2 + (~~(i/this.columns) * this.slotSize), this.slotSize - 2, this.slotSize - 2, i));
+		}
 	};
 	Inventory.prototype = {
 		constructor: Inventory,
 		draw: function(context, xview, yview) {
 			context.save();
+			context.setTransform(1, 0, 0, 1, 0, 0);
+
 			context.fillStyle = "#666";
 			context.fillText("Inventory", xview + 10, yview + 10);
-			context.fillRect(xview + 9, yview + 18, this.columns * this.slotSize + 2, ~~(this.slots / this.columns) * this.slotSize + 2);
-			context.fillStyle = "#222";
+			context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 
-			for (var i = 0; i < this.slots; ++i) {
-				context.fillRect((xview + 11) + (i%this.columns) * this.slotSize, (yview + 20) + (~~(i/this.columns) * this.slotSize), this.slotSize-2, this.slotSize-2);
+			for (var i in this.slots) {
+				this.slots[i].draw(context, xview, yview);
 			}
+
+			if (this.dragging && this.selectedItem) {
+				this.selectedItem.draw(context, Game.mousePos.x, Game.mousePos.y);
+			}
+
 			context.restore();
 		},
 		process: function(dt) {
+			if (Game.ContextMenu.active)
+				return;
+
+			for (var i in this.slots) {
+				this.slots[i].selected = this.slots[i].rect.pointWithin(Game.mousePos);
+			}
+
+			if (this.selectedItem && 
+				(Math.abs(this.mousePosOnClick.x - Game.mousePos.x) > 5 ||
+				Math.abs(this.mousePosOnClick.y - Game.mousePos.y) > 5)) {
+				// onclick event
+				this.dragging = true;
+				this.slots[this.selectedSlotId].item = null;
+			}
+		},
+		onMouseDown: function(button) {
+			if (Game.ContextMenu.active)
+				return;
+
+			switch (button) {
+				case 0:// left
+					if (this.dragging) {// if you drag out of the window then this can happen as the up event isn't hit
+						this.slots[this.selectedSlotId].item = this.selectedItem;
+						this.selectedItem = null;
+						this.dragging = false;
+					}
+					this.mousePosOnClick = Game.mousePos;
+					var slot = this.getSelectedSlot(Game.mousePos);
+					if (slot.item) {
+						this.selectedItem = slot.item;
+						this.selectedSlotId = slot.id;
+					}
+					break;
+				case 2:// right
+					var slot = this.getSelectedSlot(Game.mousePos);
+					if (slot && slot.item) {
+						// todo
+						Game.ContextMenu.addOptionsByItem(slot.item);
+						// Game.ContextMenu.push([
+						// 	{action: "equip", objectId: slot.id, objectName: slot.item.name},
+						// 	{action: "use", objectId: slot.id, objectName: slot.item.name},
+						// 	{action: "drop", objectId: slot.id, objectName: slot.item.name}
+						// ]);
+					}
+					break;
+			}
+		},
+		onMouseUp: function(button) {
+			if (Game.ContextMenu.active)
+				return;
+
+			switch (button) {
+				case 0:// left
+					if (this.selectedItem) {
+						var slot = this.getSelectedSlot(Game.mousePos);
+						if (slot) {
+							if (slot.item)
+								this.slots[this.selectedSlotId].item = slot.item;
+							slot.item = this.selectedItem;
+						} else {
+							this.slots[this.selectedSlotId].item = this.selectedItem;
+						}
+						this.selectedItem = null;
+
+						// TODO: send inventory update message to server
+						this.dragging = false;
+					}
+					break;
+			}
+		},
+		getSelectedSlot: function(pos) {
+			for (var i in this.slots) {
+				if (this.slots[i].rect.pointWithin(pos))
+					return this.slots[i];
+			}
+		},
+		loadInventory: function(invArray) {
+			for (var i in this.slots) {
+				this.slots[i].item = Game.SpriteManager.getItemById(invArray[i] || 0);
+			}
 		}
 	};
 	

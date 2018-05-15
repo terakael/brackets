@@ -14,9 +14,15 @@ $(function(){
 				Game.LogonScreen.logonError = obj["responseText"];
 				return;
 			}
+
+            Game.SpriteManager.setSpriteMap(1, obj["spriteMaps"][0].name, obj["spriteMaps"][0].dataBase64);
+            Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
+            Game.SpriteManager.loadItems(obj["items"]);
+
             document.title = obj["name"];
 			room.player = new Game.Player(obj["x"], obj["y"]);
             room.player.loadStats(obj["stats"]);
+            room.player.loadInventory(obj["inventory"]);
             room.player.currentHp = obj["currentHp"];
             room.player.stats.currentHp = room.player.currentHp;
             room.player.maxHp = obj["maxHp"];
@@ -30,6 +36,7 @@ $(function(){
 				room.addPlayer(obj["players"][i]);
 			}
 			
+			// starts the fade-in
 			room.show = 1.0;
             
             Game.ChatBox.add("Welcome to the game, {0}.".format(obj["name"]));
@@ -182,8 +189,9 @@ $(function(){
             var transformed = this.t.transformPoint(mp.x, mp.y);
             cursor.setPos({x: transformed.x + xview, y: transformed.y + yview});
             
-            if (!Game.ContextMenu.active)
+            if (!Game.ContextMenu.active && Game.worldCameraRect.pointWithin(Game.mousePos))
                 cursor.draw(ctx, xview, yview);
+
             for (var i = 0; i < this.walls.length; ++i) {
                 this.walls[i].draw(ctx, xview, yview);
             }
@@ -234,17 +242,25 @@ $(function(){
     
     canvas.addEventListener("mousedown", function(e) {
         if (Game.state === 'game') {
+            if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos))
+                Game.getPlayer().inventory.onMouseDown(e.button);
+            
             switch (e.button) {
                 case 0:// left
                     if (Game.ContextMenu.active) {
                         // send action based on context menu selection
                         var menuItem = Game.ContextMenu.getSelectedAction();
-                        if (menuItem.action !== "cancel") {
+                        if (menuItem.action === "examine") {
+                        	Game.ChatBox.add(Game.SpriteManager.getItemById(menuItem.objectId).description);
+                        } else if (menuItem.action === "cancel") {
+
+                        } else {
                             Game.ws.send(menuItem);
                         }
                         Game.ContextMenu.hide();
                     } else {
-                        Game.ws.send({action: "move", id: room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y});
+                        if (Game.worldCameraRect.pointWithin(Game.mousePos))
+                            Game.ws.send({action: "move", id: room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y});
                     }
                     break;
                 case 2:// right
@@ -264,13 +280,30 @@ $(function(){
         }
     }, false);
 
+    canvas.addEventListener("mouseup", function(e) {
+        if (Game.state === 'game') {
+            switch (e.button) {
+                case 0:
+                    if (Game.ContextMenu.active) {
+
+                    } else {
+                        //if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos))
+                        Game.getPlayer().inventory.onMouseUp(e.button);
+                    }
+                    break;
+            }
+        }
+    }, false);
+
     canvas.addEventListener("mousewheel", function(e) {
-        var e = window.event || e; // old IE support
-        Game.targetScale += Math.max(-0.1, Math.min(0.1, (e.wheelDelta || -e.detail)));
-        if (Game.targetScale < 1)
-            Game.targetScale = 1;
-        else if (Game.targetScale > 2)
-            Game.targetScale = 2;
+        if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
+            var e = window.event || e; // old IE support
+            Game.targetScale += Math.max(-0.1, Math.min(0.1, (e.wheelDelta || -e.detail)));
+            if (Game.targetScale < 1)
+                Game.targetScale = 1;
+            else if (Game.targetScale > 2)
+                Game.targetScale = 2;
+        }
     }, false);
 	
     // generate a large image texture for the room
@@ -285,7 +318,7 @@ $(function(){
     stone.onload = function() {
         hudcamera.pat = context.createPattern(stone, "repeat");
     }
-    
+
     var playerspritemap = new Image();
     playerspritemap.src = "img/kanakospritemap.png";
     playerspritemap.onload = function() {

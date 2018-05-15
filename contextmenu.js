@@ -51,7 +51,9 @@
     		if (this.active)
     			return;
 
-    		this.menuOptions.push({label: "walk here", id: Game.getPlayer().id, action: "move", x: x, y: y});
+            if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
+    	       this.menuOptions.push({label: "walk here", id: Game.getPlayer().id, action: "move", x: x, y: y});
+            }
     		this.menuOptions.push({label: "cancel", action: "cancel"});
 
 	    	var longestOption = 0;
@@ -104,9 +106,33 @@
     			obj[i].id = Game.getPlayer().id;
 	    		this.menuOptions.push(obj[i]);
     		}
+    	},
+        addOptionsByItem: function(item) {
+            // item has a contextOptions int.  parse that to retrieve the correct actions
 
-    		
-    	}
+            // for testing, we will assume the following:
+            // 1: equip
+            // 2: use
+            // 4: examine
+            // 8: drop
+
+
+            var options = []
+            if (item.contextOptions & 1)// equip
+                options.push({action: "equip", objectId: item.id, objectName: item.name});
+
+            if (item.contextOptions & 2)//use
+                options.push({action: "use", objectId: item.id, objectName: item.name});
+
+            if (item.contextOptions & 4)
+                options.push({action: "examine", objectId: item.id, objectName: item.name});
+
+            if (item.contextOptions & 8)
+                options.push({action: "drop", objectId: item.id, objectName: item.name});
+
+            if (options.length > 0)
+                this.push(options);
+        }
     };
     
     Game.ContextMenu = new ContextMenu();

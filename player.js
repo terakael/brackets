@@ -172,6 +172,7 @@
                 this.sprite.process(step);
 
             this.stats.process(step);
+            this.inventory.process(step);
 
             this.clickBox.setPos(this.x - this.width/2, this.y - this.height);
 		}
@@ -234,6 +235,10 @@
 			this.stats.setExp("mine", obj["mining"]);
 			this.stats.setExp("smith", obj["smithing"]);
 			this.stats.setExp("herb", obj["herblore"]);
+        }
+
+        Player.prototype.loadInventory = function(inv) {
+            this.inventory.loadInventory(inv);
         }
         
         Player.prototype.setDestPos = function(pos) {
