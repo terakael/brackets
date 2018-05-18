@@ -71,7 +71,7 @@
 				this.slots[i].selected = this.slots[i].rect.pointWithin(Game.mousePos);
 			}
 
-			if (this.selectedItem && 
+			if (!this.dragging && this.selectedItem && 
 				(Math.abs(this.mousePosOnClick.x - Game.mousePos.x) > 5 ||
 				Math.abs(this.mousePosOnClick.y - Game.mousePos.y) > 5)) {
 				// onclick event
@@ -91,22 +91,16 @@
 						this.dragging = false;
 					}
 					this.mousePosOnClick = Game.mousePos;
-					var slot = this.getSelectedSlot(Game.mousePos);
+					var slot = this.getMouseOverSlot(Game.mousePos);
 					if (slot.item) {
 						this.selectedItem = slot.item;
 						this.selectedSlotId = slot.id;
 					}
 					break;
 				case 2:// right
-					var slot = this.getSelectedSlot(Game.mousePos);
+					var slot = this.getMouseOverSlot(Game.mousePos);
 					if (slot && slot.item) {
-						// todo
 						Game.ContextMenu.addOptionsByItem(slot.item);
-						// Game.ContextMenu.push([
-						// 	{action: "equip", objectId: slot.id, objectName: slot.item.name},
-						// 	{action: "use", objectId: slot.id, objectName: slot.item.name},
-						// 	{action: "drop", objectId: slot.id, objectName: slot.item.name}
-						// ]);
 					}
 					break;
 			}
@@ -118,7 +112,7 @@
 			switch (button) {
 				case 0:// left
 					if (this.selectedItem) {
-						var slot = this.getSelectedSlot(Game.mousePos);
+						var slot = this.getMouseOverSlot(Game.mousePos);
 						if (slot) {
 							if (slot.item)
 								this.slots[this.selectedSlotId].item = slot.item;
@@ -126,15 +120,23 @@
 						} else {
 							this.slots[this.selectedSlotId].item = this.selectedItem;
 						}
-						this.selectedItem = null;
 
-						// TODO: send inventory update message to server
+						if (slot) {// if the mouse isnt' over a slot then the item won't move, so don't send a move request.
+							Game.ws.send({
+								action: "invmove",
+								id: Game.getPlayer().id,
+								src: this.selectedSlotId,
+								dest: slot.id
+							});
+						}
+
+						this.selectedItem = null;
 						this.dragging = false;
 					}
 					break;
 			}
 		},
-		getSelectedSlot: function(pos) {
+		getMouseOverSlot: function(pos) {
 			for (var i in this.slots) {
 				if (this.slots[i].rect.pointWithin(pos))
 					return this.slots[i];
@@ -143,6 +145,14 @@
 		loadInventory: function(invArray) {
 			for (var i in this.slots) {
 				this.slots[i].item = Game.SpriteManager.getItemById(invArray[i] || 0);
+			}
+		},
+		updateInventory: function(invArray) {
+			for (var i in invArray) {
+				if (this.slots[i].item.id !== invArray[i]) {
+					// mismatching slot between client and server; update to what server has
+					this.slots[i].item = Game.SpriteManager.getItemById(invArray[i]);
+				}
 			}
 		}
 	};

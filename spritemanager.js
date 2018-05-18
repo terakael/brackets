@@ -8,6 +8,11 @@
 		spriteMaps: [],
 		spriteFrames: [],
 		items: [],
+		loadSpriteMaps: function(spriteMaps) {
+			for (var i in spriteMaps) {
+				this.setSpriteMap(spriteMaps[i].id, spriteMaps[i].name, spriteMaps[i].dataBase64);
+			}
+		},
 		loadSpriteFrames: function(frames) {
 			for (var i in frames) {
 				//{"id":1,"sprite_map_id":1,"x":0,"y":140,"w":32,"h":32,"margin":0,"frame_count":1,"animation_type_id":1}

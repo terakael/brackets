@@ -13,7 +13,9 @@
     	active: false,
     	menuOptions: [],
     	menuOptionHeight: 20,
-    	draw: function(ctx) {
+        contextOptionList: ["equip", "eat", "drink", "use",  "mine",  "cut",  "drop", "follow", "trade", "duel", "take", "examine"],
+        // 8, 64, 2048
+        draw: function(ctx) {
     		if (!this.active)
 	    		return;
 
@@ -109,26 +111,12 @@
     	},
         addOptionsByItem: function(item) {
             // item has a contextOptions int.  parse that to retrieve the correct actions
-
-            // for testing, we will assume the following:
-            // 1: equip
-            // 2: use
-            // 4: examine
-            // 8: drop
-
-
             var options = []
-            if (item.contextOptions & 1)// equip
-                options.push({action: "equip", objectId: item.id, objectName: item.name});
 
-            if (item.contextOptions & 2)//use
-                options.push({action: "use", objectId: item.id, objectName: item.name});
-
-            if (item.contextOptions & 4)
-                options.push({action: "examine", objectId: item.id, objectName: item.name});
-
-            if (item.contextOptions & 8)
-                options.push({action: "drop", objectId: item.id, objectName: item.name});
+            for (var i = 0; i < this.contextOptionList.length; ++i) {
+                if (item.contextOptions & Math.pow(2, i))
+                    options.push({action: this.contextOptionList[i], objectId: item.id, objectName: item.name});
+            }
 
             if (options.length > 0)
                 this.push(options);

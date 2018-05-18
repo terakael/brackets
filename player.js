@@ -287,6 +287,10 @@
             this.deathsCurtainMaxTimer = 1;
         }
 
+        Player.prototype.updateInventory = function(invArray) {
+            this.inventory.updateInventory(invArray);
+        }
+
 		// add "class" Player to our Game object
 		Game.Player = Player;
 		

@@ -15,7 +15,7 @@ $(function(){
 				return;
 			}
 
-            Game.SpriteManager.setSpriteMap(1, obj["spriteMaps"][0].name, obj["spriteMaps"][0].dataBase64);
+            Game.SpriteManager.loadSpriteMaps(obj["spriteMaps"]);
             Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
             Game.SpriteManager.loadItems(obj["items"]);
 
@@ -123,6 +123,8 @@ $(function(){
                     }
                 }
             }
+        } else if (obj["action"] === "invmove") {
+            room.player.updateInventory(obj["inventory"]);
         }
     });
     
