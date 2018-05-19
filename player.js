@@ -291,6 +291,10 @@
             this.inventory.updateInventory(invArray);
         }
 
+        Player.prototype.setEquippedSlots = function(equippedArray) {
+            this.inventory.setEquippedSlots(equippedArray);
+        }
+
 		// add "class" Player to our Game object
 		Game.Player = Player;
 		

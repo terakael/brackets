@@ -5,16 +5,7 @@
 		this.selectedColor = "#444";
 		this.selected = false;
 		this.id = id;
-
-		// there will be an item instead of a sprite here.
-		// for the list of actions, we will have a bit-packed int in the item database
-		// eg:
-		// 1 = use
-		// 2 = drop
-		// 4 = eat
-		// 8 = equip
-		// 16 = examine
-		// etc.  The item will have a combination of these.
+		this.equipped = false;
 	};
 	InventorySlot.prototype = {
 		constructor: InventorySlot,
@@ -22,6 +13,10 @@
 			context.fillStyle = this.selected ? this.selectedColor : this.fillColor;
 			context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 			if (this.item) {
+				if (this.equipped) {
+					context.fillStyle = "#800";
+					context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
+				}
 				this.item.draw(context, this.rect.left + (this.rect.width/2), this.rect.top + (this.rect.height/2));
 			}
 		}
@@ -34,8 +29,7 @@
 		this.rect = new Game.Rectangle(Game.hudCameraRect.left + 9, 270, this.slotSize * this.columns + 2, ~~(this.slotCount / this.columns) * this.slotSize + 2);
 
 		this.mousePosOnClick = {x: 0, y: 0};
-		this.selectedItem = null;
-		this.selectedSlotId = 0;
+		this.selectedSlot = null;
 		this.dragging = false;// dragging an item
 
 		this.slots = [];
@@ -57,8 +51,8 @@
 				this.slots[i].draw(context, xview, yview);
 			}
 
-			if (this.dragging && this.selectedItem) {
-				this.selectedItem.draw(context, Game.mousePos.x, Game.mousePos.y);
+			if (this.dragging && this.selectedSlot) {
+				this.selectedSlot.item.draw(context, Game.mousePos.x, Game.mousePos.y);
 			}
 
 			context.restore();
@@ -71,12 +65,13 @@
 				this.slots[i].selected = this.slots[i].rect.pointWithin(Game.mousePos);
 			}
 
-			if (!this.dragging && this.selectedItem && 
+			if (!this.dragging && this.selectedSlot && 
 				(Math.abs(this.mousePosOnClick.x - Game.mousePos.x) > 5 ||
 				Math.abs(this.mousePosOnClick.y - Game.mousePos.y) > 5)) {
 				// onclick event
 				this.dragging = true;
-				this.slots[this.selectedSlotId].item = null;
+				this.slots[this.selectedSlot.id].item = null;
+				this.slots[this.selectedSlot.id].equipped = false;
 			}
 		},
 		onMouseDown: function(button) {
@@ -86,21 +81,21 @@
 			switch (button) {
 				case 0:// left
 					if (this.dragging) {// if you drag out of the window then this can happen as the up event isn't hit
-						this.slots[this.selectedSlotId].item = this.selectedItem;
-						this.selectedItem = null;
+						this.slots[this.selectedSlot.id].item = this.selectedSlot.item;
+						this.slots[this.selectedSlot.id].equipped = this.selectedSlot.equipped;
+						this.selectedSlot = null;
 						this.dragging = false;
 					}
 					this.mousePosOnClick = Game.mousePos;
 					var slot = this.getMouseOverSlot(Game.mousePos);
 					if (slot.item) {
-						this.selectedItem = slot.item;
-						this.selectedSlotId = slot.id;
+						this.selectedSlot = {id: slot.id, item: slot.item, equipped: slot.equipped};
 					}
 					break;
 				case 2:// right
 					var slot = this.getMouseOverSlot(Game.mousePos);
 					if (slot && slot.item) {
-						Game.ContextMenu.addOptionsByItem(slot.item);
+						Game.ContextMenu.addOptionsByInventorySlot(slot);
 					}
 					break;
 			}
@@ -111,28 +106,41 @@
 
 			switch (button) {
 				case 0:// left
-					if (this.selectedItem) {
+					if (this.dragging && this.selectedSlot) {
 						var slot = this.getMouseOverSlot(Game.mousePos);
 						if (slot) {
-							if (slot.item)
-								this.slots[this.selectedSlotId].item = slot.item;
-							slot.item = this.selectedItem;
+							if (slot.item) {
+								this.slots[this.selectedSlot.id].item = slot.item;
+								this.slots[this.selectedSlot.id].equipped = slot.equipped;
+							}
+							slot.item = this.selectedSlot.item;
+							slot.equipped = this.selectedSlot.equipped;
 						} else {
-							this.slots[this.selectedSlotId].item = this.selectedItem;
+							this.slots[this.selectedSlot.id].item = this.selectedSlot.item;
+							this.slots[this.selectedSlot.id].equipped = this.selectedSlot.equipped;
 						}
 
 						if (slot) {// if the mouse isnt' over a slot then the item won't move, so don't send a move request.
 							Game.ws.send({
 								action: "invmove",
 								id: Game.getPlayer().id,
-								src: this.selectedSlotId,
+								src: this.selectedSlot.id,
 								dest: slot.id
 							});
 						}
-
-						this.selectedItem = null;
-						this.dragging = false;
+					} else {
+						// not dragging an item - we wanna do the first context menu option
+						var slot = this.getMouseOverSlot(Game.mousePos);
+						if (slot && slot.item) {
+							Game.ContextMenu.addOptionsByInventorySlot(slot);
+							Game.ContextMenu.executeFirstOption();
+							Game.ContextMenu.hide();
+						}
 					}
+
+					// in all mouseup cases we want to reset the dragging and selectedSlot data
+					this.selectedSlot = null;
+					this.dragging = false;
 					break;
 			}
 		},
@@ -153,6 +161,11 @@
 					// mismatching slot between client and server; update to what server has
 					this.slots[i].item = Game.SpriteManager.getItemById(invArray[i]);
 				}
+			}
+		},
+		setEquippedSlots: function(equippedArray) {
+			for (var i in this.slots) {
+				this.slots[i].equipped = equippedArray.includes(Number(i));
 			}
 		}
 	};

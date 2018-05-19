@@ -23,6 +23,7 @@ $(function(){
 			room.player = new Game.Player(obj["x"], obj["y"]);
             room.player.loadStats(obj["stats"]);
             room.player.loadInventory(obj["inventory"]);
+            room.player.setEquippedSlots(obj["equippedSlots"]);
             room.player.currentHp = obj["currentHp"];
             room.player.stats.currentHp = room.player.currentHp;
             room.player.maxHp = obj["maxHp"];
@@ -32,6 +33,7 @@ $(function(){
 			camera.xView = obj["x"] - camera.xDeadZone;
 			camera.yView = obj["y"] - camera.yDeadZone;
 			
+            room.updateGroundItems(obj["groundItems"]);
 			for (var i in obj["players"]) {
 				room.addPlayer(obj["players"][i]);
 			}
@@ -123,8 +125,13 @@ $(function(){
                     }
                 }
             }
-        } else if (obj["action"] === "invmove") {
+        } else if (obj["action"] === "invmove" || obj["action"] === "invupdate") {
             room.player.updateInventory(obj["inventory"]);
+            room.player.setEquippedSlots(obj["equippedSlots"]);
+        } else if (obj["action"] === "equip") {
+            room.player.setEquippedSlots(obj["equippedSlots"]);
+        } else if (obj["action"] === "drop" || obj["action"] === "take") {
+            room.updateGroundItems(obj["groundItems"]);
         }
     });
     
@@ -186,6 +193,9 @@ $(function(){
             ctx.setTransform.apply(ctx, this.t.m);
             
             this.map.draw(ctx, xview, yview);
+
+            for (var i in this.groundItems)
+                this.groundItems[i].draw(ctx, xview, yview);
             
             var mp = Game.mousePos || {x: 0, y: 0};
             var transformed = this.t.transformPoint(mp.x, mp.y);
@@ -239,6 +249,14 @@ $(function(){
                     return;
                 }
             }
+        },
+        updateGroundItems: function(groundItemArray) {
+            this.groundItems = [];
+
+            for (var i in groundItemArray) {
+                var item = Game.SpriteManager.getItemById(groundItemArray[i].id);
+                this.groundItems.push(new Game.GroundItem(item, groundItemArray[i].x, groundItemArray[i].y, groundItemArray[i].groundItemId));
+            }
         }
     };
     
@@ -250,16 +268,7 @@ $(function(){
             switch (e.button) {
                 case 0:// left
                     if (Game.ContextMenu.active) {
-                        // send action based on context menu selection
-                        var menuItem = Game.ContextMenu.getSelectedAction();
-                        if (menuItem.action === "examine") {
-                        	Game.ChatBox.add(Game.SpriteManager.getItemById(menuItem.objectId).description);
-                        } else if (menuItem.action === "cancel") {
-
-                        } else {
-                            Game.ws.send(menuItem);
-                        }
-                        Game.ContextMenu.hide();
+                        Game.ContextMenu.handleMenuSelect();
                     } else {
                         if (Game.worldCameraRect.pointWithin(Game.mousePos))
                             Game.ws.send({action: "move", id: room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y});
@@ -276,6 +285,17 @@ $(function(){
                             Game.ContextMenu.push(room.otherPlayers[i].contextMenuOptions());
                         }
                     }
+
+                    for (var i in room.groundItems) {
+                        var groundItem = room.groundItems[i];
+                        if (groundItem.clickBox.pointWithin(cursor.mousePos)) {
+                            Game.ContextMenu.push([{
+                                action: "take",
+                                objectName: groundItem.item.name,
+                                groundItemId: groundItem.groundItemId
+                            }]);
+                        }
+                    }
                     Game.ContextMenu.show(~~cursor.mousePos.x, ~~cursor.mousePos.y, ~~camera.xView, ~~camera.yView);
                     break;
             }
@@ -287,7 +307,7 @@ $(function(){
             switch (e.button) {
                 case 0:
                     if (Game.ContextMenu.active) {
-
+                        Game.ContextMenu.hide();
                     } else {
                         //if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos))
                         Game.getPlayer().inventory.onMouseUp(e.button);

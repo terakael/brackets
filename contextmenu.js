@@ -20,7 +20,7 @@
 	    		return;
 
 	    	ctx.save();
-	    	ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+	    	ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
 	    	ctx.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 
 	    	var selectedOption = this.getSelectedOption();
@@ -109,17 +109,35 @@
 	    		this.menuOptions.push(obj[i]);
     		}
     	},
-        addOptionsByItem: function(item) {
-            // item has a contextOptions int.  parse that to retrieve the correct actions
+        addOptionsByInventorySlot: function(slot) {
+            // slot.item has a contextOptions int.  parse that to retrieve the correct actions
             var options = []
 
             for (var i = 0; i < this.contextOptionList.length; ++i) {
-                if (item.contextOptions & Math.pow(2, i))
-                    options.push({action: this.contextOptionList[i], objectId: item.id, objectName: item.name});
+                if (slot.item.contextOptions & Math.pow(2, i)) {
+                    options.push({action: this.contextOptionList[i], slot: slot.id, itemId: slot.item.id, objectName: slot.item.name});
+                }
             }
 
             if (options.length > 0)
                 this.push(options);
+        },
+        executeFirstOption: function() {
+        	// left-click event based usually
+        	if (this.menuOptions.length == 0)
+        		return;
+        	Game.ws.send(this.menuOptions[0]);
+        },
+        handleMenuSelect: function() {
+        	// send action based on context menu selection
+            var menuItem = Game.ContextMenu.getSelectedAction();
+            if (menuItem.action === "examine") {
+            	Game.ChatBox.add(Game.SpriteManager.getItemById(menuItem.itemId).description);
+            } else if (menuItem.action === "cancel") {
+
+            } else {
+                Game.ws.send(menuItem);
+            }
         }
     };
     
