@@ -6,8 +6,8 @@
 		this.groundItemId = id;
 	};
 
-	GroundItem.prototype.draw = function(ctx, xview, yview) {
-		this.item.draw(ctx, this.pos.x - xview, this.pos.y - yview);
+	GroundItem.prototype.draw = function(ctx, xview, yview, sx, sy) {
+		this.item.draw(ctx, (this.pos.x - xview) * (1/sx), (this.pos.y - yview) * (1/sy));
 	};
 
 	GroundItem.prototype.process = function(dt) {

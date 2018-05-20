@@ -41,6 +41,7 @@
 	}
     Stats.prototype.draw = function(ctx, xview, yview) {
         ctx.font = "15px Consolas";
+        ctx.textAlign = "left";
         ctx.fillStyle = "#555";
 		ctx.fillText("Stats", ~~(this.x + xview) + 0.5, ~~(yview - 5) + 0.5);
 		ctx.strokeStyle = "rgba(100, 100, 100, 0.6)";

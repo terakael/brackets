@@ -150,8 +150,6 @@ $(function(){
     // setup an object that represents the room
     var room = {
         offset: Game.viewScale,
-        width: 2000,
-        height: 2000,
         map: new Game.Map(2048, 2048, canvas.width-250, canvas.height),
         player: {},
 		show: 0,
@@ -194,8 +192,11 @@ $(function(){
             
             this.map.draw(ctx, xview, yview);
 
+            ctx.save();
+            ctx.scale(0.5, 0.5);
             for (var i in this.groundItems)
-                this.groundItems[i].draw(ctx, xview, yview);
+                this.groundItems[i].draw(ctx, xview, yview, 0.5, 0.5);
+            ctx.restore();
             
             var mp = Game.mousePos || {x: 0, y: 0};
             var transformed = this.t.transformPoint(mp.x, mp.y);
@@ -231,6 +232,9 @@ $(function(){
             	this.otherPlayers[i].process(dt, this.width, this.height);
             }
 
+            Game.Minimap.setOtherPlayers(this.otherPlayers);
+            Game.Minimap.setGroundItems(this.groundItems);
+
 
             if (this.offset < Game.viewScale) {
                 this.offset += dt;
@@ -262,43 +266,50 @@ $(function(){
     
     canvas.addEventListener("mousedown", function(e) {
         if (Game.state === 'game') {
-            if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos))
+            if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
                 Game.getPlayer().inventory.onMouseDown(e.button);
-            
-            switch (e.button) {
-                case 0:// left
-                    if (Game.ContextMenu.active) {
-                        Game.ContextMenu.handleMenuSelect();
-                    } else {
-                        if (Game.worldCameraRect.pointWithin(Game.mousePos))
-                            Game.ws.send({action: "move", id: room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y});
-                    }
-                    break;
-                case 2:// right
-                    // take all the things that are at this position and add them to the context menu
-                    if (Game.ContextMenu.active)
+            } else if (Game.Minimap.rect.pointWithin(Game.mousePos)) {
+                Game.Minimap.onMouseDown(e.button);
+            } else if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
+                switch (e.button) {
+                    case 0:// left
+                        if (Game.ContextMenu.active) {
+                            Game.ContextMenu.handleMenuSelect();
+                        } else {
+                            // TODO not necessarily move here; e.g. if you left click a ground item you should pick it up
+                             Game.ws.send({action: "move", id: room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y});
+                        }
                         break;
+                    case 2:// right
+                        // take all the things that are at this position and add them to the context menu
+                        if (Game.ContextMenu.active)
+                            break;
 
-                    for (var i in room.otherPlayers) {
-                        var p = room.otherPlayers[i];
-                        if (p.clickBox.pointWithin(cursor.mousePos)) {
-                            Game.ContextMenu.push(room.otherPlayers[i].contextMenuOptions());
+                        // only check for the other players and ground items if the click was within the world rect
+                        for (var i in room.otherPlayers) {
+                            var p = room.otherPlayers[i];
+                            if (p.clickBox.pointWithin(cursor.mousePos)) {
+                                Game.ContextMenu.push(room.otherPlayers[i].contextMenuOptions());
+                            }
                         }
-                    }
 
-                    for (var i in room.groundItems) {
-                        var groundItem = room.groundItems[i];
-                        if (groundItem.clickBox.pointWithin(cursor.mousePos)) {
-                            Game.ContextMenu.push([{
-                                action: "take",
-                                objectName: groundItem.item.name,
-                                groundItemId: groundItem.groundItemId
-                            }]);
+                        for (var i in room.groundItems) {
+                            var groundItem = room.groundItems[i];
+                            if (groundItem.clickBox.pointWithin(cursor.mousePos)) {
+                                Game.ContextMenu.push([{
+                                    action: "take",
+                                    objectName: groundItem.item.name,
+                                    groundItemId: groundItem.groundItemId
+                                }]);
+                            }
                         }
-                    }
-                    Game.ContextMenu.show(~~cursor.mousePos.x, ~~cursor.mousePos.y, ~~camera.xView, ~~camera.yView);
-                    break;
+                        break;
+                }
             }
+
+            // all cases
+            if (e.button === 2)// right
+                Game.ContextMenu.show(~~cursor.mousePos.x, ~~cursor.mousePos.y, ~~camera.xView, ~~camera.yView);
         }
     }, false);
 
@@ -329,12 +340,8 @@ $(function(){
     }, false);
 	
     // generate a large image texture for the room
-    var grass = new Image();
-    grass.src = "img/grass.jpg";
-    grass.onload = function() {
-        room.map.generate(grass);
-    }
-    
+    room.map.generate();
+
     var stone = new Image();
     stone.src = "img/stone.jpg";
     stone.onload = function() {
@@ -349,11 +356,14 @@ $(function(){
     }
 
     // setup the magic camera !!!
-    var camera = new Game.Camera(room.player.x, room.player.y, canvas.width-250, canvas.height, room.width, room.height);
+    var camera = new Game.Camera(room.player.x, room.player.y, canvas.width-250, canvas.height, room.map.width, room.map.height);
     Game.worldCameraRect = new Game.Rectangle(0, 0, canvas.width-250, canvas.height);
     
     var hudcamera = new Game.Camera(camera.viewportRect.width, 0, canvas.width - camera.viewportRect.width, canvas.height);
     Game.hudCameraRect = new Game.Rectangle(camera.viewportRect.width, 0, canvas.width - camera.viewportRect.width, canvas.height);
+
+    Game.Minimap.setRect(hudcamera.viewportRect.left + 10, hudcamera.viewportRect.top + 10, 230, 230);
+    Game.currentMap = room.map;
     
     var cursor = new Game.Cursor((hudcamera.xView + hudcamera.wView) - 10, hudcamera.yView + 20);
     
@@ -387,7 +397,7 @@ $(function(){
 			context.fillStyle = hudcamera.pat || "black";
 			context.fillRect(hudcamera.xView, hudcamera.yView, hudcamera.viewportRect.width, hudcamera.viewportRect.height);
 			
-			Game.Minimap.draw(context, hudcamera.xView, 0);
+			Game.Minimap.draw(context, camera.xView, camera.yView);
 			room.player.inventory.draw(context, hudcamera.xView, hudcamera.yView + Game.Minimap.height + 20);
 			room.player.stats.draw(context, hudcamera.xView, hudcamera.viewportRect.height - ((room.player.stats.stats.length + 2) * room.player.stats.y));
 			
@@ -463,6 +473,9 @@ window.addEventListener("keypress", function(e) {
 });
 window.addEventListener("keydown", function(e) {
     var event = window.event ? window.event : e;
+    if (event.keyCode === 9)//tab
+        event.preventDefault();// don't tab focus off the canvas
+
 	if (Game.state === 'logonscreen') {
 		Game.LogonScreen.onKeyDown(event.keyCode);
 		return;

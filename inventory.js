@@ -44,6 +44,8 @@
 			context.setTransform(1, 0, 0, 1, 0, 0);
 
 			context.fillStyle = "#666";
+			context.textAlign = "left";
+			context.font = "15px Consolas";
 			context.fillText("Inventory", xview + 10, yview + 10);
 			context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 
@@ -75,11 +77,13 @@
 			}
 		},
 		onMouseDown: function(button) {
-			if (Game.ContextMenu.active)
-				return;
-
 			switch (button) {
 				case 0:// left
+					if (Game.ContextMenu.active) {
+						Game.ContextMenu.handleMenuSelect();
+						return;
+					}
+
 					if (this.dragging) {// if you drag out of the window then this can happen as the up event isn't hit
 						this.slots[this.selectedSlot.id].item = this.selectedSlot.item;
 						this.slots[this.selectedSlot.id].equipped = this.selectedSlot.equipped;
@@ -93,9 +97,11 @@
 					}
 					break;
 				case 2:// right
-					var slot = this.getMouseOverSlot(Game.mousePos);
-					if (slot && slot.item) {
-						Game.ContextMenu.addOptionsByInventorySlot(slot);
+					if (!Game.ContextMenu.active) {
+						var slot = this.getMouseOverSlot(Game.mousePos);
+						if (slot && slot.item) {
+							Game.ContextMenu.addOptionsByInventorySlot(slot);
+						}
 					}
 					break;
 			}
