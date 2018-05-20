@@ -27,54 +27,9 @@
             this.respawnPos = {x: 0, y: 0};
             this.deathsCurtain = 1;
             this.deathSequence = false;
-            
-            this.sprite = new Game.Sprite();
-            this.sprite.anchor = {x: 0.5, y: 0.9};
-            this.sprite.width = this.width;
-            this.sprite.height = this.height;
-            this.sprite.currentType = "walkdown";
-            this.sprite.types = {
-                walkdown: {
-                    loop: "pingpong", 
-                    forwards: 1,
-                    speed: 0.1,
-                    frames: [
-                        {x:0, y:140, w:32, h:32},
-                        {x:32, y:140, w:32, h:32},
-                        {x:64, y:140, w:32, h:32}
-                    ]
-                },
-                walkup: {
-                    loop: "pingpong",
-                    forwards: 1,
-                    speed: 0.1,
-                    frames: [
-                        {x:0, y:204, w:32, h:32},
-                        {x:32, y:204, w:32, h:32},
-                        {x:64, y:204, w:32, h:32}
-                    ]
-                },
-                walkleft: {
-                    loop: "pingpong",
-                    forwards: 1,
-                    speed: 0.1,
-                    frames: [
-                        {x:0, y:172, w:32, h:32},
-                        {x:32, y:172, w:32, h:32},
-                        {x:64, y:172, w:32, h:32}
-                    ]
-                },
-                walkright: {
-                    loop: "pingpong",
-                    forwards: 1,
-                    speed: 0.1,
-                    frames: [
-                        {x:0, y:236, w:32, h:32},
-                        {x:32, y:236, w:32, h:32},
-                        {x:64, y:236, w:32, h:32}
-                    ]
-                }
-            }
+
+            this.spriteframes = [];
+            this.currentAnimation = "down";
 		}
 		
 		Player.prototype.process = function(step, worldWidth, worldHeight){
@@ -102,13 +57,13 @@
                 if (!Game.isometric)
                     d -= 45;// offset the angle slightly to adhere to non-isometric camera
                 if (d >= 0 && d < 90) {
-                    this.sprite.switchType("walkdown");
+                    this.currentAnimation = "down";
                 } else if (d >= 90 && d < 180) {
-                    this.sprite.switchType("walkleft");
+                    this.currentAnimation = "left";
                 } else if (d >= 180 && d < 270) {
-                    this.sprite.switchType("walkup");
+                    this.currentAnimation = "up";
                 } else {
-                    this.sprite.switchType("walkright");
+                    this.currentAnimation = "right";
                 }
                 moving = true;
             }
@@ -168,8 +123,9 @@
                 }
             }
             
-            if (moving)
-                this.sprite.process(step);
+            if (moving) {
+                this.spriteframes[this.currentAnimation].process(step);
+            }
 
             this.stats.process(step);
             this.inventory.process(step);
@@ -179,16 +135,8 @@
 		
 		Player.prototype.draw = function(context, xView, yView) {
             if (this.deathSequence != true) {
-                context.fillStyle = "pink";
-                if (this.image) {
-                    this.sprite.draw(context, this.x - xView, this.y - yView, this.image);
-                } else {
-    			     
-    			     // before draw we need to convert player world's position to canvas position			
-    			    context.fillRect(this.x- (this.width/2) - xView, (this.y-this.height) - yView, this.width, this.height);
-                    context.fillStyle = "white";
-                    context.fillRect(this.x - xView, this.y - yView, 2, 2);
-                }
+
+                this.spriteframes[this.currentAnimation].draw(context, this.x - xView, this.y - yView);
 
                 context.save()
                 context.setTransform(1, 0, 0, 1, 0, 0);
@@ -293,6 +241,13 @@
 
         Player.prototype.setEquippedSlots = function(equippedArray) {
             this.inventory.setEquippedSlots(equippedArray);
+        }
+
+        Player.prototype.setAnimations = function(animations) {
+            for (var i in animations) {
+                this.spriteframes[i] = Game.SpriteManager.getSpriteFrameById(animations[i]);
+                this.spriteframes[i].anchor = {x: 0.5, y: 0.9}
+            }
         }
 
 		// add "class" Player to our Game object

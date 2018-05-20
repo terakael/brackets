@@ -2,7 +2,7 @@
 	function GroundItem(item, x, y, id) {
 		this.item = item;
 		this.pos = {x: x, y: y};
-		this.clickBox = new Game.Rectangle(x - ~~(item.spriteFrame.rect.width/2), y - ~~(item.spriteFrame.rect.height/2), item.spriteFrame.rect.width, item.spriteFrame.rect.height);
+		this.clickBox = new Game.Rectangle(x - ~~(item.spriteFrame.frames[0].width/2), y - ~~(item.spriteFrame.frames[0].height/2), item.spriteFrame.frames[0].width, item.spriteFrame.frames[0].height);
 		this.groundItemId = id;
 	};
 

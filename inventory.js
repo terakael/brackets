@@ -79,11 +79,6 @@
 		onMouseDown: function(button) {
 			switch (button) {
 				case 0:// left
-					if (Game.ContextMenu.active) {
-						Game.ContextMenu.handleMenuSelect();
-						return;
-					}
-
 					if (this.dragging) {// if you drag out of the window then this can happen as the up event isn't hit
 						this.slots[this.selectedSlot.id].item = this.selectedSlot.item;
 						this.slots[this.selectedSlot.id].equipped = this.selectedSlot.equipped;

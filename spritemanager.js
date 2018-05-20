@@ -57,6 +57,13 @@
 			}
 			return null;
 		},
+		getSpriteMapByName: function(name) {
+			for (var i in this.spriteMaps) {
+				if (this.spriteMaps[i].name === name)
+					return this.spriteMaps[i].map;
+			}
+			return null;
+		},
 		getSpriteFrameById: function(id) {
 			for (var i in this.spriteFrames) {
 				if (this.spriteFrames[i].id === id) {

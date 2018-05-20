@@ -6,6 +6,7 @@
     	this.logonError = '';
     	this.logonErrorTimer = 0;
     	this.bkg = null;
+    	this.loading = false;
     }
 
     LogonScreen.prototype.process = function(dt) {
@@ -24,13 +25,13 @@
 		ctx.fillStyle = "white";
 		ctx.font = "30px Consolas";
 		ctx.textAlign = "center";
-		ctx.fillText("the name of my game", ~~(w/2), ~~(h/2) - 60);
+		ctx.fillText("danscape", ~~(w/2), ~~(h/2) - 60);
 
 		ctx.fillStyle = "#333";
 		ctx.fillRect(~~(w/2)-150, ~~(h/2)-30, 300, 55);
 
-		ctx.strokeStyle = "white";
-		ctx.strokeRect(~~(w/2)-150, ~~(h/2)-30, 300, 55);
+		ctx.strokeStyle = "rgb(255, {0}, {0})".format(255*(1-Math.min(this.logonErrorTimer, 1)));
+		ctx.strokeRect(~~(w/2)-150.5, ~~(h/2)-30.5, 300, 55);
 		
 		ctx.font = "15px Consolas";
 		ctx.textAlign = "left";
@@ -40,10 +41,14 @@
 		var passwordField = "password: {0}{1}".format("x".repeat(this.password.length), this.logonState === 'password' ? '*' : '');		
 
 		ctx.fillText(usernameField, ~~(w/2)-140, ~~(h/2)-10);
-		ctx.fillText(passwordField, ~~(w/2)-140, ~~(h/2)+10); 
-		
-		if (this.logonErrorTimer > 0) {
-			ctx.fillStyle = 'red';
+		ctx.fillText(passwordField, ~~(w/2)-140, ~~(h/2)+10);
+
+		if (this.loading) {
+			ctx.fillStyle = "white";
+			ctx.textAlign = 'center';
+			ctx.fillText("loading...", ~~(w/2), ~~(h/2) + 50);	
+		} else if (this.logonErrorTimer > 0) {
+			ctx.fillStyle = 'rgba(255, 0, 0, ' + this.logonErrorTimer + ")";
 			ctx.textAlign = 'center';
 			ctx.fillText(this.logonError, ~~(w/2), ~~(h/2) + 50);
 		}
@@ -79,6 +84,7 @@
 				if (this.logonState === 'username') {
 					this.logonState = 'password';
 				} else if (this.logonState === 'password') {
+					this.loading = true;
 					Game.ws.send({
 						action: "logon",
 						name: this.username,
@@ -99,6 +105,12 @@
 				this.logonState = this.logonState === 'username' ? 'password' : 'username';
 				break;
 		}
+	}
+
+	LogonScreen.prototype.setError = function(error) {
+		this.loading = false;
+		this.logonErrorTimer = 5;
+        this.logonError = error;
 	}
 
 	LogonScreen.prototype.generate = function(width, height){

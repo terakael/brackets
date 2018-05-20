@@ -2,136 +2,139 @@ $(function(){
      // prepare our game canvas
     var canvas = document.getElementById("game"),
         context = canvas.getContext("2d"),
-        matrix = [1,0,0,1,0,0];
-    
-    
-    var ip = "localhost"
+        ip = "localhost",
         port = "45555";
+
     Game.ws = new Game.WebSocket("ws://{0}:{1}/ws/game".format(ip, port), function(obj) {
-        if (obj["action"] === "logon") {
-			if (obj["success"] === 0) {
-				Game.LogonScreen.logonErrorTimer = 10;
-				Game.LogonScreen.logonError = obj["responseText"];
-				return;
-			}
+        if (obj["success"] === 0) {
+            if (Game.state === 'logonscreen') {
+                Game.LogonScreen.setError(obj["responseText"]);
+            } else {
+                Game.ChatBox.add(obj["responseText"]);
+            }
+        } else {
+            if (obj["action"] === "logon") {
+                Game.SpriteManager.loadSpriteMaps(obj["spriteMaps"]);
+                Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
+                Game.SpriteManager.loadItems(obj["items"]);
 
-            Game.SpriteManager.loadSpriteMaps(obj["spriteMaps"]);
-            Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
-            Game.SpriteManager.loadItems(obj["items"]);
+                document.title = obj["name"];
+    			room.player = new Game.Player(obj["x"], obj["y"]);
+                Game.Player.prototype.image = Game.SpriteManager.getSpriteMapByName("characters");
+                room.player.loadStats(obj["stats"]);
+                room.player.loadInventory(obj["inventory"]);
+                room.player.setEquippedSlots(obj["equippedSlots"]);
+                room.player.setAnimations(obj["animations"]);
+                room.player.currentHp = obj["currentHp"];
+                room.player.stats.currentHp = room.player.currentHp;
+                room.player.maxHp = obj["maxHp"];
+                room.player.id = obj["id"];
+                room.player.name = obj["name"];
+    			camera.follow(room.player, (canvas.width-250-(room.player.width/2))/2, (canvas.height)/2);
+    			camera.xView = obj["x"] - (camera.xDeadZone * (1/Game.scale));
+    			camera.yView = obj["y"] - (camera.yDeadZone * (1/Game.scale));
+    			
+                room.updateGroundItems(obj["groundItems"]);
+    			for (var i in obj["players"]) {
+    				room.addPlayer(obj["players"][i]);
+    			}
+    			
+                room.init();
+                
+                Game.ChatBox.add("Welcome to the game, {0}.".format(obj["name"]));
+    			Game.state = 'game';
+            } else if (obj["action"] === "logoff") {
+            	// clean up and change state to logon screen
+            	room.otherPlayers = [];
+            	Game.state = 'logonscreen';
+            } else if (obj["action"] === "move") {
+    			if (obj["id"] == room.player.id) {
+    				room.player.destPos.x = obj["x"];
+    				room.player.destPos.y = obj["y"];
+    			} else {
+    				for (var i in room.otherPlayers) {
+    					if (obj["id"] == room.otherPlayers[i].id) {
+    						room.otherPlayers[i].destPos.x = obj["x"];
+    						room.otherPlayers[i].destPos.y = obj["y"];
+    						console.log("{0} new pos = ({1},{2})".format(i, room.otherPlayers[i].destPos.x, room.otherPlayers[i].destPos.y));
+    					}
+    				}
+    			}
+    		} else if (obj["action"] === "message") {
+    			if (obj["message"]) {
+    				Game.ChatBox.add("{0}: {1}".format(obj["name"], obj["message"]), obj["colour"] == null ? 'yellow' : obj["colour"]);
 
-            document.title = obj["name"];
-			room.player = new Game.Player(obj["x"], obj["y"]);
-            room.player.loadStats(obj["stats"]);
-            room.player.loadInventory(obj["inventory"]);
-            room.player.setEquippedSlots(obj["equippedSlots"]);
-            room.player.currentHp = obj["currentHp"];
-            room.player.stats.currentHp = room.player.currentHp;
-            room.player.maxHp = obj["maxHp"];
-            room.player.id = obj["id"];
-            room.player.name = obj["name"];
-			camera.follow(room.player, (canvas.width-250-(room.player.width/2))/2, (canvas.height)/2);
-			camera.xView = obj["x"] - camera.xDeadZone;
-			camera.yView = obj["y"] - camera.yDeadZone;
-			
-            room.updateGroundItems(obj["groundItems"]);
-			for (var i in obj["players"]) {
-				room.addPlayer(obj["players"][i]);
-			}
-			
-			// starts the fade-in
-			room.show = 1.0;
-            
-            Game.ChatBox.add("Welcome to the game, {0}.".format(obj["name"]));
-			Game.state = 'game';
-        } else if (obj["action"] === "logoff") {
-        	// clean up and change state to logon screen
-        	room.otherPlayers = [];
-        	Game.state = 'logonscreen';
-        } else if (obj["action"] === "move") {
-			if (obj["id"] == room.player.id) {
-				room.player.destPos.x = obj["x"];
-				room.player.destPos.y = obj["y"];
-			} else {
-				for (var i in room.otherPlayers) {
-					if (obj["id"] == room.otherPlayers[i].id) {
-						room.otherPlayers[i].destPos.x = obj["x"];
-						room.otherPlayers[i].destPos.y = obj["y"];
-						console.log("{0} new pos = ({1},{2})".format(i, room.otherPlayers[i].destPos.x, room.otherPlayers[i].destPos.y));
-					}
-				}
-			}
-		} else if (obj["action"] === "message") {
-			if (obj["message"]) {
-				Game.ChatBox.add("{0}: {1}".format(obj["name"], obj["message"]), obj["colour"] == null ? 'yellow' : obj["colour"]);
-
-                if (obj["id"] == room.player.id) {
-                    room.player.setChatMessage(obj["message"]);
-                } else {
-                    for (var i in room.otherPlayers) {
-                        if (obj["id"] == room.otherPlayers[i].id) {
-                            room.otherPlayers[i].setChatMessage(obj["message"]);
+                    if (obj["id"] == room.player.id) {
+                        room.player.setChatMessage(obj["message"]);
+                    } else {
+                        for (var i in room.otherPlayers) {
+                            if (obj["id"] == room.otherPlayers[i].id) {
+                                room.otherPlayers[i].setChatMessage(obj["message"]);
+                            }
                         }
                     }
                 }
-            }
-		} else if (obj["action"] === "playerEnter") {
-			var p = obj["player"];
-			room.addPlayer(p);
-			Game.ChatBox.add(p["name"] + " has logged in.", "#0ff");
-		} else if (obj["action"] === "playerLeave") {
-            room.removePlayer(obj["id"]);// TODO should be session id; this is dangerous
-            Game.ChatBox.add(obj["name"] + " has logged out.", "#0ff");
-		} else if (obj["action"] === "addexp") {
-            if (obj["id"] == room.player.id) {
-                room.player.stats.gainExp(obj["statShortName"], obj["exp"]);
-                if (obj["statShortName"] === "hp") {
-                    room.player.maxHp = room.player.stats.exp2lvl(obj["exp"]);
-                }
-            }
-        } else if (obj["action"] === "unknown") {
-            Game.ChatBox.add("invalid action.", "#fff");
-        } else if (obj["action"] === "duel" || obj["action"] === "trade") {
-            if (obj["accepted"] === 0) {
-                Game.ChatBox.add("{0} wishes to {1} with you.".format(obj["opponentName"], obj["action"]), "#f0f");
-            } else {
-                Game.ChatBox.add("{0} accepted the {1}.".format(obj["opponentName"], obj["action"]), "#f0f");
-            }
-        } else if (obj["action"] === "damage") {
-            if (obj["id"] == room.player.id) {
-                room.player.damage(obj["damage"]);
-            } else {
-                for (var i in room.otherPlayers) {
-                    if (obj["id"] == room.otherPlayers[i].id) {
-                        room.otherPlayers[i].damage(obj["damage"]);
-                        break;
+    		} else if (obj["action"] === "playerEnter") {
+    			var p = obj["player"];
+    			room.addPlayer(p);
+    			Game.ChatBox.add(p["name"] + " has logged in.", "#0ff");
+    		} else if (obj["action"] === "playerLeave") {
+                room.removePlayer(obj["id"]);// TODO should be session id; this is dangerous
+                Game.ChatBox.add(obj["name"] + " has logged out.", "#0ff");
+    		} else if (obj["action"] === "addexp") {
+                if (obj["id"] == room.player.id) {
+                    room.player.stats.gainExp(obj["statShortName"], obj["exp"]);
+                    if (obj["statShortName"] === "hp") {
+                        room.player.maxHp = room.player.stats.exp2lvl(obj["exp"]);
                     }
                 }
-            }
-        } else if (obj["action"] === "dead") {
-            if (obj["id"] == room.player.id) {
-                // you died lmfao
-                room.player.respawn(obj["x"], obj["y"], obj["currentHp"]);
-                room.player.setDeathSequence();
-            } else {
-                for (var i in room.otherPlayers) {
-                    if (obj["id"] == room.otherPlayers[i].id) {
-                        // they died
-                        room.otherPlayers[i].respawn(obj["x"], obj["y"], obj["currentHp"]);
-                        room.otherPlayers[i].x = obj["x"];
-                        room.otherPlayers[i].y = obj["y"];
-                        room.otherPlayers[i].destPos.x = obj["x"];
-                        room.otherPlayers[i].destPos.y = obj["y"];
-                        break;
+            } else if (obj["action"] === "unknown") {
+                Game.ChatBox.add("invalid action.", "#fff");
+            } else if (obj["action"] === "duel" || obj["action"] === "trade") {
+                if (obj["accepted"] === 0) {
+                    Game.ChatBox.add("{0} wishes to {1} with you.".format(obj["opponentName"], obj["action"]), "#f0f");
+                } else {
+                    Game.ChatBox.add("{0} accepted the {1}.".format(obj["opponentName"], obj["action"]), "#f0f");
+                }
+            } else if (obj["action"] === "damage") {
+                if (obj["id"] == room.player.id) {
+                    room.player.damage(obj["damage"]);
+                } else {
+                    for (var i in room.otherPlayers) {
+                        if (obj["id"] == room.otherPlayers[i].id) {
+                            room.otherPlayers[i].damage(obj["damage"]);
+                            break;
+                        }
                     }
                 }
+            } else if (obj["action"] === "dead") {
+                if (obj["id"] == room.player.id) {
+                    // you died lmfao
+                    room.player.respawn(obj["x"], obj["y"], obj["currentHp"]);
+                    room.player.setDeathSequence();
+                } else {
+                    for (var i in room.otherPlayers) {
+                        if (obj["id"] == room.otherPlayers[i].id) {
+                            // they died
+                            room.otherPlayers[i].respawn(obj["x"], obj["y"], obj["currentHp"]);
+
+                            // no death sequence so move them to respawn position straight away
+                            room.otherPlayers[i].x = obj["x"];
+                            room.otherPlayers[i].y = obj["y"];
+                            room.otherPlayers[i].destPos.x = obj["x"];
+                            room.otherPlayers[i].destPos.y = obj["y"];
+                            break;
+                        }
+                    }
+                }
+            } else if (obj["action"] === "invmove" || obj["action"] === "invupdate") {
+                room.player.updateInventory(obj["inventory"]);
+                room.player.setEquippedSlots(obj["equippedSlots"]);
+            } else if (obj["action"] === "equip") {
+                room.player.setEquippedSlots(obj["equippedSlots"]);
+            } else if (obj["action"] === "drop" || obj["action"] === "take") {
+                room.updateGroundItems(obj["groundItems"]);
             }
-        } else if (obj["action"] === "invmove" || obj["action"] === "invupdate") {
-            room.player.updateInventory(obj["inventory"]);
-            room.player.setEquippedSlots(obj["equippedSlots"]);
-        } else if (obj["action"] === "equip") {
-            room.player.setEquippedSlots(obj["equippedSlots"]);
-        } else if (obj["action"] === "drop" || obj["action"] === "take") {
-            room.updateGroundItems(obj["groundItems"]);
         }
     });
     
@@ -149,18 +152,16 @@ $(function(){
     
     // setup an object that represents the room
     var room = {
-        offset: Game.viewScale,
         map: new Game.Map(2048, 2048, canvas.width-250, canvas.height),
         player: {},
 		show: 0,
 		currentShow: 0,
 		otherPlayers: [],
-        walls: [
-            new Game.Wall(1024, 987),
-            new Game.Wall(1024-48, 987),
-            new Game.Wall(1000, 1000)
-        ],
         t: new Game.Transform(),// view matrix
+        init: function() {
+            this.map.generate();
+            this.show = 1.0;
+        },
         addPlayer: function(obj) {
         	if (obj["id"] !== this.player.id) {
         		var player = new Game.Player(obj["x"], obj["y"]); 
@@ -168,7 +169,7 @@ $(function(){
                 player.maxHp = obj["maxHp"];
         		player.id = obj["id"];
                 player.name = obj["name"];
-        		//player.image = playerspritemap;
+                player.setAnimations(obj["animations"]);
 				this.otherPlayers.push(player);
 			}
         },
@@ -193,7 +194,7 @@ $(function(){
             this.map.draw(ctx, xview, yview);
 
             ctx.save();
-            ctx.scale(0.5, 0.5);
+            ctx.scale(0.5, 0.5);// make the items on the ground smaller than in the inventory
             for (var i in this.groundItems)
                 this.groundItems[i].draw(ctx, xview, yview, 0.5, 0.5);
             ctx.restore();
@@ -205,10 +206,6 @@ $(function(){
             if (!Game.ContextMenu.active && Game.worldCameraRect.pointWithin(Game.mousePos))
                 cursor.draw(ctx, xview, yview);
 
-            for (var i = 0; i < this.walls.length; ++i) {
-                this.walls[i].draw(ctx, xview, yview);
-            }
-
             context.fillStyle = "#f00";
 			for (var i in this.otherPlayers) {
 				this.otherPlayers[i].draw(ctx, xview, yview);
@@ -216,10 +213,6 @@ $(function(){
             
             if (Game.isometric)
                 ctx.restore();
-            
-            for (var i = 0; i < this.walls.length; ++i) {
-                this.walls[i].draw(ctx, xview, yview);
-            }
 
             this.player.draw(ctx, xview, yview);
             ctx.restore();
@@ -234,17 +227,6 @@ $(function(){
 
             Game.Minimap.setOtherPlayers(this.otherPlayers);
             Game.Minimap.setGroundItems(this.groundItems);
-
-
-            if (this.offset < Game.viewScale) {
-                this.offset += dt;
-                if (this.offset > Game.viewScale)
-                    this.offset = Game.viewScale;
-            } else if (this.offset > Game.viewScale) {
-                this.offset -= dt;
-                if (this.offset < Game.viewScale)
-                    this.offset = Game.viewScale;
-            }
         },
         removePlayer: function(id) {
             for (var i in this.otherPlayers) {
@@ -273,9 +255,7 @@ $(function(){
             } else if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
                 switch (e.button) {
                     case 0:// left
-                        if (Game.ContextMenu.active) {
-                            Game.ContextMenu.handleMenuSelect();
-                        } else {
+                        if (!Game.ContextMenu.active) {
                             // TODO not necessarily move here; e.g. if you left click a ground item you should pick it up
                              Game.ws.send({action: "move", id: room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y});
                         }
@@ -308,8 +288,17 @@ $(function(){
             }
 
             // all cases
-            if (e.button === 2)// right
-                Game.ContextMenu.show(~~cursor.mousePos.x, ~~cursor.mousePos.y, ~~camera.xView, ~~camera.yView);
+            switch (e.button) {
+                case 0: // left
+                    if (Game.ContextMenu.active)
+                        Game.ContextMenu.handleMenuSelect();
+                    break;
+
+                case 2: // right
+                    if (!Game.ContextMenu.active)
+                        Game.ContextMenu.show(~~cursor.mousePos.x, ~~cursor.mousePos.y, ~~camera.xView, ~~camera.yView);
+                    break;    
+            }                
         }
     }, false);
 
@@ -317,10 +306,10 @@ $(function(){
         if (Game.state === 'game') {
             switch (e.button) {
                 case 0:
+                    // this check is so when we right-click and select in the inventory, we don't select the slot under the context menu
                     if (Game.ContextMenu.active) {
                         Game.ContextMenu.hide();
                     } else {
-                        //if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos))
                         Game.getPlayer().inventory.onMouseUp(e.button);
                     }
                     break;
@@ -338,22 +327,12 @@ $(function(){
                 Game.targetScale = 2;
         }
     }, false);
-	
-    // generate a large image texture for the room
-    room.map.generate();
 
-    var stone = new Image();
-    stone.src = "img/stone.jpg";
-    stone.onload = function() {
-        hudcamera.pat = context.createPattern(stone, "repeat");
-    }
-
-    var playerspritemap = new Image();
-    playerspritemap.src = "img/kanakospritemap.png";
-    playerspritemap.onload = function() {
-        Game.Player.prototype.image = playerspritemap;
-        Game.Wall.prototype.image = playerspritemap;
-    }
+    // var stone = new Image();
+    // stone.src = "img/stone.jpg";
+    // stone.onload = function() {
+    //     hudcamera.pat = context.createPattern(stone, "repeat");
+    // }
 
     // setup the magic camera !!!
     var camera = new Game.Camera(room.player.x, room.player.y, canvas.width-250, canvas.height, room.map.width, room.map.height);
@@ -389,7 +368,6 @@ $(function(){
 		if (Game.state === 'game') {
 			// redraw all room objects
 			context.fillStyle = "#000";
-			//context.clearRect(0, 0, camera.viewportRect.width, camera.viewportRect.height);
 			context.fillRect(0, 0, camera.viewportRect.width, camera.viewportRect.height);
 			room.draw(context, camera.xView, camera.yView);
 			
@@ -400,11 +378,13 @@ $(function(){
 			Game.Minimap.draw(context, camera.xView, camera.yView);
 			room.player.inventory.draw(context, hudcamera.xView, hudcamera.yView + Game.Minimap.height + 20);
 			room.player.stats.draw(context, hudcamera.xView, hudcamera.viewportRect.height - ((room.player.stats.stats.length + 2) * room.player.stats.y));
-			
             
             if (room.currentShow <= 0.98) {
-                context.fillStyle = "rgba(0, 0, 0, "+(1-room.currentShow)+")";
-                context.fillRect(0, 0, canvas.width, canvas.height);
+                // fade out the logon screen background
+                context.save();
+                context.globalAlpha = 1 - room.currentShow;
+                context.drawImage(Game.LogonScreen.bkg, 0, 0, Game.LogonScreen.bkg.width, Game.LogonScreen.bkg.height);
+                context.restore();
             }
 			Game.ChatBox.draw(context, 0, canvas.height);
             Game.ContextMenu.draw(context);
