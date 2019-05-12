@@ -1,15 +1,16 @@
 (function(){
-		function Player(x, y){
+		function Player(tileId){
 			// (x, y) = center of object
 			// ATTENTION:
-			// it represents the player position on the world(room), not the canvas position
-			this.x = x;
-			this.y = y;				
-            this.destPos = {x: x, y: y};
+            // it represents the player position on the world(room), not the canvas position
+            var posXY = tileIdToXY(tileId)
+			this.x = posXY.x;
+			this.y = posXY.y;				
+            this.destPos = posXY;
             this.name = "null";
 			
 			// move speed in pixels per second
-			this.speed = 200;		
+			this.speed = 53.3;		
 			
 			// render properties
 			this.width = 32;
@@ -41,16 +42,18 @@
             
             if (Math.abs(diffx) > 1 || Math.abs(diffy) > 1) {
                 var n = Math.getVectorNormal({x: diffx, y: diffy});
-                if (Math.abs(n.x * step * this.speed) > Math.abs(diffx))
+                if (Math.abs(n.x * step * this.speed) > Math.abs(diffx) || Math.abs(diffx) > 64)
                     this.x = this.destPos.x;
                 else
                     this.x += n.x * step * this.speed;
                 
-                if (Math.abs(n.y * step * this.speed) > Math.abs(diffy))
+                if (Math.abs(n.y * step * this.speed) > Math.abs(diffy) || Math.abs(diffy) > 64)
                     this.y = this.destPos.y;
                 else
                     this.y += n.y * step * this.speed;
-                
+
+
+
                 var atan = Math.atan2(n.y, n.x);
                 var d = (atan > 0 ? atan : (2*Math.PI + atan)) * 360 / (2*Math.PI);
                 
@@ -222,9 +225,10 @@
             this.stats.currentHp = this.currentHp;// for drawing it in the stat bar
         }
 
-        Player.prototype.respawn = function(x, y, hp) {
-            this.respawnPos.x = x;
-            this.respawnPos.y = y;
+        Player.prototype.respawn = function(tileId, hp) {
+            var xy = tileIdToXY(tileId);
+            this.respawnPos.x = xy.x;
+            this.respawnPos.y = xy.y;
             this.currentHp = hp;
             this.maxHp = hp;
             this.stats.currentHp = hp;

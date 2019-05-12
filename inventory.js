@@ -77,6 +77,9 @@
 			}
 		},
 		onMouseDown: function(button) {
+			if (Game.ContextMenu.active)
+				return;
+
 			switch (button) {
 				case 0:// left
 					if (this.dragging) {// if you drag out of the window then this can happen as the up event isn't hit
@@ -92,11 +95,9 @@
 					}
 					break;
 				case 2:// right
-					if (!Game.ContextMenu.active) {
-						var slot = this.getMouseOverSlot(Game.mousePos);
-						if (slot && slot.item) {
-							Game.ContextMenu.addOptionsByInventorySlot(slot);
-						}
+					var slot = this.getMouseOverSlot(Game.mousePos);
+					if (slot && slot.item) {
+						Game.ContextMenu.addOptionsByInventorySlot(slot);
 					}
 					break;
 			}

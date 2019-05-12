@@ -10,53 +10,38 @@
         this.image = null;
     }
 
-    // generate an example of a large map
-    Map.prototype.generate = function(img){
-        var ctx = document.createElement("canvas").getContext("2d");		
-        ctx.canvas.width = this.width;
-        ctx.canvas.height = this.height;		
-
-        var slowload = 1;
-        var rows = ~~(this.width/32) + 1;
-        var columns = ~~(this.height/32) + 1;
-        //var color = "red";				
-        ctx.save();			
-        for (var x = 0, i = 0; i < rows; x+=32, i++) {	
-            for (var y = 0, j=0; j < columns; y+=32, j++) {
-                if (slowload) {
-                    for (var z = 0; z < 32; z += 8) {
-                        for (var w = 0; w < 32; w += 8) {
-                            var val = Math.getRandom(50, 100);
-                            ctx.fillStyle = "rgb({0}, {1}, {2})".format(~~(val/5), ~~val, ~~(val/5));
-                            ctx.fillRect (x + z, y + w, 8, 8);
-                        }
-                    }
-                } else {
-                    var val = Math.getRandom(50, 100);
-                    ctx.fillStyle = "rgb({0}, {1}, {2})".format(~~(val/5), ~~val, ~~(val/5));
-                    ctx.fillRect (x, y, 31, 31);
-                }
-            }		
-        }
-        ctx.restore();	
-
-        // store the generate map as this image texture
+    Map.prototype.load = function(context) {
         this.image = new Image();
-        this.image.src = ctx.canvas.toDataURL("image/png");
+        this.image.onload = function() {
+        }
+        this.image.src = "img/grass.jpg";
+    }
 
-        // clear context
-        ctx = null;
+    // generate an example of a large map
+    Map.prototype.generate = function() {
+
     }
 
     // draw the map adjusted to camera
-    Map.prototype.draw = function(context, xView, yView){					
+    Map.prototype.draw = function(context, xView, yView){	
         // easiest way: draw the entire map changing only the destination coordinate in canvas
         // canvas will cull the image by itself (no performance gaps -> in hardware accelerated environments, at least)
-        context.drawImage(this.image, 0, 0, this.image.width, this.image.height, -xView, -yView, this.image.width, this.image.height);
+        //if (this.imageReady) {
+            //context.drawImage(this.image, 0, 0, this.image.width, this.image.height, -xView, -yView, this.image.width, this.image.height);
+            context.drawImage(this.image, 
+                              (xView/this.width) * this.image.width, 
+                              (yView/this.height) * this.image.height, 
+                              (this.swidth/this.width) * this.image.width, 
+                              (this.sheight/this.height) * this.image.height, 
+                              0, 
+                              0, 
+                              this.swidth, 
+                              this.sheight);
+        //}
 
         // didactic way:
-/*
-        var sx, sy, dx, dy;
+
+/*        var sx, sy, dx, dy;
         var sWidth, sHeight, dWidth, dHeight;
 
         // offset point to crop the image
@@ -83,15 +68,7 @@
         dHeight = sHeight;									
 
         context.fillStyle = this.image.activePattern || "red";
-        context.drawImage(this.image, Math.floor(sx), Math.floor(sy), sWidth, sHeight, dx, dy, dWidth, dHeight);	*/	
-    }
-    
-    // this will use the A* algorithm to return a list of waypoints between the first and second point
-    // this would really be the server's job though - you pass the server a position to move to
-    // and the server takes the playerPos and the passed in pos, returning a list of waypoints.
-    Map.prototype.detectPath = function(first, second) {
-        var points = [];
-        return points;        
+        context.drawImage(this.image, Math.floor(sx), Math.floor(sy), sWidth, sHeight, dx, dy, dWidth, dHeight);	*/
     }
 
     // add "class" Map to our Game object

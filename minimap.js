@@ -11,13 +11,14 @@
 		constructor: Minimap,
 		draw: function(context, xview, yview) {
 			// minimap background
-			if (Game.currentMap.image)
+			if (Game.currentMap.image) {
 				context.drawImage(Game.currentMap.image, 
-								  (Game.currentMap.image.width * (Game.getPlayer().x / Game.currentMap.width)) - (Game.currentMap.image.width/2), 
-								  (Game.currentMap.image.height * (Game.getPlayer().y / Game.currentMap.height)) - (Game.currentMap.image.height/2), 
-								  Game.currentMap.image.width * ((this.radius*2)/Game.currentMap.image.width), 
-								  Game.currentMap.image.height * ((this.radius*2)/Game.currentMap.image.height), 
+								  (Game.currentMap.image.width * ((Game.getPlayer().x - this.radius) / Game.currentMap.width)), 
+								  (Game.currentMap.image.height * ((Game.getPlayer().y - this.radius) / Game.currentMap.height)), 
+								  Game.currentMap.image.width * ((this.radius*2)/Game.currentMap.width), 
+								  Game.currentMap.image.height * ((this.radius*2)/Game.currentMap.height), 
 								  this.rect.left, this.rect.top, this.rect.width, this.rect.height);
+			}
 
 			context.fillStyle = "#050";
 			context.strokeStyle = "#666";

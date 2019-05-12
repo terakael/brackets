@@ -46,7 +46,7 @@
 		if (this.loading) {
 			ctx.fillStyle = "white";
 			ctx.textAlign = 'center';
-			ctx.fillText("loading...", ~~(w/2), ~~(h/2) + 50);	
+			ctx.fillText("logging in...", ~~(w/2), ~~(h/2) + 50);	
 		} else if (this.logonErrorTimer > 0) {
 			ctx.fillStyle = 'rgba(255, 0, 0, ' + this.logonErrorTimer + ")";
 			ctx.textAlign = 'center';

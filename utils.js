@@ -33,4 +33,18 @@
     Math.degToRad = function(deg) {
         return Math.PI/180 * deg;
     }
+
+    tileIdToXY = function(tileId) {
+        return {
+            x: ((tileId % 250) * 32) + 16,
+            y: (Math.trunc(tileId / 250) * 32) + 16
+        }
+    }
+
+    xyToTileId = function(x,y) {
+        var destX = Math.trunc(x / 32);
+		var destY = Math.trunc(y / 32);
+			
+        return destX + (destY * 250);
+    }
 }());
