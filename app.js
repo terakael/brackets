@@ -156,15 +156,12 @@ $(function () {
                 }
                 else if (obj["action"] === "player_update") {
                     if (obj["tile"]) {
-                        var xy = tileIdToXY(obj["tile"]);
                         if (obj["id"] == room.player.id) {
-                            room.player.destPos.x = xy.x;
-                            room.player.destPos.y = xy.y;
+                            room.player.setDestPosAndSpeedByTileId(obj["tile"]);
                         } else {
                             for (var i in room.otherPlayers) {
                                 if (obj["id"] == room.otherPlayers[i].id) {
-                                    room.otherPlayers[i].destPos.x = xy.x;
-                                    room.otherPlayers[i].destPos.y = xy.y;
+                                    room.otherPlayers[i].setDestPosAndSpeedByTileId(obj["tile"]);
                                 }
                             }
                         }

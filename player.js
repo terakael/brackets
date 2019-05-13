@@ -254,6 +254,17 @@
             }
         }
 
+        Player.prototype.setDestPosAndSpeedByTileId = function(tileId) {
+            var xy = tileIdToXY(tileId);
+            this.destPos.x = xy.x;
+            this.destPos.y = xy.y;
+
+            var diffx = xy.x - this.x;
+            var diffy = xy.y - this.y;
+            var mag = Math.getVectorMagnitude({x: diffx, y: diffy});
+            this.speed = mag / 0.6;
+        }
+
 		// add "class" Player to our Game object
 		Game.Player = Player;
 		
