@@ -139,7 +139,7 @@
 		Player.prototype.draw = function(context, xView, yView) {
             if (this.deathSequence != true) {
 
-                this.spriteframes[this.currentAnimation].draw(context, this.x - xView, this.y - yView);
+                //this.spriteframes[this.currentAnimation].draw(context, this.x - xView, this.y - yView);
 
                 context.save()
                 context.setTransform(1, 0, 0, 1, 0, 0);
@@ -150,7 +150,6 @@
                     context.fillStyle = "yellow"
                     context.fillText(this.chatMessage, (this.x - xView) * Game.scale, (this.y - yView - this.height - (showingHealthBar ? 15 : 0)) * Game.scale);
                 }
-                
 
                 if (this.hitSplatTimer > 0) {
 
@@ -163,7 +162,6 @@
                     context.fillText(this.hitSplat, (this.x - xView) * Game.scale, (this.y - yView) * Game.scale);
                 }
 
-
                 context.restore();
             }
 
@@ -174,7 +172,11 @@
             context.textAlign = "center";
             context.font = "bold 40pt Consolas";
             context.fillText("You died!", ~~(Game.worldCameraRect.width/2) * (1/Game.scale), ~~(Game.worldCameraRect.height/2) * (1/Game.scale));
-		}
+        }
+        
+        Player.prototype.getCurrentSpriteFrame = function() {
+            return this.spriteframes[this.currentAnimation];
+        }
         
         Player.prototype.loadStats = function(obj) {
             this.stats.setExp("str", obj["strength"]);

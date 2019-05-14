@@ -40,6 +40,7 @@ $(function () {
                     for (var i in obj["players"]) {
                         room.addPlayer(obj["players"][i]);
                     }
+                    room.loadBackground(Game.SpriteManager.getSpriteMapByName("grass"));
                     room.init();
                     Game.ChatBox.add("Welcome to the game, {0}.".format(obj["name"]));
                     Game.state = 'game';
@@ -171,12 +172,11 @@ $(function () {
         }
     });
     Game.mousePos = { x: 0, y: 0 };
-    Game.isometric = 0;
     Game.boundingRect = canvas.getBoundingClientRect();
     Game.state = 'logonscreen';
     Game.scale = 1.5;
     Game.targetScale = 1.5;
-    Game.sceneryMap = new Map();
+    //Game.sceneryMap = new Map();
     // game settings:	
     var FPS = 50, INTERVAL = 1000 / FPS, // milliseconds
     STEP = INTERVAL / 1000; // seconds
@@ -189,23 +189,39 @@ $(function () {
         otherPlayers: [],
         sceneryInstances: new Map(),
         t: new Game.Transform(),
+        loadBackground: function(background) {
+            this.map.load(context, background);
+        },
         init: function () {
-            this.map.load(context);
-            //this.map.generate();
             this.show = 1.0;
         },
         loadScenery: function(sceneryJson) {
             for (var i = 0; i < sceneryJson.length; ++i) {
                 // save the scenery object
-                Game.sceneryMap.set(sceneryJson[i].id, sceneryJson[i]);
 
-                // save the instances
+                // TODO return the raw spriteframe data directly
+                var spriteFrame = new Game.SpriteFrame({
+                    id: sceneryJson[i].id,
+                    sprite_map_id: sceneryJson[i].spriteMapId,
+                    x: sceneryJson[i].x,
+                    y: sceneryJson[i].y,
+                    w: sceneryJson[i].w,
+                    h: sceneryJson[i].h,
+                    margin: 0,
+                    frame_count: sceneryJson[i].framecount,
+                    animation_type_id: 1
+                });
+
+                spriteFrame.anchor = {x: sceneryJson[i].anchorX, y: sceneryJson[i].anchorY};
+
+                //Game.sceneryMap.set(sceneryJson[i].id, spriteFrame);
+
+                // save the instances to the multimap
                 for (var j = 0; j < sceneryJson[i].instances.length; ++j) {
-                    // save the multimap
                     var xy = tileIdToXY(sceneryJson[i].instances[j]);
                     if (!this.sceneryInstances.has(xy.y))
                         this.sceneryInstances.set(xy.y, []);
-                    this.sceneryInstances.get(xy.y).push({x: xy.x, id: sceneryJson[i].id});
+                    this.sceneryInstances.get(xy.y).push({x: xy.x, sprite: spriteFrame});
                 }
             }
         },
@@ -223,24 +239,20 @@ $(function () {
         draw: function (ctx, xview, yview) {
             if (room.currentShow === 0)
                 return;
+
             this.t.reset();
-            if (Game.isometric) {
-                ctx.save();
-                this.t.translate(this.player.x - xview, this.player.y - yview);
-                this.t.scale(1, 1 / this.offset);
-                this.t.rotate(45 * Math.PI / 180);
-                this.t.translate(-(this.player.x - xview), -(this.player.y - yview));
-                ctx.setTransform.apply(ctx, this.t.m);
-            }
             ctx.save();
+
             this.t.scale(Game.scale, Game.scale);
             ctx.setTransform.apply(ctx, this.t.m);
             this.map.draw(ctx, xview, yview);
-            ctx.save();
-            ctx.scale(0.5, 0.5); // make the items on the ground smaller than in the inventory
+
+            ctx.save();// make the items on the ground smaller than in the inventory
+            ctx.scale(0.5, 0.5);
             for (var i in this.groundItems)
                 this.groundItems[i].draw(ctx, xview, yview, 0.5, 0.5);
             ctx.restore();
+
             var mp = Game.mousePos || { x: 0, y: 0 };
             var transformed = this.t.transformPoint(mp.x, mp.y);
             cursor.setPos({ x: transformed.x + xview, y: transformed.y + yview });
@@ -248,35 +260,42 @@ $(function () {
                 cursor.draw(ctx, xview, yview);
             context.fillStyle = "#f00";
 
-            // TODO populate a multimap containing all scenery, players and npcs within camera bounds.
-            // multimap key is the y-pos, so everything is drawn in the correct order.
-            var orderedSceneryMap = new Map([...this.sceneryInstances.entries()].sort(function(a, b) {return b > a;}));// order by key desc
-            orderedSceneryMap.forEach(function(value, key, map) {
-                for (var i = 0; i < value.length; ++i) {
-                    // pull the scenery object
-                    var scenery = Game.sceneryMap.get(value[i].id);
-
-                    // pull the sprite map
-                    var spriteMap = Game.SpriteManager.getSpriteMapById(scenery.spriteMapId);
-
-                    ctx.drawImage(spriteMap, 
-                        scenery.x, 
-                        scenery.y, 
-                        scenery.w, 
-                        scenery.h, 
-                        value[i].x-(scenery.w * scenery.anchorX) - xview, 
-                        key-(scenery.h * scenery.anchorY) - yview, 
-                        scenery.w, 
-                        scenery.h);
-            }});
+            // add everything to the draw map so we can draw in the correct order
+            var drawMap = new Map();
             
+            // add the current player
+            if (!drawMap.has(this.player.y))
+                drawMap.set(this.player.y, []);
+            drawMap.get(this.player.y).push({x: this.player.x, sprite: this.player.getCurrentSpriteFrame()});
+
+            // add the other players
+            for (var i in this.otherPlayers) {
+                if (!drawMap.has(this.otherPlayers[i].y))
+                    drawMap.set(this.otherPlayers[i].y, []);
+                drawMap.get(this.otherPlayers[i].y).push({x: this.otherPlayers[i].x, sprite: this.otherPlayers[i].getCurrentSpriteFrame()});
+            }
+
+            // TODO add the NPCs
+
+            // add the scenery
+            this.sceneryInstances.forEach(function(value, key, map) {
+                if (!drawMap.has(key))
+                    drawMap.set(key, []);
+                drawMap.set(key, drawMap.get(key).concat(value));
+            });
+
+            var orderedDrawMap = new Map([...drawMap.entries()].sort());// order by ypos
+            orderedDrawMap.forEach(function(value, key, map) {
+                for (var i = 0; i < value.length; ++i) {
+                    value[i].sprite.draw(ctx, value[i].x - xview, key - yview);
+            }});
+
+            // player-draw still draws stuff like the death curtain, health bars, chat etc so draw these last.
+            this.player.draw(ctx, xview, yview);
             for (var i in this.otherPlayers) {
                 this.otherPlayers[i].draw(ctx, xview, yview);
             }
-            if (Game.isometric)
-                ctx.restore();
-            //Game.FightManager.draw(ctx, xview, yview);
-            this.player.draw(ctx, xview, yview);
+
             ctx.restore();
         },
         process: function (dt) {
@@ -417,7 +436,7 @@ $(function () {
         if (Game.state === 'game') {
             // redraw all room objects
             context.fillStyle = "#000";
-            context.fillRect(0, 0, camera.viewportRect.width, camera.viewportRect.height);
+            context.fillRect(0, 0, camera.viewportRect.width * Game.scale, camera.viewportRect.height * Game.scale);
             room.draw(context, camera.xView, camera.yView);
             // redraw all hud objects
             context.fillStyle = hudcamera.pat || "black";
@@ -520,7 +539,3 @@ window.addEventListener("keydown", function (e) {
     }
 });
 // -->
-// start the game when page is loaded
-// window.onload = function () {
-//     Game.play();
-// };

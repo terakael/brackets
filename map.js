@@ -10,11 +10,20 @@
         this.image = null;
     }
 
-    Map.prototype.load = function(context) {
+    Map.prototype.load = function(context, imageData) {
+        var pattern = context.createPattern(imageData, "repeat");
+        var ctx = document.createElement("canvas").getContext("2d");
+        ctx.canvas.width = this.width;
+        ctx.canvas.height = this.height;
+
+        //ctx.save();
+        ctx.fillStyle = pattern;
+        ctx.fillRect(0, 0, this.width, this.height);
+        //ctx.restore();
+
         this.image = new Image();
-        this.image.onload = function() {
-        }
-        this.image.src = "img/grass.jpg";
+        this.image.src = ctx.canvas.toDataURL("image/png");
+        ctx = null;
     }
 
     // generate an example of a large map
@@ -53,15 +62,17 @@
         // canvas will cull the image by itself (no performance gaps -> in hardware accelerated environments, at least)
         //if (this.imageReady) {
             //context.drawImage(this.image, 0, 0, this.image.width, this.image.height, -xView, -yView, this.image.width, this.image.height);
-            context.drawImage(this.image, 
-                              (xView/this.width) * this.image.width, 
-                              (yView/this.height) * this.image.height, 
-                              (this.swidth/this.width) * this.image.width, 
-                              (this.sheight/this.height) * this.image.height, 
-                              0, 
-                              0, 
-                              this.swidth, 
-                              this.sheight);
+            // context.drawImage(this.image, 
+            //                   (xView/this.width) * this.image.width, 
+            //                   (yView/this.height) * this.image.height, 
+            //                   (this.swidth/this.width) * this.image.width, 
+            //                   (this.sheight/this.height) * this.image.height, 
+            //                   0, 
+            //                   0, 
+            //                   this.swidth, 
+            //                   this.sheight);
+
+            context.drawImage(this.image, xView, yView, this.swidth, this.sheight, 0, 0, this.swidth, this.sheight);
         //}
 
         // didactic way:
