@@ -16,7 +16,6 @@
 		loadSpriteFrames: function(frames) {
 			for (var i in frames) {
 				//{"id":1,"sprite_map_id":1,"x":0,"y":140,"w":32,"h":32,"margin":0,"frame_count":1,"animation_type_id":1}
-				console.log(frames[i]);
 				this.spriteFrames.push(new Game.SpriteFrame(frames[i]));
 			}			
 		},

@@ -17,9 +17,9 @@ $(function () {
                     Game.SpriteManager.loadSpriteMaps(obj["spriteMaps"]);
                     Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
                     Game.SpriteManager.loadItems(obj["items"]);
+                    room.loadScenery(obj["scenery"]);
                     document.title = obj["name"];
                     var playerXY = tileIdToXY(obj["tileId"]);
-                    console.log("tileId: " + obj["tileId"] + "(" + playerXY.x + "," + playerXY.y + ")");
                     room.player = new Game.Player(obj["tileId"]);
                     Game.Player.prototype.image = Game.SpriteManager.getSpriteMapByName("characters");
                     room.player.loadStats(obj["stats"]);
@@ -176,6 +176,7 @@ $(function () {
     Game.state = 'logonscreen';
     Game.scale = 1.5;
     Game.targetScale = 1.5;
+    Game.sceneryMap = new Map();
     // game settings:	
     var FPS = 50, INTERVAL = 1000 / FPS, // milliseconds
     STEP = INTERVAL / 1000; // seconds
@@ -186,11 +187,27 @@ $(function () {
         show: 0,
         currentShow: 0,
         otherPlayers: [],
+        sceneryInstances: new Map(),
         t: new Game.Transform(),
         init: function () {
             this.map.load(context);
             //this.map.generate();
             this.show = 1.0;
+        },
+        loadScenery: function(sceneryJson) {
+            for (var i = 0; i < sceneryJson.length; ++i) {
+                // save the scenery object
+                Game.sceneryMap.set(sceneryJson[i].id, sceneryJson[i]);
+
+                // save the instances
+                for (var j = 0; j < sceneryJson[i].instances.length; ++j) {
+                    // save the multimap
+                    var xy = tileIdToXY(sceneryJson[i].instances[j]);
+                    if (!this.sceneryInstances.has(xy.y))
+                        this.sceneryInstances.set(xy.y, []);
+                    this.sceneryInstances.get(xy.y).push({x: xy.x, id: sceneryJson[i].id});
+                }
+            }
         },
         addPlayer: function (obj) {
             if (obj["id"] != this.player.id) {
@@ -230,6 +247,29 @@ $(function () {
             if (!Game.ContextMenu.active && Game.worldCameraRect.pointWithin(Game.mousePos))
                 cursor.draw(ctx, xview, yview);
             context.fillStyle = "#f00";
+
+            // TODO populate a multimap containing all scenery, players and npcs within camera bounds.
+            // multimap key is the y-pos, so everything is drawn in the correct order.
+            var orderedSceneryMap = new Map([...this.sceneryInstances.entries()].sort(function(a, b) {return b > a;}));// order by key desc
+            orderedSceneryMap.forEach(function(value, key, map) {
+                for (var i = 0; i < value.length; ++i) {
+                    // pull the scenery object
+                    var scenery = Game.sceneryMap.get(value[i].id);
+
+                    // pull the sprite map
+                    var spriteMap = Game.SpriteManager.getSpriteMapById(scenery.spriteMapId);
+
+                    ctx.drawImage(spriteMap, 
+                        scenery.x, 
+                        scenery.y, 
+                        scenery.w, 
+                        scenery.h, 
+                        value[i].x-(scenery.w * scenery.anchorX) - xview, 
+                        key-(scenery.h * scenery.anchorY) - yview, 
+                        scenery.w, 
+                        scenery.h);
+            }});
+            
             for (var i in this.otherPlayers) {
                 this.otherPlayers[i].draw(ctx, xview, yview);
             }
