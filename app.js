@@ -220,6 +220,18 @@ $(function () {
                         }
                     }
                 }
+                else if (obj["action"] === "start_mining") {
+                    Game.ChatBox.add("you start mining the rock...");
+                }
+                else if (obj["action"] === "finish_mining") {
+                    Game.ChatBox.add("you mine the rock.");
+
+                    // keep mining automatically
+                    Game.ws.send({
+                        action: "mine",
+                        tileId: obj["tileId"]
+                    });
+                }
             }
         }
     }
@@ -281,7 +293,7 @@ $(function () {
                     var xy = tileIdToXY(sceneryJson[i].instances[j]);
                     if (!this.sceneryInstances.has(xy.y))
                         this.sceneryInstances.set(xy.y, []);
-                    this.sceneryInstances.get(xy.y).push({x: xy.x, sprite: spriteFrame});
+                    this.sceneryInstances.get(xy.y).push({x: xy.x, tileId: sceneryJson[i].instances[j], sprite: spriteFrame});
                 }
             }
         },
@@ -452,10 +464,17 @@ $(function () {
                                     spriteFrame.height);
 
                                 if (rect.pointWithin(cursor.mousePos)) {
+                                    var tileId = value[i].tileId;
                                     var scenery = Game.sceneryMap.get(sprite.id);
                                     Game.ContextMenu.contextOptions.forEach(function(value, key, map) {
                                         if (scenery.attributes & key) {
-                                            Game.ContextMenu.push([{action: value, objectId: scenery.id, objectName: scenery.name, type: "scenery"}]);
+                                            Game.ContextMenu.push([{
+                                                action: value, 
+                                                objectId: scenery.id, 
+                                                tileId: tileId, 
+                                                objectName: scenery.name, 
+                                                type: "scenery"
+                                            }]);
                                         }
                                     });
                                 }
