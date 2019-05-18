@@ -12,7 +12,8 @@
     	toleranceMargin: 10,
     	active: false,
     	menuOptions: [],
-    	menuOptionHeight: 20,
+		menuOptionHeight: 20,
+		contextOptions: new Map(),
         contextOptionList: ["equip", "eat", "drink", "use",  "mine",  "cut",  "drop", "follow", "trade", "duel", "take", "examine"],
         // 8, 64, 2048
         draw: function(ctx) {
@@ -111,13 +112,13 @@
     	},
         addOptionsByInventorySlot: function(slot) {
             // slot.item has a contextOptions int.  parse that to retrieve the correct actions
-            var options = []
-
-            for (var i = 0; i < this.contextOptionList.length; ++i) {
-                if (slot.item.contextOptions & Math.pow(2, i)) {
-                    options.push({action: this.contextOptionList[i], slot: slot.id, itemId: slot.item.id, objectName: slot.item.name});
+			var options = []
+			
+			this.contextOptions.forEach(function(value, key, map) {
+				if (slot.item.contextOptions & key) {
+                    options.push({action: value, slot: slot.id, objectId: slot.item.id, objectName: slot.item.name, type: "item"});
                 }
-            }
+			});
 
             if (options.length > 0)
                 this.push(options);
@@ -131,14 +132,15 @@
         handleMenuSelect: function() {
         	// send action based on context menu selection
             var menuItem = Game.ContextMenu.getSelectedAction();
-            if (menuItem.action === "examine") {
-            	Game.ChatBox.add(Game.SpriteManager.getItemById(menuItem.itemId).description);
-            } else if (menuItem.action === "cancel") {
-
+			if (menuItem.action === "cancel") {
+				// do nothing
             } else {
                 Game.ws.send(menuItem);
             }
-        }
+		},
+		loadContextOptions: function(obj) {
+			this.contextOptions = new Map(Object.entries(obj));
+		}
     };
     
     Game.ContextMenu = new ContextMenu();

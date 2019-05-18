@@ -3,7 +3,7 @@
 			// (x, y) = center of object
 			// ATTENTION:
             // it represents the player position on the world(room), not the canvas position
-            var posXY = tileIdToXY(tileId)
+            var posXY = tileIdToXY(tileId);
 			this.x = posXY.x;
 			this.y = posXY.y;				
             this.destPos = posXY;

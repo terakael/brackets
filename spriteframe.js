@@ -37,6 +37,10 @@
 		
 	};
 
+	SpriteFrame.prototype.getCurrentFrame = function() {
+		return this.frames[this.currentFrame];
+	}
+
 	SpriteFrame.prototype.process = function(dt) {
 		this.frameTimer -= dt;
         if (this.frameTimer < 0) {

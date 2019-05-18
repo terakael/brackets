@@ -77,13 +77,8 @@
 	LogonScreen.prototype.onKeyDown = function(keyCode) {
 		switch (keyCode) {
 			case 32://space
-				// quick login for dmk
-				// Game.ws.send({
-				// 	action: "logon",
-				// 	name: "dmk",
-				// 	password: "Password12"
-				// });
 				Game.connectAndLogin("dmk", "Password12");
+				this.loading = true;
 				break;
 			case 13:// enter
 				if (this.logonState === 'username') {
@@ -91,11 +86,6 @@
 				} else if (this.logonState === 'password') {
 					Game.connectAndLogin(this.username, this.password);
 					this.loading = true;
-					// Game.ws.send({
-					// 	action: "logon",
-					// 	name: this.username,
-					// 	password: this.password
-					// });
 				}
 				break;
 			case 8: // backspace

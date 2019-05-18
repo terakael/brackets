@@ -10,6 +10,7 @@ $(function () {
                 Game.SpriteManager.loadSpriteMaps(obj["spriteMaps"]);
                 Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
                 Game.SpriteManager.loadItems(obj["items"]);
+                Game.ContextMenu.loadContextOptions(obj["contextOptions"]);
                 room.loadScenery(obj["scenery"]);
             }
         }
@@ -112,6 +113,9 @@ $(function () {
                             }
                         }
                     }
+                }
+                else if (obj["action"] === "examine") {
+                    Game.ChatBox.add(obj["examineText"], "#fff");
                 }
                 else if (obj["action"] === "playerEnter") {
                     var p = obj["player"];
@@ -219,7 +223,7 @@ $(function () {
             }
         }
     }
-    
+
     Game.mousePos = { x: 0, y: 0 };
     Game.boundingRect = canvas.getBoundingClientRect();
     Game.state = 'logonscreen';
@@ -227,7 +231,7 @@ $(function () {
     Game.targetScale = 1.5;
     Game.maxScale = 2;
     Game.minScale = 1;
-    //Game.sceneryMap = new Map();
+    Game.sceneryMap = new Map();
     // game settings:	
     var FPS = 50, INTERVAL = 1000 / FPS, // milliseconds
     STEP = INTERVAL / 1000; // seconds
@@ -239,6 +243,7 @@ $(function () {
         currentShow: 0,
         otherPlayers: [],
         sceneryInstances: new Map(),
+        drawableSceneryMap: new Map(),
         t: new Game.Transform(),
         loadBackground: function(background) {
             this.map.load(context, background);
@@ -265,7 +270,11 @@ $(function () {
 
                 spriteFrame.anchor = {x: sceneryJson[i].anchorX, y: sceneryJson[i].anchorY};
 
-                //Game.sceneryMap.set(sceneryJson[i].id, spriteFrame);
+                Game.sceneryMap.set(sceneryJson[i].id, {
+                    id: sceneryJson[i].id,
+                    name: sceneryJson[i].name,
+                    attributes: sceneryJson[i].attributes
+                });
 
                 // save the instances to the multimap
                 for (var j = 0; j < sceneryJson[i].instances.length; ++j) {
@@ -275,14 +284,6 @@ $(function () {
                     this.sceneryInstances.get(xy.y).push({x: xy.x, sprite: spriteFrame});
                 }
             }
-
-            // console.log(this.sceneryInstances.get(16.0));
-            // console.log(this.sceneryInstances.get(16).filter(obj => obj.x > 3000 && obj.x < 4000));
-            // // order each list by x pos
-            // this.sceneryInstances.forEach(function(value, key, map) {
-            //     value.sort((a, b) => parseFloat(a.x) - parseFloat(b.x));
-            // });
-            // console.log(this.sceneryInstances.get(16));
         },
         addPlayer: function (obj) {
             if (obj["id"] != this.player.id) {
@@ -336,22 +337,12 @@ $(function () {
 
             // TODO add the NPCs
 
-            var drawBoundWidth = (camera.viewportRect.width * Game.maxScale);
-            var drawBoundHeight = (camera.viewportRect.height * Game.maxScale);
-
-            var minX = (xview + (camera.viewportRect.width * 0.5)) - (drawBoundWidth * 0.5); 
-            var minY = (yview + (camera.viewportRect.height) * 0.5) - (drawBoundHeight * 0.5);
-            
-            // add the scenery
-            this.sceneryInstances.forEach(function(value, key, map) {
-                // camera.viewportRect.width * Game.scale, camera.viewportRect.height * Game.scale
-                if (key > minY && key < minY + drawBoundHeight) {
-                    if (!drawMap.has(key)) 
-                        drawMap.set(key, []);
-
-                    var filteredByXPos = value.filter(obj => obj.x > minX && obj.x < minX + drawBoundWidth);
-                    drawMap.set(key, drawMap.get(key).concat(filteredByXPos));
-                }
+            // add scenery
+            this.compileDrawableSceneryMap(xview, yview);
+            this.drawableSceneryMap.forEach(function(value, key, map) {
+                if (!drawMap.has(key))
+                    drawMap.set(key, []);
+                drawMap.set(key, drawMap.get(key).concat(value));
             });
 
             var orderedDrawMap = new Map([...drawMap.entries()].sort());// order by ypos
@@ -376,6 +367,26 @@ $(function () {
             }
             Game.Minimap.setOtherPlayers(this.otherPlayers);
             Game.Minimap.setGroundItems(this.groundItems);
+        },
+        compileDrawableSceneryMap: function(xview, yview) {
+            var drawBoundWidth = (camera.viewportRect.width * Game.maxScale);
+            var drawBoundHeight = (camera.viewportRect.height * Game.maxScale);
+
+            var minX = (xview + (camera.viewportRect.width * 0.5)) - (drawBoundWidth * 0.5); 
+            var minY = (yview + (camera.viewportRect.height) * 0.5) - (drawBoundHeight * 0.5);
+            
+            // add the scenery
+            var drawableSceneryMap = new Map();
+            this.sceneryInstances.forEach(function(value, key, map) {
+                if (key > minY && key < minY + drawBoundHeight) {
+                    if (!drawableSceneryMap.has(key)) 
+                        drawableSceneryMap.set(key, []);
+
+                    var filteredByXPos = value.filter(obj => obj.x > minX && obj.x < minX + drawBoundWidth);
+                    drawableSceneryMap.set(key, drawableSceneryMap.get(key).concat(filteredByXPos));
+                }
+            });
+            this.drawableSceneryMap = drawableSceneryMap;
         },
         removePlayer: function (id) {
             for (var i in this.otherPlayers) {
@@ -424,13 +435,32 @@ $(function () {
                         for (var i in room.groundItems) {
                             var groundItem = room.groundItems[i];
                             if (groundItem.clickBox.pointWithin(cursor.mousePos)) {
-                                Game.ContextMenu.push([{
-                                        action: "take",
-                                        objectName: groundItem.item.name,
-                                        groundItemId: groundItem.groundItemId
-                                    }]);
+                                Game.ContextMenu.push([
+                                    { action: "take", objectName: groundItem.item.name, groundItemId: groundItem.groundItemId },
+                                    { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, type: "item" }
+                                ]);
                             }
                         }
+                        room.drawableSceneryMap.forEach(function(value, key, map) {
+                            for (var i in value) {
+                                var sprite = value[i].sprite;
+                                var spriteFrame = sprite.getCurrentFrame();
+                                var rect = new Game.Rectangle(
+                                    value[i].x - (spriteFrame.width * sprite.anchor.x), 
+                                    key - (spriteFrame.height * sprite.anchor.y), 
+                                    spriteFrame.width, 
+                                    spriteFrame.height);
+
+                                if (rect.pointWithin(cursor.mousePos)) {
+                                    var scenery = Game.sceneryMap.get(sprite.id);
+                                    Game.ContextMenu.contextOptions.forEach(function(value, key, map) {
+                                        if (scenery.attributes & key) {
+                                            Game.ContextMenu.push([{action: value, objectId: scenery.id, objectName: scenery.name, type: "scenery"}]);
+                                        }
+                                    });
+                                }
+                            }
+                        });
                         break;
                 }
             }

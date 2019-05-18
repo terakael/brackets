@@ -11,50 +11,18 @@
     }
 
     Map.prototype.load = function(context, imageData) {
-//        this.image = new Image();
         var pattern = context.createPattern(imageData, "repeat");
         var ctx = document.createElement("canvas").getContext("2d");
         ctx.canvas.width = this.width;
         ctx.canvas.height = this.height;
-
-        //ctx.save();
+        ctx.save();
         ctx.fillStyle = pattern;
         ctx.fillRect(0, 0, this.width, this.height);
-        //ctx.restore();
+        ctx.restore();
 
-        this.image = new Image();
-        this.image.src = ctx.canvas.toDataURL("image/png");
+        this.image = imageData;
+        this.image.src = ctx.canvas.toDataURL("image/png");// this is slow af, takes over a second
         ctx = null;
-    }
-
-    // generate an example of a large map
-    Map.prototype.generate = function(img) {
-        // TODO generate map based on ground_texture spritemaps
-
-        // example:
-        // var ctx = document.createElement("canvas").getContext("2d");        
-        // ctx.canvas.width = this.width;
-        // ctx.canvas.height = this.height;        
-
-        // var rows = ~~(this.width/32) + 1;
-        // var columns = ~~(this.height/32) + 1;
-                
-        // ctx.save();         
-        // for (var x = 0, i = 0; i < rows; x+=32, i++) {  
-        //     for (var y = 0, j=0; j < columns; y+=32, j++) {
-        //         var val = Math.getRandom(50, 100);
-        //         ctx.fillStyle = "rgb({0}, {1}, {2})".format(~~(val/5), ~~val, ~~(val/5));
-        //         ctx.fillRect (x, y, 31, 31);
-        //     }       
-        // }
-        // ctx.restore();  
-
-        // // store the generate map as this image texture
-        // this.image = new Image();
-        // this.image.src = ctx.canvas.toDataURL("image/png");
-
-        // // clear context
-        // ctx = null;
     }
 
     // draw the map adjusted to camera
@@ -73,7 +41,8 @@
             //                   this.swidth, 
             //                   this.sheight);
 
-            context.drawImage(this.image, xView, yView, this.swidth, this.sheight, 0, 0, this.swidth, this.sheight);
+             context.drawImage(this.image, xView, yView, this.swidth, this.sheight, 0, 0, this.swidth, this.sheight);
+            //context.drawImage(this.image, 0, 0, this.image.width, this.image.height, 0, 0, this.image.width, this.image.height);
         //}
 
         // didactic way:
