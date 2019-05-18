@@ -1,7 +1,59 @@
 $(function () {
     // prepare our game canvas
-    var canvas = document.getElementById("game"), context = canvas.getContext("2d"), ip = "localhost", port = "45555";
-    Game.ws = new Game.WebSocket("ws://{0}:{1}/ws/game".format(ip, port), function (arr) {
+    var canvas = document.getElementById("game"), context = canvas.getContext("2d"), ip = "localhost", port = "45555", resourcePort = "45556";
+    Game.resourceWs = new Game.WebSocket("ws://{0}:{1}/ws/resources".format(ip, resourcePort), function (obj) {
+        if (obj["success"] == 0) {
+
+        } else {
+            
+            if (obj["action"] === "cached_resources") {
+                Game.SpriteManager.loadSpriteMaps(obj["spriteMaps"]);
+                Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
+                Game.SpriteManager.loadItems(obj["items"]);
+                room.loadScenery(obj["scenery"]);
+            }
+        }
+    });
+
+    Game.resourceWs.ws.onopen = function() {
+        // get the initial resources for the game (sprite maps, scenery etc)
+        Game.resourceWs.send({
+            action: "resources",
+            id: 0
+        });
+    };
+    Game.resourceWs.ws.onclose = function() {
+        console.log("loaded resources");
+    };
+    Game.connectAndLogin = function(username, password) {
+        Game.ws = new Game.WebSocket("ws://{0}:{1}/ws/game".format(ip, port), Game.processResponse);
+
+        Game.ws.ws.onopen = function() {
+            Game.ws.send({
+                action: "logon",
+                name: username,
+                password: password
+            });
+        };
+
+        Game.ws.ws.onclose = function() {
+            room.otherPlayers = [];
+            room.player = null;
+            document.title = 'danscape';
+            if (Game.state !== 'logonscreen') {
+                Game.state = 'logonscreen';
+                Game.LogonScreen.reset();
+            }
+            console.log("server closed connection");
+        }
+
+        Game.ws.ws.onerror = function() {
+            if (Game.state === 'logonscreen') {
+                Game.LogonScreen.setError("Error connecting to server.")
+            }
+        }
+    };
+    Game.processResponse = function(arr) {
         for (var ele = 0; ele < arr.length; ++ele) {
             var obj = arr[ele];
             if (obj["success"] === 0) {
@@ -14,10 +66,6 @@ $(function () {
             }
             else {
                 if (obj["action"] === "logon") {
-                    Game.SpriteManager.loadSpriteMaps(obj["spriteMaps"]);
-                    Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
-                    Game.SpriteManager.loadItems(obj["items"]);
-                    room.loadScenery(obj["scenery"]);
                     document.title = obj["name"];
                     var playerXY = tileIdToXY(obj["tileId"]);
                     room.player = new Game.Player(obj["tileId"]);
@@ -170,7 +218,8 @@ $(function () {
                 }
             }
         }
-    });
+    }
+    
     Game.mousePos = { x: 0, y: 0 };
     Game.boundingRect = canvas.getBoundingClientRect();
     Game.state = 'logonscreen';
@@ -487,7 +536,7 @@ $(function () {
     // I'll use setInterval instead of requestAnimationFrame for compatibility reason,
     // but it's easy to change that.
     var runningId = -1;
-    Game.play = function () {
+    Game.play = function () {        
         if (runningId === -1) {
             runningId = setInterval(function () {
                 gameLoop();

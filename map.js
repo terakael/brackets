@@ -11,6 +11,7 @@
     }
 
     Map.prototype.load = function(context, imageData) {
+//        this.image = new Image();
         var pattern = context.createPattern(imageData, "repeat");
         var ctx = document.createElement("canvas").getContext("2d");
         ctx.canvas.width = this.width;

@@ -1,13 +1,17 @@
 (function() {
     function LogonScreen() {
-    	this.username = '';
+		this.reset();
+    	this.bkg = null;
+	}
+	
+	LogonScreen.prototype.reset = function() {
+		this.username = '';
     	this.password = '';
     	this.logonState = 'username';
     	this.logonError = '';
     	this.logonErrorTimer = 0;
-    	this.bkg = null;
     	this.loading = false;
-    }
+	}
 
     LogonScreen.prototype.process = function(dt) {
 		if (this.logonErrorTimer > 0) {
@@ -74,22 +78,24 @@
 		switch (keyCode) {
 			case 32://space
 				// quick login for dmk
-				Game.ws.send({
-					action: "logon",
-					name: "dmk",
-					password: "Password12"
-				});
+				// Game.ws.send({
+				// 	action: "logon",
+				// 	name: "dmk",
+				// 	password: "Password12"
+				// });
+				Game.connectAndLogin("dmk", "Password12");
 				break;
 			case 13:// enter
 				if (this.logonState === 'username') {
 					this.logonState = 'password';
 				} else if (this.logonState === 'password') {
+					Game.connectAndLogin(this.username, this.password);
 					this.loading = true;
-					Game.ws.send({
-						action: "logon",
-						name: this.username,
-						password: this.password
-					});
+					// Game.ws.send({
+					// 	action: "logon",
+					// 	name: this.username,
+					// 	password: this.password
+					// });
 				}
 				break;
 			case 8: // backspace
