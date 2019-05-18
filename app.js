@@ -176,6 +176,8 @@ $(function () {
     Game.state = 'logonscreen';
     Game.scale = 1.5;
     Game.targetScale = 1.5;
+    Game.maxScale = 2;
+    Game.minScale = 1;
     //Game.sceneryMap = new Map();
     // game settings:	
     var FPS = 50, INTERVAL = 1000 / FPS, // milliseconds
@@ -224,6 +226,14 @@ $(function () {
                     this.sceneryInstances.get(xy.y).push({x: xy.x, sprite: spriteFrame});
                 }
             }
+
+            // console.log(this.sceneryInstances.get(16.0));
+            // console.log(this.sceneryInstances.get(16).filter(obj => obj.x > 3000 && obj.x < 4000));
+            // // order each list by x pos
+            // this.sceneryInstances.forEach(function(value, key, map) {
+            //     value.sort((a, b) => parseFloat(a.x) - parseFloat(b.x));
+            // });
+            // console.log(this.sceneryInstances.get(16));
         },
         addPlayer: function (obj) {
             if (obj["id"] != this.player.id) {
@@ -277,11 +287,22 @@ $(function () {
 
             // TODO add the NPCs
 
+            var drawBoundWidth = (camera.viewportRect.width * Game.maxScale);
+            var drawBoundHeight = (camera.viewportRect.height * Game.maxScale);
+
+            var minX = (xview + (camera.viewportRect.width * 0.5)) - (drawBoundWidth * 0.5); 
+            var minY = (yview + (camera.viewportRect.height) * 0.5) - (drawBoundHeight * 0.5);
+            
             // add the scenery
             this.sceneryInstances.forEach(function(value, key, map) {
-                if (!drawMap.has(key))
-                    drawMap.set(key, []);
-                drawMap.set(key, drawMap.get(key).concat(value));
+                // camera.viewportRect.width * Game.scale, camera.viewportRect.height * Game.scale
+                if (key > minY && key < minY + drawBoundHeight) {
+                    if (!drawMap.has(key)) 
+                        drawMap.set(key, []);
+
+                    var filteredByXPos = value.filter(obj => obj.x > minX && obj.x < minX + drawBoundWidth);
+                    drawMap.set(key, drawMap.get(key).concat(filteredByXPos));
+                }
             });
 
             var orderedDrawMap = new Map([...drawMap.entries()].sort());// order by ypos
@@ -396,10 +417,10 @@ $(function () {
         if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
             var e = window.event || e; // old IE support
             Game.targetScale += Math.max(-0.1, Math.min(0.1, (e.wheelDelta || -e.detail)));
-            if (Game.targetScale < 1)
-                Game.targetScale = 1;
-            else if (Game.targetScale > 2)
-                Game.targetScale = 2;
+            if (Game.targetScale < Game.minScale)
+                Game.targetScale = Game.minScale;
+            else if (Game.targetScale > Game.maxScale)
+                Game.targetScale = Game.maxScale;
         }
     }, false);
     var stone = new Image();
