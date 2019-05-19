@@ -13,9 +13,8 @@
     	active: false,
     	menuOptions: [],
 		menuOptionHeight: 20,
-		contextOptions: new Map(),
-        contextOptionList: ["equip", "eat", "drink", "use",  "mine",  "cut",  "drop", "follow", "trade", "duel", "take", "examine"],
-        // 8, 64, 2048
+		contextOptions: [],
+		
         draw: function(ctx) {
     		if (!this.active)
 	    		return;
@@ -52,12 +51,16 @@
     	},
     	show: function(x, y, xview, yview) {
     		if (this.active)
-    			return;
-
+				return;
+				
             if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
-    	       this.menuOptions.push({label: "walk here", id: Game.getPlayer().id, action: "move", x: x, y: y});
-            }
-    		this.menuOptions.push({label: "cancel", action: "cancel"});
+    	       this.menuOptions.push({label: "walk here", id: Game.getPlayer().id, action: "move", x: x, y: y, priority: 2});
+			}
+
+			this.menuOptions.sort((a,b) => b.priority - a.priority);
+
+			// this one always goes at the bottom; it's basically useless
+			this.menuOptions.push({label: "cancel", action: "cancel", priority: -1});
 
 	    	var longestOption = 0;
 	    	for (var i in this.menuOptions) {
@@ -75,7 +78,7 @@
 
 	    	this.rect.top = (y - yview) * Game.scale;
 	    	if (this.rect.top + this.rect.height > Game.boundingRect.bottom)
-	    		this.rect.top = Game.boundingRect.bottom - this.rect.height - this.toleranceMargin;
+	    		this.rect.top = Math.max(Game.boundingRect.bottom - this.rect.height - this.toleranceMargin, 0);
     	},
     	hide: function() {
     		this.active = false;
@@ -106,19 +109,27 @@
     			if (!obj[i].label) 
 	    			obj[i].label = "{0} {1}".format(obj[i].action, obj[i].objectName || "");
 
-    			obj[i].id = Game.getPlayer().id;
+				obj[i].id = Game.getPlayer().id;
+				obj[i].priority = this.getPriorityByAction(obj[i].action);
 	    		this.menuOptions.push(obj[i]);
-    		}
+			}
     	},
         addOptionsByInventorySlot: function(slot) {
             // slot.item has a contextOptions int.  parse that to retrieve the correct actions
 			var options = []
-			
-			this.contextOptions.forEach(function(value, key, map) {
-				if (slot.item.contextOptions & key) {
-                    options.push({action: value, slot: slot.id, objectId: slot.item.id, objectName: slot.item.name, type: "item"});
-                }
-			});
+
+			for (var i = 0; i < this.contextOptions.length; ++i) {
+				var contextOption = this.contextOptions[i];
+				if (slot.item.contextOptions & contextOption.id)
+					options.push({
+						action: contextOption.name, 
+						slot: slot.id, 
+						objectId: slot.item.id, 
+						objectName: slot.item.name, 
+						type: "item", 
+						priority: contextOption.priority
+					});
+			}
 
             if (options.length > 0)
                 this.push(options);
@@ -139,7 +150,15 @@
             }
 		},
 		loadContextOptions: function(obj) {
-			this.contextOptions = new Map(Object.entries(obj));
+			this.contextOptions = obj;
+		},
+		getPriorityByAction: function(action) {
+			for (var i = 0; i < this.contextOptions.length; ++i) {
+				if (this.contextOptions[i].name === action) {
+					return this.contextOptions[i].priority;
+				}
+			}
+			return 0;
 		}
     };
     

@@ -466,17 +466,18 @@ $(function () {
                                 if (rect.pointWithin(cursor.mousePos)) {
                                     var tileId = value[i].tileId;
                                     var scenery = Game.sceneryMap.get(sprite.id);
-                                    Game.ContextMenu.contextOptions.forEach(function(value, key, map) {
-                                        if (scenery.attributes & key) {
+                                    for (var i = 0; i < Game.ContextMenu.contextOptions.length; ++i) {
+                                        var contextOption = Game.ContextMenu.contextOptions[i];
+                                        if (scenery.attributes & contextOption.id) {
                                             Game.ContextMenu.push([{
-                                                action: value, 
+                                                action: contextOption.name, 
                                                 objectId: scenery.id, 
                                                 tileId: tileId, 
                                                 objectName: scenery.name, 
                                                 type: "scenery"
                                             }]);
                                         }
-                                    });
+                                    }
                                 }
                             }
                         });
