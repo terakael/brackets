@@ -21,13 +21,14 @@
 		},
 		loadItems: function(items) {
 			for (var i in items) {
-				//items":[{"id":1,"name":"kanako","description":"it's kanako","spriteFrameId":1,"contextOptions":0}],
+				//items":[{"id":1,"name":"kanako","description":"it's kanako","spriteFrameId":1,"leftclickOption":0,"otherOptions":0}],
 				this.items.push(new Game.Item({
 					id: items[i].id,
 					name: items[i].name,
 					description: items[i].description,
 					spriteFrame: this.getSpriteFrameById(items[i].spriteFrameId),
-					contextOptions: items[i].contextOptions
+					leftclickOption: items[i].leftclickOption,
+					otherOptions: items[i].otherOptions
 				}));
 			}
 		},

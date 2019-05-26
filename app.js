@@ -93,6 +93,7 @@ $(function () {
                     room.init();
                     Game.ChatBox.add("Welcome to the game, {0}.".format(obj["name"]));
                     Game.state = 'game';
+                    Game.currentPlayer = room.player;
                 }
                 else if (obj["action"] === "logoff") {
                     // clean up and change state to logon screen
@@ -232,6 +233,9 @@ $(function () {
                         tileId: obj["tileId"]
                     });
                 }
+                else if (obj["action"] === "show_smithing_table") {
+                    Game.ChatBox.add("todo show smithing table");
+                }
             }
         }
     }
@@ -259,6 +263,7 @@ $(function () {
         t: new Game.Transform(),
         loadBackground: function(background) {
             this.map.load(context, background);
+            Game.Minimap.bakeMinimap(this.map.image, this.sceneryInstances);
         },
         init: function () {
             this.show = 1.0;
@@ -285,7 +290,8 @@ $(function () {
                 Game.sceneryMap.set(sceneryJson[i].id, {
                     id: sceneryJson[i].id,
                     name: sceneryJson[i].name,
-                    attributes: sceneryJson[i].attributes
+                    leftclickOption: sceneryJson[i].leftclickOption,
+                    otherOptions: sceneryJson[i].otherOptions
                 });
 
                 // save the instances to the multimap
@@ -304,6 +310,7 @@ $(function () {
                 player.maxHp = obj["maxHp"];
                 player.id = obj["id"];
                 player.name = obj["name"];
+                player.combatLevel = obj["combatLevel"];
                 player.setAnimations(obj["animations"]);
                 this.otherPlayers.push(player);
             }
@@ -321,15 +328,34 @@ $(function () {
 
             ctx.save();// make the items on the ground smaller than in the inventory
             ctx.scale(0.5, 0.5);
-            for (var i in this.groundItems)
+            for (var i in this.groundItems) {
                 this.groundItems[i].draw(ctx, xview, yview, 0.5, 0.5);
+            }
             ctx.restore();
 
-            var mp = Game.mousePos || { x: 0, y: 0 };
-            var transformed = this.t.transformPoint(mp.x, mp.y);
-            cursor.setPos({ x: transformed.x + xview, y: transformed.y + yview });
-            if (!Game.ContextMenu.active && Game.worldCameraRect.pointWithin(Game.mousePos))
-                cursor.draw(ctx, xview, yview);
+            Game.ContextMenu.setLeftclick(null, null);// clear the leftclick before we reassign
+            for (var i in this.groundItems) {
+                var rect = new Game.Rectangle(
+                    this.groundItems[i].clickBox.left - xview, 
+                    this.groundItems[i].clickBox.top - yview, 
+                    this.groundItems[i].clickBox.width, this.groundItems[i].clickBox.height);
+
+                if (rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
+                    Game.worldCameraRect.pointWithin(Game.mousePos)) {
+                    // if there's a slot in use then show nothing; you cannot use an inv item on a ground item.
+                    // this means don't even show the usual "take" option; the current state is a use inv item on something
+                    if (Game.currentPlayer.inventory.slotInUse == null) {
+                        // { action: "take", objectName: groundItem.item.name, groundItemId: groundItem.groundItemId }
+                        Game.ContextMenu.setLeftclick(Game.mousePos, {
+                            id: Game.currentPlayer.id,
+                            action: "take", 
+                            objectName: this.groundItems[i].item.name, 
+                            groundItemId: this.groundItems[i].groundItemId
+                        });
+                    }
+                }
+            }
+            
             context.fillStyle = "#f00";
 
             // add everything to the draw map so we can draw in the correct order
@@ -359,15 +385,56 @@ $(function () {
 
             var orderedDrawMap = new Map([...drawMap.entries()].sort());// order by ypos
             orderedDrawMap.forEach(function(value, key, map) {
-                for (var i = 0; i < value.length; ++i) {
+                for (var i = 0; i < value.length; ++i) { 
                     value[i].sprite.draw(ctx, value[i].x - xview, key - yview);
-            }});
+                    var currentFrame = value[i].sprite.getCurrentFrame();
+
+                    var rect = new Game.Rectangle(
+                        value[i].x - xview - (value[i].sprite.anchor.x * currentFrame.width), 
+                        key - yview - (value[i].sprite.anchor.y * currentFrame.height), 
+                        currentFrame.width, currentFrame.height);
+
+                    // mouse position needs to account for scale because the whole context is currently scaled
+                    if (rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
+                        Game.worldCameraRect.pointWithin(Game.mousePos)) {
+                        var scenery = Game.sceneryMap.get(value[i].sprite.id);
+
+                        if (Game.currentPlayer.inventory.slotInUse) {
+                            Game.ContextMenu.setLeftclick(Game.mousePos, {
+                                id: Game.currentPlayer.id,
+                                action: "use",
+                                src: Game.currentPlayer.inventory.slotInUse.item.id,
+                                dest: value[i].tileId,
+                                type: "scenery",
+                                label: "use {0} -> {1}".format(Game.currentPlayer.inventory.slotInUse.item.name, scenery.name)
+                            });
+                        } else {
+                            if (scenery.leftclickOption != 0) {
+                                var contextOpt = Game.ContextMenu.getContextOptionById(scenery.leftclickOption);
+                                Game.ContextMenu.setLeftclick(Game.mousePos, {
+                                    id: Game.currentPlayer.id,
+                                    action: contextOpt.name,
+                                    objectName: scenery.name,
+                                    objectId: scenery.id,
+                                    tileId: value[i].tileId,
+                                    type: "scenery"
+                                });
+                            }
+                        }
+                    }
+                }
+            });
 
             // player-draw still draws stuff like the death curtain, health bars, chat etc so draw these last.
             this.player.draw(ctx, xview, yview);
             for (var i in this.otherPlayers) {
                 this.otherPlayers[i].draw(ctx, xview, yview);
             }
+
+            var mp = Game.mousePos || { x: 0, y: 0 };
+            var transformed = this.t.transformPoint(mp.x, mp.y);
+            cursor.setPos({ x: transformed.x + xview, y: transformed.y + yview });
+            cursor.draw(ctx, xview, yview);
 
             ctx.restore();
         },
@@ -419,19 +486,59 @@ $(function () {
     };
     canvas.addEventListener("mousedown", function (e) {
         if (Game.state === 'game') {
-            if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
+            if (Game.ContextMenu.active && e.button == 0) {// left
+                var menuItem = Game.ContextMenu.handleMenuSelect();
+                if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
+                    Game.getPlayer().inventory.handleSlotAction(menuItem.action, menuItem.originalPos);
+                }
+                // Game.currentPlayer.inventory.slotInUse = null;
+            } else if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
                 Game.getPlayer().inventory.onMouseDown(e.button);
-            }
-            else if (Game.Minimap.rect.pointWithin(Game.mousePos)) {
+            } else if (Game.Minimap.rect.pointWithin(Game.mousePos)) {
                 Game.Minimap.onMouseDown(e.button);
-            }
-            else if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
+            } else if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
                 switch (e.button) {
                     case 0: // left
-                        if (!Game.ContextMenu.active) {
-                            // TODO not necessarily move here; e.g. if you left click a ground item you should pick it up
-                            Game.ws.send({ action: "move", id: room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y });
+                        if (!Game.ContextMenu.active && room.player.inventory.slotInUse == null) {
+                            if (Game.ContextMenu.leftclickMenuOption == null) {
+                                // no stored leftclick option, so just move to the position
+                                cursor.handleClick(false);
+                                Game.ws.send({ action: "move", id: room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y });
+                            } else {
+                                // there's a stored leftclick option so perform the leftclick option
+                                cursor.handleClick(true);
+                                Game.ws.send(Game.ContextMenu.leftclickMenuOption);
+                            }
+                        } else if (room.player.inventory.slotInUse != null) {
+                            // are we hovering over a player/scenery/npc?
+                            room.drawableSceneryMap.forEach(function(value, key, map) {
+                                for (var i in value) {
+                                    var sprite = value[i].sprite;
+                                    var spriteFrame = sprite.getCurrentFrame();
+                                    var rect = new Game.Rectangle(
+                                        value[i].x - (spriteFrame.width * sprite.anchor.x), 
+                                        key - (spriteFrame.height * sprite.anchor.y), 
+                                        spriteFrame.width, 
+                                        spriteFrame.height);
+    
+                                    if (rect.pointWithin(cursor.mousePos)) {
+                                        cursor.handleClick(true);
+                                        var tileId = value[i].tileId;
+                                        Game.ws.send({
+                                            action: "use",
+                                            id: room.player.id,
+                                            src: room.player.inventory.slotInUse.item.id,
+                                            dest: tileId,
+                                            type: "scenery"
+                                        });
+                                        room.player.inventory.slotInUse = null;
+                                        return;
+                                    }
+                                }
+                            });
+                            room.player.inventory.slotInUse = null;
                         }
+
                         break;
                     case 2: // right
                         // take all the things that are at this position and add them to the context menu
@@ -466,16 +573,38 @@ $(function () {
                                 if (rect.pointWithin(cursor.mousePos)) {
                                     var tileId = value[i].tileId;
                                     var scenery = Game.sceneryMap.get(sprite.id);
-                                    for (var i = 0; i < Game.ContextMenu.contextOptions.length; ++i) {
-                                        var contextOption = Game.ContextMenu.contextOptions[i];
-                                        if (scenery.attributes & contextOption.id) {
+                                    
+                                    if (room.player.inventory.slotInUse) {
+                                        Game.ContextMenu.push([{
+                                            id: room.player.id,
+                                            action: "use",
+                                            src: room.player.inventory.slotInUse.item.id,
+                                            dest: tileId,
+                                            type: "scenery",
+                                            label: "use {0} -> {1}".format(room.player.inventory.slotInUse.item.name, scenery.name)
+                                        }]);
+                                    } else {
+                                        // add the leftclick option first (if there is one)
+                                        if (scenery.leftclickOption != 0) {
                                             Game.ContextMenu.push([{
-                                                action: contextOption.name, 
-                                                objectId: scenery.id, 
-                                                tileId: tileId, 
-                                                objectName: scenery.name, 
+                                                action: Game.ContextMenu.getContextOptionById(scenery.leftclickOption).name,
+                                                objectId: scenery.id,
+                                                tileId: tileId,
+                                                objectName: scenery.name,
                                                 type: "scenery"
                                             }]);
+                                        }
+                                        for (var i = 0; i < Game.ContextMenu.contextOptions.length; ++i) {
+                                            var contextOption = Game.ContextMenu.contextOptions[i];
+                                            if (scenery.otherOptions & contextOption.id) {
+                                                Game.ContextMenu.push([{
+                                                    action: contextOption.name, 
+                                                    objectId: scenery.id, 
+                                                    tileId: tileId, 
+                                                    objectName: scenery.name, 
+                                                    type: "scenery"
+                                                }]);
+                                            }
                                         }
                                     }
                                 }
@@ -487,8 +616,12 @@ $(function () {
             // all cases
             switch (e.button) {
                 case 0: // left
-                    if (Game.ContextMenu.active)
-                        Game.ContextMenu.handleMenuSelect();
+                    // if (Game.ContextMenu.active) {
+                    //     var menuItem = Game.ContextMenu.handleMenuSelect();
+                    //     if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
+                    //         Game.getPlayer().inventory.handleSlotAction(menuItem.action, menuItem.originalPos);
+                    //     }
+                    // }
                     break;
                 case 2: // right
                     if (!Game.ContextMenu.active)
@@ -542,6 +675,7 @@ $(function () {
         if (Game.state === 'game') {
             Game.scale += (Game.targetScale - Game.scale) * STEP * 10;
             room.process(STEP);
+            cursor.process(STEP);
             camera.update(STEP);
             Game.ChatBox.process(STEP);
             Game.ContextMenu.process(STEP);

@@ -1,8 +1,12 @@
 (function() {
     function Cursor(drawx, drawy) {
         this.mousePos = {};
+        this.clickPos = {};
         this.drawpos = {x: drawx || 10, y: drawy || 20};
         this.size = 32;
+        this.cursorMaxLife = 1;
+        this.cursorLife = 0;
+        this.actionClick = false;
     }
     Cursor.prototype.pos = function() {
         return this.mousePos;
@@ -12,16 +16,34 @@
         this.mousePos.y = pos.y;
     }
     Cursor.prototype.draw = function(context, xview, yview) {
-        context.save();
-        context.textAlign = "center";
-        context.strokeStyle = "rgba(255, 255, 255, 0.2)";
-        context.fillStyle = "rgba(255, 255, 255, 0.1)";
-        context.lineWidth = 3;
-        var realx = ~~(this.mousePos.x);
-        var realy = ~~(this.mousePos.y);
-        context.fillRect((~~(realx / this.size) * this.size) - xview, (~~(realy / this.size) * this.size) - yview, this.size, this.size);
-        context.strokeRect((~~(realx / this.size) * this.size) - xview, (~~(realy / this.size) * this.size) - yview, this.size, this.size);
-        context.restore();
+        // context.save();
+        // context.textAlign = "center";
+        // context.strokeStyle = "rgba(255, 255, 255, 0.2)";
+        // context.fillStyle = "rgba(255, 255, 255, 0.1)";
+        // context.lineWidth = 3;
+        // var realx = ~~(this.mousePos.x);
+        // var realy = ~~(this.mousePos.y);
+        // context.fillRect((~~(realx / this.size) * this.size) - xview, (~~(realy / this.size) * this.size) - yview, this.size, this.size);
+        // context.strokeRect((~~(realx / this.size) * this.size) - xview, (~~(realy / this.size) * this.size) - yview, this.size, this.size);
+        // context.restore();
+        if (this.cursorLife > 0) {
+            context.save();
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            context.font = "15px Consolas";
+            context.fillStyle = "rgba(255, {0}, 0, {1}".format(this.actionClick ? 0 : 255, this.cursorLife);
+            context.fillText("x", this.clickPos.x - xview, this.clickPos.y - yview);
+            context.restore();
+        }
+    }
+    Cursor.prototype.process = function(dt) {
+        if (this.cursorLife > 0)
+            this.cursorLife -= dt;
+    }
+    Cursor.prototype.handleClick = function(actionClick) {
+        this.cursorLife = this.cursorMaxLife;
+        this.clickPos = {x: this.mousePos.x, y: this.mousePos.y};
+        this.actionClick = actionClick;
     }
     
     Game.Cursor = Cursor;

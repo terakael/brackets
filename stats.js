@@ -38,7 +38,7 @@
 			total += this.exp2lvl(this.stats[i].exp);
 		}
 		return total;
-	}
+    }
     Stats.prototype.draw = function(ctx, xview, yview) {
         ctx.font = "15px Consolas";
         ctx.textAlign = "left";

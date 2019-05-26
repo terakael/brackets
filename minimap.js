@@ -11,14 +11,12 @@
 		constructor: Minimap,
 		draw: function(context, xview, yview) {
 			// minimap background
-			if (Game.currentMap.image) {
-				context.drawImage(Game.currentMap.image, 
-								  (Game.currentMap.image.width * ((Game.getPlayer().x - this.radius) / Game.currentMap.width)), 
-								  (Game.currentMap.image.height * ((Game.getPlayer().y - this.radius) / Game.currentMap.height)), 
-								  Game.currentMap.image.width * ((this.radius*2)/Game.currentMap.width), 
-								  Game.currentMap.image.height * ((this.radius*2)/Game.currentMap.height), 
-								  this.rect.left, this.rect.top, this.rect.width, this.rect.height);
-			}
+			context.drawImage(this.image, 
+								(Game.currentMap.image.width * ((Game.getPlayer().x - this.radius) / Game.currentMap.width)), 
+								(Game.currentMap.image.height * ((Game.getPlayer().y - this.radius) / Game.currentMap.height)), 
+								Game.currentMap.image.width * ((this.radius*2)/Game.currentMap.width), 
+								Game.currentMap.image.height * ((this.radius*2)/Game.currentMap.height), 
+								this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 
 			context.fillStyle = "#050";
 			context.strokeStyle = "#666";
@@ -65,6 +63,24 @@
 		},
 		setRect: function(x, y, w, h) {
 			this.rect = new Game.Rectangle(x, y, w, h);
+		},
+		bakeMinimap: function(image, sceneryInstances) {
+			if (0) {
+				var ctx = document.createElement("canvas").getContext("2d");
+				ctx.canvas.width = image.width;
+				ctx.canvas.height = image.height;
+				ctx.drawImage(image, 0, 0, ctx.canvas.width, ctx.canvas.height);
+				sceneryInstances.forEach(function(value, key, map) {
+					for (var i = 0; i < value.length; ++i) {
+						value[i].sprite.draw(ctx, value[i].x, key);
+				}});
+
+				this.image = new Image();
+				this.image.src = ctx.canvas.toDataURL("image/png");// this is slow af, takes over a second
+				ctx = null;
+			} else {
+				this.image = new Image();
+			}
 		}
 	};
 	

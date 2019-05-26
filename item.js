@@ -3,7 +3,8 @@
 		this.id = obj.id;
 		this.name = obj.name;
 		this.description = obj.description;
-		this.contextOptions = obj.contextOptions;
+		this.leftclickOption = obj.leftclickOption;
+		this.otherOptions = obj.otherOptions;
 		this.spriteFrame = obj.spriteFrame;
 
 	};

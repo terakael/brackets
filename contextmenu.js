@@ -13,11 +13,39 @@
     	active: false,
     	menuOptions: [],
 		menuOptionHeight: 20,
+		leftclickMenuOption: null,
+		leftclickPos: null,
 		contextOptions: [],
-		
+
         draw: function(ctx) {
-    		if (!this.active)
-	    		return;
+    		if (!this.active) {
+				if (this.leftclickMenuOption != null) {
+					ctx.save();
+
+					var label = this.leftclickMenuOption.label || "{0} {1}".format(this.leftclickMenuOption.action, this.leftclickMenuOption.objectName);
+
+					var rect = new Game.Rectangle(
+						this.leftclickPos.x, 
+						this.leftclickPos.y,
+						label.length * 9 + 10,
+						this.menuOptionHeight);
+
+					if (rect.left + rect.width > Game.boundingRect.right)
+						rect.left = Game.boundingRect.right - rect.width - this.toleranceMargin;
+
+					ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+					ctx.fillRect(rect.left, rect.top, rect.width, rect.height);
+
+					ctx.strokeStyle = "red";
+					ctx.strokeRect(rect.left + 0.5, rect.top + 0.5, rect.width, rect.height);
+					
+					ctx.fillStyle = "white";
+					ctx.fillText(label, rect.left + 10, rect.top + rect.height - 5);
+					
+					ctx.restore();
+				}
+				return;
+			}
 
 	    	ctx.save();
 	    	ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
@@ -32,7 +60,7 @@
 	    	ctx.strokeRect(this.rect.left + 0.5, this.rect.top + 0.5, this.rect.width, this.rect.height);
 
 	    	for (var i = 0; i < this.menuOptions.length; ++i) {
-	    		ctx.fillStyle = i === selectedOption ? "yellow" : "white";
+	    		ctx.fillStyle = this.menuOptions[i].fillStyle || (i === selectedOption ? "yellow" : "white");
 	    		ctx.fillText(this.menuOptions[i].label, this.rect.left + 10, this.rect.top + (this.menuOptionHeight * (i+1)) - 5);
 	    	}
 
@@ -52,6 +80,8 @@
     	show: function(x, y, xview, yview) {
     		if (this.active)
 				return;
+
+			this.originalPos = Game.mousePos;
 				
             if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
     	       this.menuOptions.push({label: "walk here", id: Game.getPlayer().id, action: "move", x: x, y: y, priority: 2});
@@ -114,40 +144,18 @@
 	    		this.menuOptions.push(obj[i]);
 			}
     	},
-        addOptionsByInventorySlot: function(slot) {
-            // slot.item has a contextOptions int.  parse that to retrieve the correct actions
-			var options = []
-
-			for (var i = 0; i < this.contextOptions.length; ++i) {
-				var contextOption = this.contextOptions[i];
-				if (slot.item.contextOptions & contextOption.id)
-					options.push({
-						action: contextOption.name, 
-						slot: slot.id, 
-						objectId: slot.item.id, 
-						objectName: slot.item.name, 
-						type: "item", 
-						priority: contextOption.priority
-					});
-			}
-
-            if (options.length > 0)
-                this.push(options);
-        },
-        executeFirstOption: function() {
-        	// left-click event based usually
-        	if (this.menuOptions.length == 0)
-        		return;
-        	Game.ws.send(this.menuOptions[0]);
-        },
         handleMenuSelect: function() {
         	// send action based on context menu selection
             var menuItem = Game.ContextMenu.getSelectedAction();
 			if (menuItem.action === "cancel") {
 				// do nothing
-            } else {
+            } else if (menuItem.action === "use" && !Game.currentPlayer.inventory.slotInUse) {
+				menuItem.originalPos = this.originalPos;
+			} else {
                 Game.ws.send(menuItem);
-            }
+			}
+			
+			return menuItem;
 		},
 		loadContextOptions: function(obj) {
 			this.contextOptions = obj;
@@ -159,6 +167,17 @@
 				}
 			}
 			return 0;
+		},
+		getContextOptionById: function(id) {
+			for (var i = 0; i < this.contextOptions.length; ++i) {
+				if (this.contextOptions[i].id === id)
+					return this.contextOptions[i];
+			}
+			return null;
+		},
+		setLeftclick: function(currentMousePos, obj) {
+			this.leftclickPos = currentMousePos;
+			this.leftclickMenuOption = obj;
 		}
     };
     

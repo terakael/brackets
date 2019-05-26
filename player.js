@@ -10,12 +10,13 @@
             this.name = "null";
 			
 			// move speed in pixels per second
-			this.speed = 53.3;		
+			this.speed = 53.3;
 			
 			// render properties
 			this.width = 32;
 			this.height = 32;
             this.stats = new Game.Stats();
+            this.combatLevel = 0;
             this.inventory = new Game.Inventory();
             this.chatMessage = "";// the text over the player's head
             this.chatMessageTimer = 0;// counter until the chat message is cleared
@@ -208,7 +209,12 @@
             var options = [];
 
             for (var i in this.contextActions) {
-                options.push({action: this.contextActions[i], objectId: this.id, objectName: this.name});
+                options.push({
+                    action: this.contextActions[i], 
+                    objectId: this.id, 
+                    objectName: this.name,
+                    label: "{0} {1} (lvl {2})".format(this.contextActions[i], this.name, this.combatLevel)
+                });
             }
 
             return options;
