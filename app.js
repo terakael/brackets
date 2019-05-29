@@ -234,7 +234,19 @@ $(function () {
                     });
                 }
                 else if (obj["action"] === "show_smithing_table") {
-                    Game.ChatBox.add("todo show smithing table");
+                    Game.activeUiWindow = uiWindow;
+                    // TODO add buttons based on message contents
+
+                    var buttons = [
+                        new Game.UIButton("helmet"),
+                        new Game.UIButton("shield"),
+                        new Game.UIButton("platebody"),
+                        new Game.UIButton("platelegs"),
+                        new Game.UIButton("sword"),
+                        new Game.UIButton("daggers"),
+                        new Game.UIButton("hammer")
+                    ];
+                    uiWindow.setButtons(buttons);
                 }
             }
         }
@@ -356,8 +368,6 @@ $(function () {
                 }
             }
             
-            context.fillStyle = "#f00";
-
             // add everything to the draw map so we can draw in the correct order
             var drawMap = new Map();
             
@@ -485,7 +495,11 @@ $(function () {
         }
     };
     canvas.addEventListener("mousedown", function (e) {
-        if (Game.state === 'game') {
+        if (Game.activeUiWindow) {
+            Game.activeUiWindow.onMouseDown(e);
+        }
+
+        else if (Game.state === 'game') {
             if (Game.ContextMenu.active && e.button == 0) {// left
                 var menuItem = Game.ContextMenu.handleMenuSelect();
                 if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
@@ -631,7 +645,11 @@ $(function () {
         }
     }, false);
     canvas.addEventListener("mouseup", function (e) {
-        if (Game.state === 'game') {
+        if (Game.activeUiWindow) {
+            Game.activeUiWindow.onMouseUp(e);
+        }
+
+        else if (Game.state === 'game') {
             switch (e.button) {
                 case 0:
                     // this check is so when we right-click and select in the inventory, we don't select the slot under the context menu
@@ -659,6 +677,7 @@ $(function () {
     stone.src = "img/stone.jpg";
     stone.onload = function () {
         hudcamera.pat = context.createPattern(stone, "repeat");
+        uiWindow.background = hudcamera.pat;
     };
     // setup the magic camera !!!
     var camera = new Game.Camera(room.player.x, room.player.y, canvas.width - 250, canvas.height, room.map.width, room.map.height);
@@ -670,6 +689,13 @@ $(function () {
     var cursor = new Game.Cursor((hudcamera.xView + hudcamera.wView) - 10, hudcamera.yView + 20);
     var grid = new Game.Grid();
     grid.createGridLines(camera.viewportRect.width, camera.viewportRect.height);
+
+    var uiWidth = (canvas.width - 250) / 2;
+    var uiHeight = canvas.height / 2;
+    var uix = uiWidth - (uiWidth / 2);
+    var uiy = uiHeight - (uiHeight / 2);
+    var uiWindow = new Game.UIWindow(new Game.Rectangle(uix, uiy, uiWidth, uiHeight), hudcamera.pat);
+    
     // Game update function
     var update = function () {
         if (Game.state === 'game') {
@@ -679,15 +705,18 @@ $(function () {
             camera.update(STEP);
             Game.ChatBox.process(STEP);
             Game.ContextMenu.process(STEP);
+
+            if (Game.activeUiWindow)
+                Game.activeUiWindow.process(STEP);
         }
         else if (Game.state === 'logonscreen') {
             Game.LogonScreen.process(STEP);
         }
     };
-    var counter = 0;
+
     // Game draw function
     var draw = function () {
-        if (Game.state === 'game') {
+        if (Game.state === 'game' || Game.state === 'uiwindow') {
             // redraw all room objects
             context.fillStyle = "#000";
             context.fillRect(0, 0, camera.viewportRect.width * Game.scale, camera.viewportRect.height * Game.scale);
@@ -706,6 +735,10 @@ $(function () {
                 context.restore();
             }
             Game.ChatBox.draw(context, 0, canvas.height);
+
+            if (Game.activeUiWindow)
+                Game.activeUiWindow.draw(context);
+            
             Game.ContextMenu.draw(context);
         }
         else if (Game.state === 'logonscreen') {
@@ -764,6 +797,10 @@ window.addEventListener("keydown", function (e) {
     }
     else if (Game.state === 'game') {
         switch (event.keyCode) {
+            case 27: // escape
+                if (Game.activeUiWindow)
+                    Game.activeUiWindow = null;
+                break;
             case 38: // up
                 Game.targetScale += 0.1;
                 if (Game.targetScale > 2)
