@@ -66,6 +66,10 @@ $(function () {
                 }
             }
             else {
+                if (obj["responseText"].length > 0 && Game.state === "game") {
+                    Game.ChatBox.add(obj["responseText"]);
+                }
+
                 if (obj["action"] === "logon") {
                     document.title = obj["name"];
                     var playerXY = tileIdToXY(obj["tileId"]);
@@ -235,18 +239,16 @@ $(function () {
                 }
                 else if (obj["action"] === "show_smithing_table") {
                     Game.activeUiWindow = uiWindow;
-                    // TODO add buttons based on message contents
 
-                    var buttons = [
-                        new Game.UIButton("helmet"),
-                        new Game.UIButton("shield"),
-                        new Game.UIButton("platebody"),
-                        new Game.UIButton("platelegs"),
-                        new Game.UIButton("sword"),
-                        new Game.UIButton("daggers"),
-                        new Game.UIButton("hammer")
-                    ];
+                    var buttons = [];
+                    for (var i = 0; i < obj["smithingOptions"].length; ++i) {
+                        buttons.push(new Game.UIButton(obj["smithingOptions"][i]));
+                    }
                     uiWindow.setButtons(buttons);
+                    uiWindow.otherInfo = {
+                        storedCoal: obj["storedCoal"],
+                        furnaceTile: obj["furnaceTile"]
+                    };
                 }
             }
         }

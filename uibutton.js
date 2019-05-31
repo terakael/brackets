@@ -1,9 +1,15 @@
 (function() {
-    function UIButton(title) {
+    var ButtonStates = {
+        off: 0,
+        hover: 1,
+        click: 2
+    }
+
+    function UIButton(buttonInfo) {
         this.rect = new Game.Rectangle(0, 0, 100, 75);
 
-        this.state = "off";
-        this.title = title;
+        this.state = ButtonStates.off;
+        this.buttonInfo = buttonInfo;
 
         this.fillStyle = "#000";
         this.hoverFillStyle = "#222";
@@ -23,31 +29,55 @@
         
         this.setFillStrokeStyle(context);
 
-        var offsetX = this.state === "click" ? 2 : 0;
-        var offsetY = this.state === "click" ? 2 : 0;
+        var buttonOffsetX = this.state === ButtonStates.click ? 2 : 0;
+        var buttonOffsetY = this.state === ButtonStates.click ? 2 : 0;
 
-        // context.fillStyle = this.hover ? this.hoverFillStyle : this.fillStyle;
-        // context.strokeStyle = this.hover ? this.hoverStrokeStyle : this.strokeStyle;
-        context.fillRect(this.rect.left + offsetX, this.rect.top + offsetY, this.rect.width, this.rect.height);
-        context.strokeRect(this.rect.left + offsetX, this.rect.top + offsetY, this.rect.width, this.rect.height);
+        context.fillRect(this.rect.left + buttonOffsetX, this.rect.top + buttonOffsetY, this.rect.width, this.rect.height);
+        context.strokeRect(this.rect.left + buttonOffsetX, this.rect.top + buttonOffsetY, this.rect.width, this.rect.height);
 
         // TODO button title, icon etc
-        context.textAlign = "center";
+        context.textAlign = "right";
         context.textBaseline = "top";
         context.font = "15px Consolas";
         context.fillStyle = "white";
-        context.fillText(this.title, this.rect.left + (this.rect.width / 2) + offsetX, this.rect.top + 10 + offsetY);
+        var titleLines = this.buttonInfo.itemName.split(' ');
+        for (var i = 0; i < titleLines.length; ++i)
+            context.fillText(titleLines[i], this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + (10 * i) + buttonOffsetY + 5);
+
+        // draw the icon
+        var drawItem = Game.SpriteManager.getItemById(this.buttonInfo.itemId);
+        var itemOffsetX = drawItem.spriteFrame.getCurrentFrame().width/2;
+        var itemOffsetY = drawItem.spriteFrame.getCurrentFrame().height/2;
+        drawItem.draw(context, this.rect.left + itemOffsetX + buttonOffsetX, this.rect.top + itemOffsetY + buttonOffsetY);
+
+        context.textAlign = "left";
+        context.textBaseline = "middle";
+        // draw the materials
+        for (var i = 1; i < 5; ++i) {
+            var material = "material" + i;
+            if (!this.buttonInfo.hasOwnProperty(material))
+                break;
+
+            if (this.buttonInfo[material] === 0)
+                continue;
+
+            var materialItem = Game.SpriteManager.getItemById(this.buttonInfo[material]);
+            var posx = this.rect.left + ((i - 1) * 45) + materialItem.spriteFrame.getCurrentFrame().width / 2;
+            var posy = this.rect.bottom - materialItem.spriteFrame.getCurrentFrame().height / 2;
+            materialItem.draw(context, posx + buttonOffsetX, posy + buttonOffsetY);
+            context.fillText("x" + this.buttonInfo["count" + i] || 0, posx + 10 + buttonOffsetX, posy + buttonOffsetY);
+        }
         
         context.restore();
     }
 
     UIButton.prototype.setFillStrokeStyle = function(context) {
         switch (this.state) {
-            case "hover":
+            case ButtonStates.hover:
                 context.fillStyle = this.hoverFillStyle;
                 context.strokeStyle = this.hoverStrokeStyle;
                 break;
-            case "click":
+            case ButtonStates.click:
                 context.fillStyle = this.clickFillStyle;
                 context.strokeStyle = this.strokeFillStyle;
                 break;
@@ -60,23 +90,33 @@
 
     UIButton.prototype.process = function(dt) {
         if(this.rect.pointWithin(Game.mousePos)) {
-            if (this.state != "click") 
-                this.state = "hover";
+            if (this.state !== ButtonStates.click) 
+                this.state = ButtonStates.hover;
         } else {
-            this.state = "off";
+            this.state = ButtonStates.off;
         }
     }
 
     UIButton.prototype.onMouseDown = function(e) {
         if (this.rect.pointWithin(Game.mousePos)) {
             // todo send message
-            this.state = "click";
+            this.state = ButtonStates.click;
         }
     }
 
     UIButton.prototype.onMouseUp = function(e) {
-        if (this.state === "click")
-            this.state = "off";
+        if (this.state === ButtonStates.click) {
+            this.state = ButtonStates.off;
+
+            Game.ws.send({
+                id: Game.currentPlayer.id,
+                action: "smith",
+                itemId: this.buttonInfo.itemId
+            });
+
+            // close the window
+            Game.activeUiWindow = null;
+        }
     }
 
     Game.UIButton = UIButton;

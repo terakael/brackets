@@ -3,15 +3,7 @@
         this.rect = rect;
         this.background = background;
         this.uiButtons = null;
-        // [
-        //     "helmet (2 ores)", 
-        //     "platebody (5 ores)", 
-        //     "platelegs (3 ores)", 
-        //     "shield (5 ores)", 
-        //     "sword (2 ores)", 
-        //     "hammer (3 ores)", 
-        //     "daggers (3 ores)"
-        // ];
+        this.otherInfo = {};
     }
 
     UIWindow.prototype.setButtons = function(buttons) {
@@ -44,7 +36,7 @@
         }
         
         context.textAlign = "right";
-        context.fillText("stored coal: 281", this.rect.left + this.rect.width - 10, this.rect.top + this.rect.height - 8);
+        context.fillText("stored coal: " + this.otherInfo.storedCoal, this.rect.left + this.rect.width - 10, this.rect.top + this.rect.height - 8);
         context.restore();
     }
 
