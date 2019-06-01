@@ -1,6 +1,7 @@
 (function() {
 	function SpriteFrame(obj) {
 		//{"id":1,"sprite_map_id":1,"x":0,"y":140,"w":32,"h":32,"margin":0,"frame_count":1,"animation_type_id":1}
+		this.frameData = obj;
 		this.id = obj.id;
 		this.spriteMapId = obj.sprite_map_id;
 		this.margin = obj.margin;
@@ -9,7 +10,7 @@
 		this.forwards = true;
 		this.frameSpeed = 0.1;
 		this.frameTimer = 0.1;
-		this.anchor = {x: 0.5, y: 0.5};
+		this.anchor = {x: obj.anchorX || 0.5, y: obj.anchorY || 0.5};
 
 		this.frames = [];
 		for (var i = 0; i < this.frameCount; ++i) {

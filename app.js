@@ -93,6 +93,7 @@ $(function () {
                     for (var i in obj["players"]) {
                         room.addPlayer(obj["players"][i]);
                     }
+                    
                     room.loadBackground(Game.SpriteManager.getSpriteMapByName("grass"));
                     room.init();
                     Game.ChatBox.add("Welcome to the game, {0}.".format(obj["name"]));
@@ -248,6 +249,19 @@ $(function () {
                         furnaceTile: obj["furnaceTile"]
                     };
                 }
+                else if (obj["action"] === "npc_full_update") {
+                    for (var i in obj["npcs"]) {
+                        room.addNPC(obj["npcs"][i]);
+                    }
+                }
+                else if (obj["action"] === "npc_update") {
+                    for (var i = 0; i < room.npcs.length; ++i) {
+                        if (room.npcs[i].id === obj["instanceId"]) {
+                            room.npcs[i].setDestPosAndSpeedByTileId(obj["tileId"]);
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -270,6 +284,7 @@ $(function () {
         show: 0,
         currentShow: 0,
         otherPlayers: [],
+        npcs: [],
         sceneryInstances: new Map(),
         drawableSceneryMap: new Map(),
         t: new Game.Transform(),
@@ -311,7 +326,16 @@ $(function () {
                     var xy = tileIdToXY(sceneryJson[i].instances[j]);
                     if (!this.sceneryInstances.has(xy.y))
                         this.sceneryInstances.set(xy.y, []);
-                    this.sceneryInstances.get(xy.y).push({x: xy.x, tileId: sceneryJson[i].instances[j], sprite: spriteFrame});
+
+                    this.sceneryInstances.get(xy.y).push({
+                        id: sceneryJson[i].id,
+                        name: sceneryJson[i].name,
+                        x: xy.x, 
+                        tileId: sceneryJson[i].instances[j], 
+                        leftclickOption: sceneryJson[i].leftclickOption,
+                        sprite: spriteFrame,
+                        type: "scenery"
+                    });
                 }
             }
         },
@@ -326,6 +350,10 @@ $(function () {
                 player.setAnimations(obj["animations"]);
                 this.otherPlayers.push(player);
             }
+        },
+        addNPC: function(obj) {
+            var npc = new Game.NPC(obj);
+            this.npcs.push(npc);
         },
         draw: function (ctx, xview, yview) {
             if (room.currentShow === 0)
@@ -375,16 +403,42 @@ $(function () {
             // add the current player
             if (!drawMap.has(this.player.y))
                 drawMap.set(this.player.y, []);
-            drawMap.get(this.player.y).push({x: this.player.x, sprite: this.player.getCurrentSpriteFrame()});
+            drawMap.get(this.player.y).push({
+                id: this.player.id,
+                name: this.player.name,
+                x: this.player.x, 
+                sprite: this.player.getCurrentSpriteFrame(),
+                type: "player",
+                leftclickOption: 0
+            });
 
             // add the other players
             for (var i in this.otherPlayers) {
                 if (!drawMap.has(this.otherPlayers[i].y))
                     drawMap.set(this.otherPlayers[i].y, []);
-                drawMap.get(this.otherPlayers[i].y).push({x: this.otherPlayers[i].x, sprite: this.otherPlayers[i].getCurrentSpriteFrame()});
+                drawMap.get(this.otherPlayers[i].y).push({
+                    id: this.otherPlayers[i].id,
+                    name: this.otherPlayers[i].name,
+                    x: this.otherPlayers[i].x, 
+                    sprite: this.otherPlayers[i].getCurrentSpriteFrame(),
+                    type: "player",
+                    leftclickOption: 0
+                });
             }
 
-            // TODO add the NPCs
+            // add the NPCs
+            for (var i in this.npcs) {
+                if (!drawMap.has(this.npcs[i].pos.y))
+                    drawMap.set(this.npcs[i].pos.y, []);
+                drawMap.get(this.npcs[i].pos.y).push({
+                    id: this.npcs[i].id,
+                    name: this.npcs[i].name,
+                    x: this.npcs[i].pos.x, 
+                    sprite: this.npcs[i].getCurrentSpriteFrame(),
+                    type: "npc",
+                    leftclickOption: this.npcs[i].leftclickOption
+                });
+            }
 
             // add scenery
             this.compileDrawableSceneryMap(xview, yview);
@@ -409,27 +463,25 @@ $(function () {
                         // mouse position needs to account for scale because the whole context is currently scaled
                         if (rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
                             Game.worldCameraRect.pointWithin(Game.mousePos)) {
-                            var scenery = Game.sceneryMap.get(value[i].sprite.id);
-
                             if (Game.currentPlayer.inventory.slotInUse) {
                                 Game.ContextMenu.setLeftclick(Game.mousePos, {
                                     id: Game.currentPlayer.id,
                                     action: "use",
                                     src: Game.currentPlayer.inventory.slotInUse.item.id,
                                     dest: value[i].tileId,
-                                    type: "scenery",
-                                    label: "use {0} -> {1}".format(Game.currentPlayer.inventory.slotInUse.item.name, scenery.name)
+                                    type: value[i].type,
+                                    label: "use {0} -> {1}".format(Game.currentPlayer.inventory.slotInUse.item.name, value[i].name)
                                 });
                             } else {
-                                if (scenery.leftclickOption != 0) {
-                                    var contextOpt = Game.ContextMenu.getContextOptionById(scenery.leftclickOption);
+                                if (value[i].leftclickOption != 0) {
+                                    var contextOpt = Game.ContextMenu.getContextOptionById(value[i].leftclickOption);
                                     Game.ContextMenu.setLeftclick(Game.mousePos, {
                                         id: Game.currentPlayer.id,
                                         action: contextOpt.name,
-                                        objectName: scenery.name,
-                                        objectId: scenery.id,
+                                        objectName: value[i].name,
+                                        objectId: value[i].id,
                                         tileId: value[i].tileId,
-                                        type: "scenery"
+                                        type: value[i].type
                                     });
                                 }
                             }
@@ -456,6 +508,9 @@ $(function () {
             this.player.process(dt, this.width, this.height);
             for (var i in this.otherPlayers) {
                 this.otherPlayers[i].process(dt, this.width, this.height);
+            }
+            for (var i in this.npcs) {
+                this.npcs[i].process(dt);
             }
             Game.Minimap.setOtherPlayers(this.otherPlayers);
             Game.Minimap.setGroundItems(this.groundItems);
