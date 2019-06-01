@@ -114,5 +114,12 @@
     Stats.prototype.showHealthBar = function() {
         this.healthBarTimer = 5;
     }
+    Stats.prototype.getLevelByStat = function(stat) {
+        for (var i = 0; i < this.stats.length; ++i) {
+            if (this.stats[i].name === stat)
+                return this.exp2lvl(this.stats[i].exp);
+        }
+        return 0;
+    }
     window.Game.Stats = Stats;
 }());

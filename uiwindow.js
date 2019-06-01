@@ -8,8 +8,16 @@
 
     UIWindow.prototype.setButtons = function(buttons) {
         this.uiButtons = buttons;
-        var initialBuffer = 50;
+        var initialBuffer = 30;
         var buffer = 15;
+
+        let buttonRows = Math.floor(this.uiButtons.length / 4) + 1;
+        let x = this.rect.left;
+        let h = initialBuffer + (buttonRows * buffer) + (buttonRows * this.uiButtons[0].rect.height);
+        let y = (Game.worldCameraRect.height / 2) - (h / 2);
+        let w = this.rect.width;
+        this.rect.set(x, y, w, h);
+
         for (var i = 0; i < this.uiButtons.length; ++i) {
             this.uiButtons[i].setLocalPosition(
                 this.rect.left + buffer + ((i % 4) * buffer) + ((i % 4) * this.uiButtons[i].rect.width),
@@ -36,6 +44,7 @@
         }
         
         context.textAlign = "right";
+        context.font = "12px Consolas";
         context.fillText("stored coal: " + this.otherInfo.storedCoal, this.rect.left + this.rect.width - 10, this.rect.top + this.rect.height - 8);
         context.restore();
     }

@@ -2,13 +2,18 @@
     var ButtonStates = {
         off: 0,
         hover: 1,
-        click: 2
+        click: 2,
+        disabled: 3
     }
 
     function UIButton(buttonInfo) {
         this.rect = new Game.Rectangle(0, 0, 100, 75);
 
-        this.state = ButtonStates.off;
+        if (Game.currentPlayer.stats.getLevelByStat("smith") < buttonInfo.level)
+            this.state = ButtonStates.disabled;
+        else
+            this.state = ButtonStates.off;
+            
         this.buttonInfo = buttonInfo;
 
         this.fillStyle = "#000";
@@ -35,23 +40,38 @@
         context.fillRect(this.rect.left + buttonOffsetX, this.rect.top + buttonOffsetY, this.rect.width, this.rect.height);
         context.strokeRect(this.rect.left + buttonOffsetX, this.rect.top + buttonOffsetY, this.rect.width, this.rect.height);
 
-        // TODO button title, icon etc
         context.textAlign = "right";
         context.textBaseline = "top";
-        context.font = "15px Consolas";
-        context.fillStyle = "white";
-        var titleLines = this.buttonInfo.itemName.split(' ');
-        for (var i = 0; i < titleLines.length; ++i)
-            context.fillText(titleLines[i], this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + (10 * i) + buttonOffsetY + 5);
+        context.font = "12px Consolas";
+        context.fillStyle = Game.currentPlayer.stats.getLevelByStat("smith") < this.buttonInfo.level ? "red" : "white";
+
+        // required smithing level
+        context.fillText("lvl: " + this.buttonInfo.level, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
 
         // draw the icon
         var drawItem = Game.SpriteManager.getItemById(this.buttonInfo.itemId);
-        var itemOffsetX = drawItem.spriteFrame.getCurrentFrame().width/2;
-        var itemOffsetY = drawItem.spriteFrame.getCurrentFrame().height/2;
-        drawItem.draw(context, this.rect.left + itemOffsetX + buttonOffsetX, this.rect.top + itemOffsetY + buttonOffsetY);
+        var itemWidth = drawItem.spriteFrame.getCurrentFrame().width;
+        var itemHeight = drawItem.spriteFrame.getCurrentFrame().height;
+        //drawItem.draw(context, this.rect.left + (this.rect.width / 2) + buttonOffsetX, this.rect.top + itemHeight + buttonOffsetY);
+
+        let spriteFrame = drawItem.spriteFrame.getCurrentFrame();
+        let spriteMap = Game.SpriteManager.getSpriteMapById(drawItem.spriteFrame.spriteMapId);
+        context.drawImage(spriteMap, 
+            spriteFrame.left, 
+            spriteFrame.top, 
+            spriteFrame.width, 
+            spriteFrame.height, 
+            this.rect.left + (this.rect.width / 2) + buttonOffsetX - (itemWidth * 1.5), 
+            this.rect.top + buttonOffsetY, 
+            itemWidth * 1.5, 
+            itemHeight * 1.5);
 
         context.textAlign = "left";
         context.textBaseline = "middle";
+        context.font = "15px Consolas";
+
+        // TODO check if player has required materials; change fillstyle based on this
+        context.fillStyle = "white";
         // draw the materials
         for (var i = 1; i < 5; ++i) {
             var material = "material" + i;
@@ -66,6 +86,11 @@
             var posy = this.rect.bottom - materialItem.spriteFrame.getCurrentFrame().height / 2;
             materialItem.draw(context, posx + buttonOffsetX, posy + buttonOffsetY);
             context.fillText("x" + this.buttonInfo["count" + i] || 0, posx + 10 + buttonOffsetX, posy + buttonOffsetY);
+        }
+
+        if (this.state === ButtonStates.disabled) {
+            context.fillStyle = "rgba(50, 50, 50, 0.5)";
+            context.fillRect(this.rect.left + buttonOffsetX, this.rect.top + buttonOffsetY, this.rect.width, this.rect.height);
         }
         
         context.restore();
@@ -89,15 +114,28 @@
     }
 
     UIButton.prototype.process = function(dt) {
+        if (this.state === ButtonStates.disabled)
+            return;
+
         if(this.rect.pointWithin(Game.mousePos)) {
             if (this.state !== ButtonStates.click) 
                 this.state = ButtonStates.hover;
+            
+            Game.ContextMenu.setLeftclick(Game.mousePos, {
+                id: Game.currentPlayer.id,
+                action: "smith", 
+                objectName: this.buttonInfo.itemName,
+                itemId: this.buttonInfo.itemId
+            });
         } else {
             this.state = ButtonStates.off;
         }
     }
 
     UIButton.prototype.onMouseDown = function(e) {
+        if (this.state === ButtonStates.disabled)
+            return;
+    
         if (this.rect.pointWithin(Game.mousePos)) {
             // todo send message
             this.state = ButtonStates.click;
@@ -105,6 +143,9 @@
     }
 
     UIButton.prototype.onMouseUp = function(e) {
+        if (this.state === ButtonStates.disabled)
+            return;
+
         if (this.state === ButtonStates.click) {
             this.state = ButtonStates.off;
 

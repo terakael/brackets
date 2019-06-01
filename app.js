@@ -229,8 +229,6 @@ $(function () {
                     Game.ChatBox.add("you start mining the rock...");
                 }
                 else if (obj["action"] === "finish_mining") {
-                    Game.ChatBox.add("you mine the rock.");
-
                     // keep mining automatically
                     Game.ws.send({
                         action: "mine",
@@ -244,7 +242,7 @@ $(function () {
                     for (var i = 0; i < obj["smithingOptions"].length; ++i) {
                         buttons.push(new Game.UIButton(obj["smithingOptions"][i]));
                     }
-                    uiWindow.setButtons(buttons);
+                    uiWindow.setButtons(buttons.sort((a, b) => a.buttonInfo.level - b.buttonInfo.level));
                     uiWindow.otherInfo = {
                         storedCoal: obj["storedCoal"],
                         furnaceTile: obj["furnaceTile"]
@@ -347,25 +345,26 @@ $(function () {
             }
             ctx.restore();
 
-            Game.ContextMenu.setLeftclick(null, null);// clear the leftclick before we reassign
-            for (var i in this.groundItems) {
-                var rect = new Game.Rectangle(
-                    this.groundItems[i].clickBox.left - xview, 
-                    this.groundItems[i].clickBox.top - yview, 
-                    this.groundItems[i].clickBox.width, this.groundItems[i].clickBox.height);
+            if (Game.activeUiWindow == null) {// if there's a window up then don't show hover texts for items behind it
+                for (var i in this.groundItems) {
+                    var rect = new Game.Rectangle(
+                        this.groundItems[i].clickBox.left - xview, 
+                        this.groundItems[i].clickBox.top - yview, 
+                        this.groundItems[i].clickBox.width, this.groundItems[i].clickBox.height);
 
-                if (rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
-                    Game.worldCameraRect.pointWithin(Game.mousePos)) {
-                    // if there's a slot in use then show nothing; you cannot use an inv item on a ground item.
-                    // this means don't even show the usual "take" option; the current state is a use inv item on something
-                    if (Game.currentPlayer.inventory.slotInUse == null) {
-                        // { action: "take", objectName: groundItem.item.name, groundItemId: groundItem.groundItemId }
-                        Game.ContextMenu.setLeftclick(Game.mousePos, {
-                            id: Game.currentPlayer.id,
-                            action: "take", 
-                            objectName: this.groundItems[i].item.name, 
-                            groundItemId: this.groundItems[i].groundItemId
-                        });
+                    if (rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
+                        Game.worldCameraRect.pointWithin(Game.mousePos)) {
+                        // if there's a slot in use then show nothing; you cannot use an inv item on a ground item.
+                        // this means don't even show the usual "take" option; the current state is a use inv item on something
+                        if (Game.currentPlayer.inventory.slotInUse == null) {
+                            // { action: "take", objectName: groundItem.item.name, groundItemId: groundItem.groundItemId }
+                            Game.ContextMenu.setLeftclick(Game.mousePos, {
+                                id: Game.currentPlayer.id,
+                                action: "take", 
+                                objectName: this.groundItems[i].item.name, 
+                                groundItemId: this.groundItems[i].groundItemId
+                            });
+                        }
                     }
                 }
             }
@@ -401,36 +400,38 @@ $(function () {
                     value[i].sprite.draw(ctx, value[i].x - xview, key - yview);
                     var currentFrame = value[i].sprite.getCurrentFrame();
 
-                    var rect = new Game.Rectangle(
-                        value[i].x - xview - (value[i].sprite.anchor.x * currentFrame.width), 
-                        key - yview - (value[i].sprite.anchor.y * currentFrame.height), 
-                        currentFrame.width, currentFrame.height);
+                    if (Game.activeUiWindow == null) {
+                        var rect = new Game.Rectangle(
+                            value[i].x - xview - (value[i].sprite.anchor.x * currentFrame.width), 
+                            key - yview - (value[i].sprite.anchor.y * currentFrame.height), 
+                            currentFrame.width, currentFrame.height);
 
-                    // mouse position needs to account for scale because the whole context is currently scaled
-                    if (rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
-                        Game.worldCameraRect.pointWithin(Game.mousePos)) {
-                        var scenery = Game.sceneryMap.get(value[i].sprite.id);
+                        // mouse position needs to account for scale because the whole context is currently scaled
+                        if (rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
+                            Game.worldCameraRect.pointWithin(Game.mousePos)) {
+                            var scenery = Game.sceneryMap.get(value[i].sprite.id);
 
-                        if (Game.currentPlayer.inventory.slotInUse) {
-                            Game.ContextMenu.setLeftclick(Game.mousePos, {
-                                id: Game.currentPlayer.id,
-                                action: "use",
-                                src: Game.currentPlayer.inventory.slotInUse.item.id,
-                                dest: value[i].tileId,
-                                type: "scenery",
-                                label: "use {0} -> {1}".format(Game.currentPlayer.inventory.slotInUse.item.name, scenery.name)
-                            });
-                        } else {
-                            if (scenery.leftclickOption != 0) {
-                                var contextOpt = Game.ContextMenu.getContextOptionById(scenery.leftclickOption);
+                            if (Game.currentPlayer.inventory.slotInUse) {
                                 Game.ContextMenu.setLeftclick(Game.mousePos, {
                                     id: Game.currentPlayer.id,
-                                    action: contextOpt.name,
-                                    objectName: scenery.name,
-                                    objectId: scenery.id,
-                                    tileId: value[i].tileId,
-                                    type: "scenery"
+                                    action: "use",
+                                    src: Game.currentPlayer.inventory.slotInUse.item.id,
+                                    dest: value[i].tileId,
+                                    type: "scenery",
+                                    label: "use {0} -> {1}".format(Game.currentPlayer.inventory.slotInUse.item.name, scenery.name)
                                 });
+                            } else {
+                                if (scenery.leftclickOption != 0) {
+                                    var contextOpt = Game.ContextMenu.getContextOptionById(scenery.leftclickOption);
+                                    Game.ContextMenu.setLeftclick(Game.mousePos, {
+                                        id: Game.currentPlayer.id,
+                                        action: contextOpt.name,
+                                        objectName: scenery.name,
+                                        objectId: scenery.id,
+                                        tileId: value[i].tileId,
+                                        type: "scenery"
+                                    });
+                                }
                             }
                         }
                     }
@@ -701,15 +702,18 @@ $(function () {
     // Game update function
     var update = function () {
         if (Game.state === 'game') {
+            Game.ContextMenu.setLeftclick(null, null);
+
             Game.scale += (Game.targetScale - Game.scale) * STEP * 10;
             room.process(STEP);
             cursor.process(STEP);
             camera.update(STEP);
             Game.ChatBox.process(STEP);
-            Game.ContextMenu.process(STEP);
 
             if (Game.activeUiWindow)
                 Game.activeUiWindow.process(STEP);
+
+            Game.ContextMenu.process(STEP);
         }
         else if (Game.state === 'logonscreen') {
             Game.LogonScreen.process(STEP);
@@ -742,6 +746,7 @@ $(function () {
                 Game.activeUiWindow.draw(context);
             
             Game.ContextMenu.draw(context);
+
         }
         else if (Game.state === 'logonscreen') {
             Game.LogonScreen.draw(context, canvas.width, canvas.height);
