@@ -77,7 +77,8 @@ $(function () {
                     Game.Player.prototype.image = Game.SpriteManager.getSpriteMapByName("characters");
                     room.player.loadStats(obj["stats"]);
                     room.player.loadInventory(obj["inventory"]);
-                    room.player.setEquippedSlots(obj["equippedSlots"]);
+                    // room.player.setEquippedSlots(obj["equippedSlots"]);
+                    // room.player.setBonuses(obj["bonuses"]);
                     room.player.setAnimations(obj["animations"]);
                     room.player.currentHp = obj["currentHp"];
                     room.player.stats.currentHp = room.player.currentHp;
@@ -151,19 +152,6 @@ $(function () {
                         Game.ChatBox.add("{0} accepted the {1}.".format(obj["opponentName"], obj["action"]), "#f0f");
                     }
                 }
-                else if (obj["action"] === "damage") {
-                    if (obj["id"] == room.player.id) {
-                        room.player.damage(obj["damage"]);
-                    }
-                    else {
-                        for (var i in room.otherPlayers) {
-                            if (obj["id"] == room.otherPlayers[i].id) {
-                                room.otherPlayers[i].damage(obj["damage"]);
-                                break;
-                            }
-                        }
-                    }
-                }
                 else if (obj["action"] === "dead") {
                     if (obj["id"] == room.player.id) {
                         // you died lmfao
@@ -192,6 +180,7 @@ $(function () {
                 }
                 else if (obj["action"] === "equip") {
                     room.player.setEquippedSlots(obj["equippedSlots"]);
+                    room.player.setBonuses(obj["bonuses"]);
                 }
                 else if (obj["action"] === "drop" || obj["action"] === "take") {
                     room.updateGroundItems(obj["groundItems"]);
@@ -214,14 +203,12 @@ $(function () {
                         Game.FightManager.addFight(fighter1, fighter2);
                 }
                 else if (obj["action"] === "player_update") {
-                    if (obj["tile"]) {
-                        if (obj["id"] == room.player.id) {
-                            room.player.setDestPosAndSpeedByTileId(obj["tile"]);
-                        } else {
-                            for (var i in room.otherPlayers) {
-                                if (obj["id"] == room.otherPlayers[i].id) {
-                                    room.otherPlayers[i].setDestPosAndSpeedByTileId(obj["tile"]);
-                                }
+                    if (obj["id"] == room.player.id) {
+                        room.player.handlePlayerUpdate(obj);
+                    } else {
+                        for (var i in room.otherPlayers) {
+                            if (obj["id"] == room.otherPlayers[i].id) {
+                                room.otherPlayers[i].handlePlayerUpdate(obj);
                             }
                         }
                     }
@@ -257,10 +244,13 @@ $(function () {
                 else if (obj["action"] === "npc_update") {
                     for (var i = 0; i < room.npcs.length; ++i) {
                         if (room.npcs[i].id === obj["instanceId"]) {
-                            room.npcs[i].setDestPosAndSpeedByTileId(obj["tileId"]);
+                            room.npcs[i].handleNpcUpdate(obj)
                             break;
                         }
                     }
+
+                    // clear out any dead npcs (they are re-added when the server respawns them)
+                    room.npcs = room.npcs.filter(e => e.currentHp > 0);
                 }
             }
         }
@@ -436,7 +426,8 @@ $(function () {
                     x: this.npcs[i].pos.x, 
                     sprite: this.npcs[i].getCurrentSpriteFrame(),
                     type: "npc",
-                    leftclickOption: this.npcs[i].leftclickOption
+                    leftclickOption: this.npcs[i].leftclickOption,
+                    label: this.npcs[i].getLeftclickLabel()
                 });
             }
 
@@ -474,6 +465,7 @@ $(function () {
                                 });
                             } else {
                                 if (value[i].leftclickOption != 0) {
+                                    var label = value[i].label || "";
                                     var contextOpt = Game.ContextMenu.getContextOptionById(value[i].leftclickOption);
                                     Game.ContextMenu.setLeftclick(Game.mousePos, {
                                         id: Game.currentPlayer.id,
@@ -481,7 +473,8 @@ $(function () {
                                         objectName: value[i].name,
                                         objectId: value[i].id,
                                         tileId: value[i].tileId,
-                                        type: value[i].type
+                                        type: value[i].type,
+                                        label: label
                                     });
                                 }
                             }
@@ -490,10 +483,14 @@ $(function () {
                 }
             });
 
-            // player-draw still draws stuff like the death curtain, health bars, chat etc so draw these last.
+            // these draw calls still draw stuff like the death curtain, health bars, chat etc so draw these last.
             this.player.draw(ctx, xview, yview);
             for (var i in this.otherPlayers) {
                 this.otherPlayers[i].draw(ctx, xview, yview);
+            }
+
+            for (var i in this.npcs) {
+                this.npcs[i].draw(ctx, xview, yview);
             }
 
             var mp = Game.mousePos || { x: 0, y: 0 };
@@ -514,6 +511,7 @@ $(function () {
             }
             Game.Minimap.setOtherPlayers(this.otherPlayers);
             Game.Minimap.setGroundItems(this.groundItems);
+            Game.Minimap.setNpcs(this.npcs);
         },
         compileDrawableSceneryMap: function(xview, yview) {
             var drawBoundWidth = (camera.viewportRect.width * Game.maxScale);

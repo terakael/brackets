@@ -4,6 +4,7 @@
 		this.height = 230;
 		this.otherPlayers = null;
 		this.groundItems = null;
+		this.npcs = null;
 		this.radius = 1000;// its a square but basically from the player in the middle to the edge of the square
 		this.rect = new Game.Rectangle(0, 0, 0, 0);
 	};
@@ -27,6 +28,12 @@
 			context.fillStyle = "white";
 			context.fillRect((this.rect.left + (this.width/2)) - 2.5, (this.rect.top + (this.height/2)) - 2.5, 5, 5);
 
+			// npcs
+			context.fillStyle = "yellow";
+			for (var i in this.npcs) {
+				this.drawOnMap(context, this.npcs[i].pos.x, this.npcs[i].pos.y);
+			}
+			
 			// other players
 			context.fillStyle = "white";
 			for (var i in this.otherPlayers) {
@@ -55,6 +62,9 @@
 		},
 		setGroundItems: function(groundItemArray) {
 			this.groundItems = groundItemArray;
+		},
+		setNpcs: function(npcs) {
+			this.npcs = npcs;
 		},
 		onMouseDown: function(button) {
 			var x = ((Game.mousePos.x - (this.rect.left + (this.width/2))) / (this.width/2)) * this.radius;

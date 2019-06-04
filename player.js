@@ -22,8 +22,7 @@
             this.chatMessageTimer = 0;// counter until the chat message is cleared
             this.clickBox = new Game.Rectangle(0, 0, this.width, this.height);
             this.contextActions = ["follow", "trade", "duel"];
-            this.hitSplat = 0;
-            this.hitSplatTimer = 0;
+            this.hitsplat = null;
             this.currentHp = 1;
             this.maxHp = 1;
             this.respawnPos = {x: 0, y: 0};
@@ -94,13 +93,6 @@
                 }
             }
 
-            if (this.hitSplatTimer > 0) {
-                this.hitSplatTimer -= step;
-                if (this.hitSplatTimer < 0) {
-                    this.hitSplatTimer = 0;
-                }
-            }
-
             if (this.deathSequence === true) {
                 this.deathsCurtain -= step;
                 if (this.deathsCurtain < 0) {
@@ -134,6 +126,12 @@
             this.stats.process(step);
             this.inventory.process(step);
 
+            if (this.hitsplat) {
+                this.hitsplat.lifetime -= step;
+                if (this.hitsplat.lifetime <= 0)
+                    this.hitsplat = null;
+            }
+
             this.clickBox.setPos(this.x - this.width/2, this.y - this.height);
 		}
 		
@@ -152,15 +150,15 @@
                     context.fillText(this.chatMessage, (this.x - xView) * Game.scale, (this.y - yView - this.height - (showingHealthBar ? 15 : 0)) * Game.scale);
                 }
 
-                if (this.hitSplatTimer > 0) {
-
-                    context.fillStyle = this.hitSplat == "0" ? "rgba(0, 200, 200, 0.5)" : "rgba(200, 0, 0, 0.5)";
-                    context.fillRect(((this.x - xView) * Game.scale) - 16, ((this.y - yView) * Game.scale) - 16 - 10, 32, 32);
-
-                    context.font = "bold 20pt Consolas";
+                if (this.hitsplat) {
+                    context.fillStyle = this.hitsplat.damage == 0 ? "blue" : "red";
+                    context.fillRect((this.x - xView - 8) * Game.scale, (this.y - yView - 8) * Game.scale, 16 * Game.scale, 16 * Game.scale);
+                    
                     context.fillStyle = "white";
                     context.textAlign = "center";
-                    context.fillText(this.hitSplat, (this.x - xView) * Game.scale, (this.y - yView) * Game.scale);
+                    context.textBaseline = "middle";
+                    context.font = "bold 20pt Consolas";
+                    context.fillText(this.hitsplat.damage, (this.x - xView) * Game.scale, (this.y - yView) * Game.scale);
                 }
 
                 context.restore();
@@ -220,19 +218,6 @@
             return options;
         }
 
-        Player.prototype.damage = function(dmg) {
-            this.hitSplat = dmg;
-            this.hitSplatTimer = 1;
-            this.stats.showHealthBar();
-            this.currentHp -= dmg;
-
-            if (this.currentHp <= 0) {
-                this.currentHp = this.maxHp;
-            }
-
-            this.stats.currentHp = this.currentHp;// for drawing it in the stat bar
-        }
-
         Player.prototype.respawn = function(tileId, hp) {
             var xy = tileIdToXY(tileId);
             this.respawnPos.x = xy.x;
@@ -255,6 +240,10 @@
             this.inventory.setEquippedSlots(equippedArray);
         }
 
+        Player.prototype.setBonuses = function(bonuses) {
+            this.stats.bonuses = bonuses;
+        }
+
         Player.prototype.setAnimations = function(animations) {
             for (var i in animations) {
                 this.spriteframes[i] = Game.SpriteManager.getSpriteFrameById(animations[i]);
@@ -271,6 +260,26 @@
             var diffy = xy.y - this.y;
             var mag = Math.getVectorMagnitude({x: diffx, y: diffy});
             this.speed = mag / 0.6;
+        }
+
+        Player.prototype.handlePlayerUpdate = function(obj) {
+            if (obj.hasOwnProperty("tile"))
+                this.setDestPosAndSpeedByTileId(obj.tile);
+            
+            if (obj.hasOwnProperty("hp")) {
+                // set current hp
+                this.currentHp = obj.hp;
+            }
+
+            if (obj.hasOwnProperty("damage")) {
+                // damage hitsplat on top of the npc, set health bar timer
+                this.stats.showHealthBar();
+                this.hitsplat = {
+                    damage: obj.damage,
+                    lifetime: 1
+                };
+                this.stats.currentHp = this.currentHp;// so the healthbar can draw it
+            }
         }
 
 		// add "class" Player to our Game object

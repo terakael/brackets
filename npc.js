@@ -3,22 +3,69 @@
         var xy = tileIdToXY(obj.tileId);
         this.id = obj.dto.tileId;// npc instance id is the spawn tile
         this.name = obj.dto.name;
+        this.cmb = obj.dto.cmb;
         this.pos = {x: xy.x, y: xy.y};
         this.dest = {x: xy.x, y: xy.y};
         this.leftclickOption = obj.dto.leftclickOption;
         this.speed = 0;
+        this.currentHp = obj.currentHp;
+        this.maxHp = obj.dto.hp;
+        this.healthBarTimer = 0;
+        this.hitsplat = null;
         
         this.spriteframes = [];
         this.spriteframes["up"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.upId).frameData);
         this.spriteframes["down"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.downId).frameData);
         this.spriteframes["left"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.leftId).frameData);
         this.spriteframes["right"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.rightId).frameData);
-        // this.spriteframes["up"] = Game.SpriteManager.getSpriteFrameById(obj.dto.upId);
+        // this.spriteframes["attack"] = Game.SpriteManager.getSpriteFrameById(obj.dto.upId);
 
         this.currentAnimation = "down";
     }
+
+    NPC.prototype.getLeftclickLabel = function() {
+        if (this.leftclickOption === 4096) // attack
+            return "attack {0} (lvl {1})".format(this.name, this.cmb);
+        return "";
+    }
     
     NPC.prototype.process = function(step){
+        this.processMovement(step);
+
+        if (this.healthBarTimer > 0) {
+            this.healthBarTimer -= step;
+            if (this.healthBarTimer < 0)
+                this.healthBarTimer = 0;
+        }
+
+        if (this.hitsplat) {
+            this.hitsplat.lifetime -= step;
+            if (this.hitsplat.lifetime <= 0)
+                this.hitsplat = null;
+        }
+    }
+    
+    NPC.prototype.draw = function(context, xView, yView) {
+        // the sprite itself is drawn in the main room via the drawMap.
+        // we still draw hitsplats and health bar here though.
+        context.save();
+        let frameHeight = this.spriteframes[this.currentAnimation].getCurrentFrame().height;
+        this.drawHealthBar(context, this.pos.x - xView, this.pos.y - yView - frameHeight, this.currentHp, this.maxHp);
+
+        if (this.hitsplat) {
+            context.fillStyle = this.hitsplat.damage == 0 ? "blue" : "red";
+            context.fillRect(this.pos.x - xView - (8 * (1/Game.scale)), this.pos.y - yView - (8 * (1/Game.scale)), 16 * (1/Game.scale), 16 * (1/Game.scale));
+            
+            context.fillStyle = "white";
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            context.font = "bold " + (20 * (1/Game.scale)) + "pt Consolas";
+            context.fillText(this.hitsplat.damage, this.pos.x - xView, this.pos.y - yView);
+        }
+        context.restore();
+    }
+
+    NPC.prototype.processMovement = function(step) {
         var diffx = this.dest.x - this.pos.x;
         var diffy = this.dest.y - this.pos.y;
         
@@ -54,11 +101,6 @@
             this.spriteframes[this.currentAnimation].currentFrame = 1;
         }
     }
-    
-    NPC.prototype.draw = function(context, xView, yView) {
-        // the sprite itself is drawn in the main room via the drawMap.
-        // we still draw hitsplats and health bar here though.
-    }
 
     NPC.prototype.getCurrentSpriteFrame = function() {
         return this.spriteframes[this.currentAnimation];
@@ -73,6 +115,41 @@
         var diffy = xy.y - this.pos.y;
         var mag = Math.getVectorMagnitude({x: diffx, y: diffy});
         this.speed = mag / 0.6;
+    }
+
+    NPC.prototype.handleNpcUpdate = function(obj) {
+        if (obj.hasOwnProperty("tileId"))
+            this.setDestPosAndSpeedByTileId(obj.tileId);
+        
+        if (obj.hasOwnProperty("hp")) {
+            // set current hp
+            this.currentHp = obj.hp;
+        }
+
+        if (obj.hasOwnProperty("damage")) {
+            // damage hitsplat on top of the npc, set health bar timer
+            // this.stats.showHealthBar();
+            this.hitsplat = {
+                damage: obj.damage,
+                lifetime: 1
+            };
+            this.healthBarTimer = 5;
+        }
+    }
+
+    NPC.prototype.drawHealthBar = function(ctx, x, y, currentHp, maxHp) {
+        if (this.healthBarTimer === 0)
+            return false;
+
+        var barLength = 32;
+        var currentHpLength = ~~(barLength * (currentHp/maxHp));
+
+        ctx.fillStyle = "#0f0";
+        ctx.fillRect(x - ~~(barLength/2), y - 2.5, currentHpLength * (1/Game.scale), 5 * (1/Game.scale));
+
+        ctx.fillStyle = "#f00";
+        ctx.fillRect(x - ~~(barLength/2) + (currentHpLength * (1/Game.scale)), y - 2.5, (barLength - currentHpLength) * (1/Game.scale), 5 * (1/Game.scale));
+        return true;
     }
     
     Game.NPC = NPC;		

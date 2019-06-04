@@ -14,6 +14,9 @@
         for (var i = 0; i < this.stats.length; ++i) {
             this.stats[i].lvl = this.exp2lvl(this.stats[i].exp);
         }
+
+        this.bonuses = null;
+        
         this.x = 10;
         this.y = 20;
         this.healthBarTimer = 0;
@@ -40,33 +43,92 @@
 		return total;
     }
     Stats.prototype.draw = function(ctx, xview, yview) {
+        ctx.save();
         ctx.font = "15px Consolas";
         ctx.textAlign = "left";
         ctx.fillStyle = "#555";
 		ctx.fillText("Stats", ~~(this.x + xview) + 0.5, ~~(yview - 5) + 0.5);
 		ctx.strokeStyle = "rgba(100, 100, 100, 0.6)";
         var statBoxWidth = 230;
-		
+
+        var spritemap = Game.SpriteManager.getSpriteMapById(10);
+        
+        var hoverStatId = null;
         ctx.lineWidth = 1;
         for (var i = 0; i < this.stats.length; ++i) {
+            var xOffset = (i % 3) * 80; 
             var name = this.stats[i].name;
             var exp = this.stats[i].exp;
 
-            var expSinceLvl = this.stats[i].exp - this.lvl2exp(this.stats[i].lvl);
-            var expDiff = this.lvl2exp(this.stats[i].lvl + 1) - this.lvl2exp(this.stats[i].lvl);
-            var remaining = (expSinceLvl / expDiff);
-            ctx.strokeRect(~~(this.x + xview) + 0.5, ~~(this.y + yview + (this.y * i) - 15) + 0.5, statBoxWidth, 20);
-            ctx.fillStyle = "rgba(0, 100, 0, 0.6)";
-            ctx.fillRect(this.x + xview, this.y + yview + (this.y * i) - 15, remaining * statBoxWidth, 20);
-            
+            var clickbox = new Game.Rectangle(this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 80, 16);
+            if (clickbox.pointWithin(Game.mousePos)) {
+                ctx.fillStyle = "rgba(100, 100, 100, 0.6)";
+                ctx.fillRect(clickbox.left, clickbox.top, clickbox.width, clickbox.height);
+                hoverStatId = i;
+            }
+
+            ctx.drawImage(spritemap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 16, 16);
+
+            ctx.textBaseline = "middle";
             ctx.fillStyle = "red";
             if (name === "hp") {
-                ctx.fillText("{0}: {1} / {2} ({3}xp)".format(name, this.currentHp, this.stats[i].lvl, exp), this.x + xview + 10, this.y + yview + (this.y * i));
+                ctx.fillText("{1}/{2}".format(name, this.currentHp, this.stats[i].lvl, exp), this.x + xview + 20 + xOffset, this.y + yview + (this.y * ~~(i/3)));
             } else {
-                ctx.fillText("{0}: {1} / {1} ({2}xp)".format(name, this.stats[i].lvl, exp), this.x + xview + 10, this.y + yview + (this.y * i));
+                ctx.fillText("{1}/{1}".format(name, this.stats[i].lvl, exp), this.x + xview + 20 + xOffset, this.y + yview + (this.y * ~~(i/3)));
             }
         }
-		ctx.fillText("total: {0} ({1}xp)".format(this.totalLvl(), this.totalExp()), this.x + xview + 10, this.y + yview + (this.y * this.stats.length));
+        
+        
+        var yOffset = this.y + yview + ~~(this.stats.length / 3) * 16 + 5;
+        ctx.strokeRect(~~(this.x + xview) + 0.5, ~~yOffset + 0.5, statBoxWidth, 16);
+        if (hoverStatId !== null) {
+            var expSinceLvl = this.stats[hoverStatId].exp - this.lvl2exp(this.stats[hoverStatId].lvl);
+            var expDiff = this.lvl2exp(this.stats[hoverStatId].lvl + 1) - this.lvl2exp(this.stats[hoverStatId].lvl);
+            var remaining = (expSinceLvl / expDiff);
+            ctx.fillStyle = "rgba(0, 100, 0, 0.6)";
+            ctx.fillRect(this.x + xview, yOffset, remaining * statBoxWidth, 16);
+
+            ctx.textAlign = "center";
+            ctx.fillStyle = "red";
+            ctx.textBaseline = "middle";
+            ctx.fillText("{0}: {1}xp ({2}%)".format(this.stats[hoverStatId].name, this.stats[hoverStatId].exp, ~~(remaining * 100)), this.x + xview + (statBoxWidth / 2), yOffset + 8);
+        } else {
+            ctx.textAlign = "center";
+            ctx.fillStyle = "red";
+            ctx.textBaseline = "middle";
+            ctx.fillText("total: {0} ({1}xp)".format(this.totalLvl(), this.totalExp()), this.x + xview + (statBoxWidth / 2), yOffset + 8);
+        }
+
+        ctx.font = "15px Consolas";
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#555";
+        yOffset += 30;
+        ctx.fillText("Bonuses", ~~(this.x + xview) + 0.5, ~~yOffset + 0.5);
+        yOffset += 15;
+
+        var bonusStats = ["acc", "str", "def", "agil", "hp"];
+        for (var i = 0; i < this.stats.length; ++i) {
+            if (!bonusStats.includes(this.stats[i].name))
+                continue;
+
+            var xOffset = (i % 5) * 45; 
+
+            ctx.drawImage(spritemap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, yOffset - 8, 16, 16);
+
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "red";
+
+            var bonus = (this.bonuses && this.bonuses[this.stats[i].name]) || 0;
+            ctx.fillText(bonus, this.x + xview + 16 + xOffset, yOffset);
+        }
+
+        // TODO draw attack style button.  here? or somewhere else?  still need to handle click events for it
+        yOffset += 80;
+        ctx.strokeStyle = "rgba(100, 100, 100, 0.6)";
+        ctx.strokeRect(~~(this.x + xview) + 0.5, ~~yOffset + 0.5, statBoxWidth, 16);
+        ctx.textAlign = "center";
+        ctx.fillText("aggressive", this.x + xview + (statBoxWidth / 2), yOffset + 8);
+        ctx.restore();
     }
     Stats.prototype.process = function(dt) {
         if (this.healthBarTimer > 0) {

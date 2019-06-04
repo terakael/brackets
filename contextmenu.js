@@ -18,6 +18,12 @@
 		contextOptions: [],
 
         draw: function(ctx) {
+			ctx.save();
+			ctx.textAlign = "left";
+			ctx.textBaseline = "middle";
+			ctx.font = "10pt Consolas";
+			ctx.lineWidth = 1;
+
     		if (!this.active) {
 				if (this.leftclickMenuOption != null) {
 					ctx.save();
@@ -38,16 +44,16 @@
 
 					ctx.strokeStyle = "red";
 					ctx.strokeRect(rect.left + 0.5, rect.top + 0.5, rect.width, rect.height);
-					
+
 					ctx.fillStyle = "white";
-					ctx.fillText(label, rect.left + 10, rect.top + rect.height - 5);
+					ctx.fillText(label, rect.left + 10, rect.top + (rect.height/2));
 					
 					ctx.restore();
 				}
 				return;
 			}
 
-	    	ctx.save();
+	    	
 	    	ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
 	    	ctx.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 
@@ -61,7 +67,7 @@
 
 	    	for (var i = 0; i < this.menuOptions.length; ++i) {
 	    		ctx.fillStyle = this.menuOptions[i].fillStyle || (i === selectedOption ? "yellow" : "white");
-	    		ctx.fillText(this.menuOptions[i].label, this.rect.left + 10, this.rect.top + (this.menuOptionHeight * (i+1)) - 5);
+	    		ctx.fillText(this.menuOptions[i].label, this.rect.left + 10, this.rect.top + ((this.menuOptionHeight * i) + (this.menuOptionHeight / 2)));
 	    	}
 
 	    	ctx.restore();
