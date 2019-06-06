@@ -2,7 +2,6 @@
 	function Item(obj) {
 		this.id = obj.id;
 		this.name = obj.name;
-		this.description = obj.description;
 		this.leftclickOption = obj.leftclickOption;
 		this.otherOptions = obj.otherOptions;
 		this.spriteFrame = obj.spriteFrame;

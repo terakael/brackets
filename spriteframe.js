@@ -1,6 +1,6 @@
 (function() {
 	function SpriteFrame(obj) {
-		//{"id":1,"sprite_map_id":1,"x":0,"y":140,"w":32,"h":32,"margin":0,"frame_count":1,"animation_type_id":1}
+		//{"id":1,"sprite_map_id":1,"x":0,"y":140,"w":32,"h":32,"anchorX":0.5,"anchorY":0.95,"margin":0,"frame_count":1,"animation_type_id":1}
 		this.frameData = obj;
 		this.id = obj.id;
 		this.spriteMapId = obj.sprite_map_id;
@@ -21,21 +21,18 @@
 	};
 
 	SpriteFrame.prototype.draw = function(ctx, x, y) {
-		if (this.spriteMap == null) {
-			this.spriteMap = Game.SpriteManager.getSpriteMapById(this.spriteMapId);
-		}
+		let spriteMap = Game.SpriteManager.getSpriteMapById(this.spriteMapId);
 
-		if (this.spriteMap)
-			ctx.drawImage(this.spriteMap, 
-						  this.frames[this.currentFrame].left, 
-						  this.frames[this.currentFrame].top, 
-						  this.frames[this.currentFrame].width, 
-						  this.frames[this.currentFrame].height, 
-						  x-(this.frames[this.currentFrame].width * this.anchor.x), 
-						  y-(this.frames[this.currentFrame].height * this.anchor.y), 
-						  this.frames[this.currentFrame].width, 
-						  this.frames[this.currentFrame].height);
-		
+		if (spriteMap)
+			ctx.drawImage(spriteMap, 
+						this.frames[this.currentFrame].left, 
+						this.frames[this.currentFrame].top, 
+						this.frames[this.currentFrame].width, 
+						this.frames[this.currentFrame].height, 
+						x-(this.frames[this.currentFrame].width * this.anchor.x), 
+						y-(this.frames[this.currentFrame].height * this.anchor.y), 
+						this.frames[this.currentFrame].width, 
+						this.frames[this.currentFrame].height);
 	};
 
 	SpriteFrame.prototype.getCurrentFrame = function() {

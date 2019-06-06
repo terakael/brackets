@@ -8,6 +8,7 @@
 			this.y = posXY.y;				
             this.destPos = posXY;
             this.name = "null";
+            this.inCombat = false;
 			
 			// move speed in pixels per second
 			this.speed = 53.3;
@@ -70,6 +71,9 @@
                 }
                 moving = true;
             }
+
+            if (this.inCombat && Math.abs(this.destPos.x - this.x) < 1 && Math.abs(this.destPos.y - this.y) < 1)
+                this.currentAnimation = "attack";
 			
 			// don't let player leaves the world's boundary
 			if(this.x - this.width/2 < 0){
@@ -137,9 +141,6 @@
 		
 		Player.prototype.draw = function(context, xView, yView) {
             if (this.deathSequence != true) {
-
-                //this.spriteframes[this.currentAnimation].draw(context, this.x - xView, this.y - yView);
-
                 context.save()
                 context.setTransform(1, 0, 0, 1, 0, 0);
                 var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.maxHp);
@@ -164,6 +165,14 @@
                 context.restore();
             }
 
+            this.drawDeathSequence(context, xView, yView);
+        }
+
+        Player.prototype.drawDeathSequence = function(context, xView, yView) {
+            if (!this.deathSequence)
+                return;
+            
+            context.save();
             context.fillStyle = "rgba(0, 0, 0, "+ (1-this.deathsCurtain) + ")";
             context.fillRect(0, 0, Game.worldCameraRect.width, Game.worldCameraRect.height);
 
@@ -171,6 +180,7 @@
             context.textAlign = "center";
             context.font = "bold 40pt Consolas";
             context.fillText("You died!", ~~(Game.worldCameraRect.width/2) * (1/Game.scale), ~~(Game.worldCameraRect.height/2) * (1/Game.scale));
+            context.restore();
         }
         
         Player.prototype.getCurrentSpriteFrame = function() {
@@ -247,12 +257,13 @@
         Player.prototype.setAnimations = function(animations) {
             for (var i in animations) {
                 this.spriteframes[i] = Game.SpriteManager.getSpriteFrameById(animations[i]);
-                this.spriteframes[i].anchor = {x: 0.5, y: 0.9}
             }
         }
 
-        Player.prototype.setDestPosAndSpeedByTileId = function(tileId) {
+        Player.prototype.setDestPosAndSpeedByTileId = function(tileId, xOffset) {
             var xy = tileIdToXY(tileId);
+            xy.x += xOffset || 0;
+            
             this.destPos.x = xy.x;
             this.destPos.y = xy.y;
 
@@ -263,7 +274,7 @@
         }
 
         Player.prototype.handlePlayerUpdate = function(obj) {
-            if (obj.hasOwnProperty("tile"))
+            if (obj.hasOwnProperty("tile") && !this.inCombat)
                 this.setDestPosAndSpeedByTileId(obj.tile);
             
             if (obj.hasOwnProperty("hp")) {

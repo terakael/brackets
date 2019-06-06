@@ -12,13 +12,14 @@
         this.maxHp = obj.dto.hp;
         this.healthBarTimer = 0;
         this.hitsplat = null;
+        this.inCombat = false;
         
         this.spriteframes = [];
         this.spriteframes["up"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.upId).frameData);
         this.spriteframes["down"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.downId).frameData);
         this.spriteframes["left"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.leftId).frameData);
         this.spriteframes["right"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.rightId).frameData);
-        // this.spriteframes["attack"] = Game.SpriteManager.getSpriteFrameById(obj.dto.upId);
+        this.spriteframes["attack"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.leftId).frameData);
 
         this.currentAnimation = "down";
     }
@@ -31,6 +32,9 @@
     
     NPC.prototype.process = function(step){
         this.processMovement(step);
+
+        if (this.inCombat && Math.abs(this.dest.x - this.pos.x) < 1 && Math.abs(this.dest.y - this.pos.y) < 1)
+            this.currentAnimation = "attack";
 
         if (this.healthBarTimer > 0) {
             this.healthBarTimer -= step;
@@ -49,18 +53,19 @@
         // the sprite itself is drawn in the main room via the drawMap.
         // we still draw hitsplats and health bar here though.
         context.save();
+        context.setTransform(1, 0, 0, 1, 0, 0);// TODO fix with this transform, this is what was missing
         let frameHeight = this.spriteframes[this.currentAnimation].getCurrentFrame().height;
-        this.drawHealthBar(context, this.pos.x - xView, this.pos.y - yView - frameHeight, this.currentHp, this.maxHp);
+        this.drawHealthBar(context, (this.pos.x - xView) * Game.scale, (this.pos.y - yView - frameHeight - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.maxHp);
 
         if (this.hitsplat) {
             context.fillStyle = this.hitsplat.damage == 0 ? "blue" : "red";
-            context.fillRect(this.pos.x - xView - (8 * (1/Game.scale)), this.pos.y - yView - (8 * (1/Game.scale)), 16 * (1/Game.scale), 16 * (1/Game.scale));
+            context.fillRect((this.pos.x - xView - 8) * Game.scale, (this.pos.y - yView - 8) * Game.scale, 16 * Game.scale, 16 * Game.scale);
             
             context.fillStyle = "white";
             context.textAlign = "center";
             context.textBaseline = "middle";
-            context.font = "bold " + (20 * (1/Game.scale)) + "pt Consolas";
-            context.fillText(this.hitsplat.damage, this.pos.x - xView, this.pos.y - yView);
+            context.font = "bold 20pt Consolas";
+            context.fillText(this.hitsplat.damage, (this.pos.x - xView) * Game.scale, (this.pos.y - yView) * Game.scale);
         }
         context.restore();
     }
@@ -106,8 +111,10 @@
         return this.spriteframes[this.currentAnimation];
     }
 
-    NPC.prototype.setDestPosAndSpeedByTileId = function(tileId) {
+    NPC.prototype.setDestPosAndSpeedByTileId = function(tileId, xOffset) {
         var xy = tileIdToXY(tileId);
+        xy.x += xOffset || 0;// if in combat
+
         this.dest.x = xy.x;
         this.dest.y = xy.y;
 
@@ -118,7 +125,7 @@
     }
 
     NPC.prototype.handleNpcUpdate = function(obj) {
-        if (obj.hasOwnProperty("tileId"))
+        if (obj.hasOwnProperty("tileId") && !this.inCombat)
             this.setDestPosAndSpeedByTileId(obj.tileId);
         
         if (obj.hasOwnProperty("hp")) {
@@ -145,10 +152,11 @@
         var currentHpLength = ~~(barLength * (currentHp/maxHp));
 
         ctx.fillStyle = "#0f0";
-        ctx.fillRect(x - ~~(barLength/2), y - 2.5, currentHpLength * (1/Game.scale), 5 * (1/Game.scale));
+        ctx.fillRect(x - ~~(barLength/2), y - 2.5, currentHpLength, 5);
 
         ctx.fillStyle = "#f00";
-        ctx.fillRect(x - ~~(barLength/2) + (currentHpLength * (1/Game.scale)), y - 2.5, (barLength - currentHpLength) * (1/Game.scale), 5 * (1/Game.scale));
+        ctx.fillRect(x - ~~(barLength/2) + currentHpLength, y - 2.5, barLength - currentHpLength, 5);
+
         return true;
     }
     

@@ -15,17 +15,16 @@
 		},
 		loadSpriteFrames: function(frames) {
 			for (var i in frames) {
-				//{"id":1,"sprite_map_id":1,"x":0,"y":140,"w":32,"h":32,"margin":0,"frame_count":1,"animation_type_id":1}
+				//{"id":1,"sprite_map_id":1,"x":0,"y":140,"w":32,"h":32,"anchorX":0.5,"anchory":0.95,"margin":0,"frame_count":1,"animation_type_id":1}
 				this.spriteFrames.push(new Game.SpriteFrame(frames[i]));
 			}			
 		},
 		loadItems: function(items) {
 			for (var i in items) {
-				//items":[{"id":1,"name":"kanako","description":"it's kanako","spriteFrameId":1,"leftclickOption":0,"otherOptions":0}],
+				//items":[{"id":1,"name":"kanako","spriteFrameId":1,"leftclickOption":0,"otherOptions":0}],
 				this.items.push(new Game.Item({
 					id: items[i].id,
 					name: items[i].name,
-					description: items[i].description,
 					spriteFrame: this.getSpriteFrameById(items[i].spriteFrameId),
 					leftclickOption: items[i].leftclickOption,
 					otherOptions: items[i].otherOptions

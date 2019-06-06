@@ -252,6 +252,66 @@ $(function () {
                     // clear out any dead npcs (they are re-added when the server respawns them)
                     room.npcs = room.npcs.filter(e => e.currentHp > 0);
                 }
+                else if (obj["action"] === "pvm_start") {
+                    let player = null, monster = null;
+                    if (obj.playerId == Game.currentPlayer.id) {
+                        player = Game.currentPlayer;
+                    } else {
+                        for (var i in room.otherPlayers) {
+                            if (room.otherPlayers[i].id == obj.playerId) {
+                                player = room.otherPlayers[i];
+                                break;
+                            }
+                        }
+                    }
+
+                    for (var i = 0; i < room.npcs.length; ++i) {
+                        if (room.npcs[i].id === obj.monsterId) {
+                            monster = room.npcs[i];
+                            break;
+                        }
+                    }
+
+                    if (player !== null && monster !== null) {
+                        // handle fight
+                        player.setDestPosAndSpeedByTileId(obj.tileId, -12);
+                        player.inCombat = true;
+                        
+                        monster.setDestPosAndSpeedByTileId(obj.tileId, 12);
+                        monster.inCombat = true;
+                    }
+                }
+                else if (obj["action"] === "pvm_end") {
+                    let player = null;
+                    if (obj.playerId == Game.currentPlayer.id) {
+                        player = Game.currentPlayer;
+                    } else {
+                        for (var i in room.otherPlayers) {
+                            if (room.otherPlayers[i].id == obj.playerId) {
+                                player = room.otherPlayers[i];
+                                break;
+                            }
+                        }
+                    }
+                    if (player != null) {
+                        player.inCombat = false;
+                        player.setDestPosAndSpeedByTileId(obj.tileId);
+                    }
+
+                    for (var i = 0; i < room.npcs.length; ++i) {
+                        if (room.npcs[i].id === obj.monsterId) {
+                            room.npcs[i].inCombat = false;
+                            room.npcs[i].setDestPosAndSpeedByTileId(obj.tileId);
+                            break;
+                        }
+                    }
+                }
+                else if (obj["action"] === "pvp_start") {
+
+                }
+                else if (obj["action"] === "pvp_end") {
+
+                }
             }
         }
     }
