@@ -294,13 +294,13 @@ $(function () {
                     }
                     if (player != null) {
                         player.inCombat = false;
-                        player.setDestPosAndSpeedByTileId(obj.tileId);
+                        player.setDestPosAndSpeedByTileId(obj.playerTileId);
                     }
 
                     for (var i = 0; i < room.npcs.length; ++i) {
                         if (room.npcs[i].instanceId === obj.monsterId) {
                             room.npcs[i].inCombat = false;
-                            room.npcs[i].setDestPosAndSpeedByTileId(obj.tileId);
+                            room.npcs[i].setDestPosAndSpeedByTileId(obj.monsterTileId);
                             break;
                         }
                     }
