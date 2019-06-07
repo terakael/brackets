@@ -16,6 +16,7 @@
 		leftclickMenuOption: null,
 		leftclickPos: null,
 		contextOptions: [],
+		characterWidth: 8,// for figuring out the width of the context menu based on longest string
 
         draw: function(ctx) {
 			ctx.save();
@@ -33,7 +34,7 @@
 					var rect = new Game.Rectangle(
 						this.leftclickPos.x, 
 						this.leftclickPos.y,
-						label.length * 9 + 10,
+						label.length * this.characterWidth + 10,
 						this.menuOptionHeight);
 
 					if (rect.left + rect.width > Game.boundingRect.right)
@@ -104,7 +105,7 @@
 	    			longestOption = this.menuOptions[i].label.length;
 	    	}
 
-	    	this.rect.width = longestOption * 9 + 10;
+	    	this.rect.width = longestOption * this.characterWidth + 10;
 	    	this.rect.height = this.menuOptions.length * this.menuOptionHeight;
 
     		this.active = true;

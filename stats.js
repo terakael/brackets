@@ -122,12 +122,6 @@
             ctx.fillText(bonus, this.x + xview + 16 + xOffset, yOffset);
         }
 
-        // TODO draw attack style button.  here? or somewhere else?  still need to handle click events for it
-        yOffset += 80;
-        ctx.strokeStyle = "rgba(100, 100, 100, 0.6)";
-        ctx.strokeRect(~~(this.x + xview) + 0.5, ~~yOffset + 0.5, statBoxWidth, 16);
-        ctx.textAlign = "center";
-        ctx.fillText("aggressive", this.x + xview + (statBoxWidth / 2), yOffset + 8);
         ctx.restore();
     }
     Stats.prototype.process = function(dt) {

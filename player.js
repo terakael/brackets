@@ -32,6 +32,9 @@
 
             this.spriteframes = [];
             this.currentAnimation = "down";
+            
+            this.attackStyles = {};
+            this.attackStyle = 0;
 		}
 		
 		Player.prototype.process = function(step, worldWidth, worldHeight){
@@ -72,8 +75,10 @@
                 moving = true;
             }
 
-            if (this.inCombat && Math.abs(this.destPos.x - this.x) < 1 && Math.abs(this.destPos.y - this.y) < 1)
+            if (this.inCombat && Math.abs(this.destPos.x - this.x) < 1 && Math.abs(this.destPos.y - this.y) < 1) {
                 this.currentAnimation = "attack";
+                // TODO mirror attack animation if on the right-hand side of the fight
+            }
 			
 			// don't let player leaves the world's boundary
 			if(this.x - this.width/2 < 0){
@@ -123,7 +128,7 @@
                 }
             }
             
-            if (moving) {
+            if (moving || this.inCombat) {
                 this.spriteframes[this.currentAnimation].process(step);
             }
 
@@ -152,7 +157,7 @@
                 }
 
                 if (this.hitsplat) {
-                    context.fillStyle = this.hitsplat.damage == 0 ? "blue" : "red";
+                    context.fillStyle = this.hitsplat.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";
                     context.fillRect((this.x - xView - 8) * Game.scale, (this.y - yView - 8) * Game.scale, 16 * Game.scale, 16 * Game.scale);
                     
                     context.fillStyle = "white";
@@ -188,15 +193,11 @@
         }
         
         Player.prototype.loadStats = function(obj) {
-            this.stats.setExp("str", obj["strength"]);
-            this.stats.setExp("acc", obj["accuracy"]);
-            this.stats.setExp("def", obj["defence"]);
-            this.stats.setExp("agil", obj["agility"]);
-            this.stats.setExp("hp", obj["hitpoints"]);
-			this.stats.setExp("mage", obj["magic"]);
-			this.stats.setExp("mine", obj["mining"]);
-			this.stats.setExp("smith", obj["smithing"]);
-			this.stats.setExp("herb", obj["herblore"]);
+            var stats = this.stats;
+            Game.statMap.forEach(function(value, key, map) {
+                console.log("setting stat {0} to exp {1}".format(value, obj[key]));
+                stats.setExp(value, obj[key]);
+            });
         }
 
         Player.prototype.loadInventory = function(inv) {
@@ -291,6 +292,18 @@
                 };
                 this.stats.currentHp = this.currentHp;// so the healthbar can draw it
             }
+        }
+
+        Player.prototype.loadAttackStyles = function(obj) {
+            this.attackStyles = obj;
+        }
+
+        Player.prototype.setAttackStyle = function(id) {
+            this.attackStyle = id;
+        }
+
+        Player.prototype.getCurrentAttackStyle = function() {
+            return this.attackStyles[this.attackStyle];
         }
 
 		// add "class" Player to our Game object

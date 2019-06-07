@@ -1,12 +1,14 @@
 (function(){
     function NPC(obj){
         var xy = tileIdToXY(obj.tileId);
-        this.id = obj.dto.tileId;// npc instance id is the spawn tile
+        this.id = obj.dto.id;
+        this.instanceId = obj.dto.tileId;// npc instance id is the spawn tile
         this.name = obj.dto.name;
         this.cmb = obj.dto.cmb;
         this.pos = {x: xy.x, y: xy.y};
         this.dest = {x: xy.x, y: xy.y};
         this.leftclickOption = obj.dto.leftclickOption;
+        this.otherOptions = obj.dto.otherOptions;
         this.speed = 0;
         this.currentHp = obj.currentHp;
         this.maxHp = obj.dto.hp;
@@ -53,12 +55,12 @@
         // the sprite itself is drawn in the main room via the drawMap.
         // we still draw hitsplats and health bar here though.
         context.save();
-        context.setTransform(1, 0, 0, 1, 0, 0);// TODO fix with this transform, this is what was missing
+        context.setTransform(1, 0, 0, 1, 0, 0);
         let frameHeight = this.spriteframes[this.currentAnimation].getCurrentFrame().height;
         this.drawHealthBar(context, (this.pos.x - xView) * Game.scale, (this.pos.y - yView - frameHeight - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.maxHp);
 
         if (this.hitsplat) {
-            context.fillStyle = this.hitsplat.damage == 0 ? "blue" : "red";
+            context.fillStyle = this.hitsplat.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";
             context.fillRect((this.pos.x - xView - 8) * Game.scale, (this.pos.y - yView - 8) * Game.scale, 16 * Game.scale, 16 * Game.scale);
             
             context.fillStyle = "white";
@@ -74,6 +76,7 @@
         var diffx = this.dest.x - this.pos.x;
         var diffy = this.dest.y - this.pos.y;
         
+        let moving = false;
         if (Math.abs(diffx) > 1 || Math.abs(diffy) > 1) {
             var n = Math.getVectorNormal({x: diffx, y: diffy});
             if (Math.abs(n.x * step * this.speed) > Math.abs(diffx) || Math.abs(diffx) > 64)
@@ -100,11 +103,13 @@
             } else {
                 this.currentAnimation = "right";
             }
-
-            this.spriteframes[this.currentAnimation].process(step);
-        } else {
-            this.spriteframes[this.currentAnimation].currentFrame = 1;
+            moving = true;
         }
+
+        if (moving || this.inCombat)
+            this.spriteframes[this.currentAnimation].process(step);
+        else
+            this.spriteframes[this.currentAnimation].currentFrame = 1;
     }
 
     NPC.prototype.getCurrentSpriteFrame = function() {

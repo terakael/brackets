@@ -12,6 +12,7 @@ $(function () {
                 Game.SpriteManager.loadItems(obj["items"]);
                 Game.ContextMenu.loadContextOptions(obj["contextOptions"]);
                 room.loadScenery(obj["scenery"]);
+                Game.statMap = new Map(Object.entries(obj["statMap"]));
             }
         }
     });
@@ -66,8 +67,8 @@ $(function () {
                 }
             }
             else {
-                if (obj["responseText"].length > 0 && Game.state === "game") {
-                    Game.ChatBox.add(obj["responseText"]);
+                if (obj.responseText.length > 0 && Game.state === "game") {
+                    Game.ChatBox.add(obj.responseText, obj.messageColour);
                 }
 
                 if (obj["action"] === "logon") {
@@ -77,9 +78,9 @@ $(function () {
                     Game.Player.prototype.image = Game.SpriteManager.getSpriteMapByName("characters");
                     room.player.loadStats(obj["stats"]);
                     room.player.loadInventory(obj["inventory"]);
-                    // room.player.setEquippedSlots(obj["equippedSlots"]);
-                    // room.player.setBonuses(obj["bonuses"]);
                     room.player.setAnimations(obj["animations"]);
+                    room.player.loadAttackStyles(obj["attackStyles"]);
+                    room.player.setAttackStyle(obj["attackStyleId"]);
                     room.player.currentHp = obj["currentHp"];
                     room.player.stats.currentHp = room.player.currentHp;
                     room.player.maxHp = obj["maxHp"];
@@ -134,23 +135,12 @@ $(function () {
                     Game.ChatBox.add(obj["name"] + " has logged out.", "#0ff");
                 }
                 else if (obj["action"] === "addexp") {
-                    if (obj["id"] == room.player.id) {
-                        room.player.stats.gainExp(obj["statShortName"], obj["exp"]);
-                        if (obj["statShortName"] === "hp") {
-                            room.player.maxHp = room.player.stats.exp2lvl(obj["exp"]);
-                        }
+                    for (var key in obj["stats"]) {
+                        room.player.stats.gainExp(Game.statMap.get(key), obj.stats[key]);
                     }
                 }
                 else if (obj["action"] === "unknown") {
                     Game.ChatBox.add("invalid action.", "#fff");
-                }
-                else if (obj["action"] === "duel" || obj["action"] === "trade") {
-                    if (obj["accepted"] === 0) {
-                        Game.ChatBox.add("{0} wishes to {1} with you.".format(obj["opponentName"], obj["action"]), "#f0f");
-                    }
-                    else {
-                        Game.ChatBox.add("{0} accepted the {1}.".format(obj["opponentName"], obj["action"]), "#f0f");
-                    }
                 }
                 else if (obj["action"] === "dead") {
                     if (obj["id"] == room.player.id) {
@@ -198,7 +188,6 @@ $(function () {
                                 fighter2 = room.otherPlayers[i];
                         }
                     }
-                    // TODO NPC fighting
                     if (fighter1 && fighter2)
                         Game.FightManager.addFight(fighter1, fighter2);
                 }
@@ -243,7 +232,7 @@ $(function () {
                 }
                 else if (obj["action"] === "npc_update") {
                     for (var i = 0; i < room.npcs.length; ++i) {
-                        if (room.npcs[i].id === obj["instanceId"]) {
+                        if (room.npcs[i].instanceId === obj["instanceId"]) {
                             room.npcs[i].handleNpcUpdate(obj)
                             break;
                         }
@@ -266,7 +255,7 @@ $(function () {
                     }
 
                     for (var i = 0; i < room.npcs.length; ++i) {
-                        if (room.npcs[i].id === obj.monsterId) {
+                        if (room.npcs[i].instanceId === obj.monsterId) {
                             monster = room.npcs[i];
                             break;
                         }
@@ -299,7 +288,7 @@ $(function () {
                     }
 
                     for (var i = 0; i < room.npcs.length; ++i) {
-                        if (room.npcs[i].id === obj.monsterId) {
+                        if (room.npcs[i].instanceId === obj.monsterId) {
                             room.npcs[i].inCombat = false;
                             room.npcs[i].setDestPosAndSpeedByTileId(obj.tileId);
                             break;
@@ -307,10 +296,73 @@ $(function () {
                     }
                 }
                 else if (obj["action"] === "pvp_start") {
+                    let player1 = null, player2 = null;
+                    if (obj.player1Id == Game.currentPlayer.id) {
+                        player1 = Game.currentPlayer;
+                    } else {
+                        for (var i in room.otherPlayers) {
+                            if (room.otherPlayers[i].id == obj.player1Id) {
+                                player1 = room.otherPlayers[i];
+                                break;
+                            }
+                        }
+                    }
 
+                    if (obj.player2Id == Game.currentPlayer.id) {
+                        player2 = Game.currentPlayer;
+                    } else {
+                        for (var i in room.otherPlayers) {
+                            if (room.otherPlayers[i].id == obj.player2Id) {
+                                player2 = room.otherPlayers[i];
+                                break;
+                            }
+                        }
+                    }
+
+                    if (player1 !== null && player2 !== null) {
+                        // handle fight
+                        player1.setDestPosAndSpeedByTileId(obj.tileId, -12);
+                        player1.inCombat = true;
+                        
+                        player2.setDestPosAndSpeedByTileId(obj.tileId, 12);
+                        player2.inCombat = true;
+                    }
                 }
                 else if (obj["action"] === "pvp_end") {
+                    let player1 = null;
+                    if (obj.player1Id == Game.currentPlayer.id) {
+                        player1 = Game.currentPlayer;
+                    } else {
+                        for (var i in room.otherPlayers) {
+                            if (room.otherPlayers[i].id == obj.player1Id) {
+                                player1 = room.otherPlayers[i];
+                                break;
+                            }
+                        }
+                    }
+                    if (player1 != null) {
+                        player1.inCombat = false;
+                        player1.setDestPosAndSpeedByTileId(obj.tileId);
+                    }
 
+                    let player2 = null;
+                    if (obj.player2Id == Game.currentPlayer.id) {
+                        player2 = Game.currentPlayer;
+                    } else {
+                        for (var i in room.otherPlayers) {
+                            if (room.otherPlayers[i].id == obj.player2Id) {
+                                player2 = room.otherPlayers[i];
+                                break;
+                            }
+                        }
+                    }
+                    if (player2 != null) {
+                        player2.inCombat = false;
+                        player2.setDestPosAndSpeedByTileId(obj.tileId);
+                    }
+                }
+                else if (obj["action"] === "toggle_attack_style") {
+                    Game.currentPlayer.setAttackStyle(obj.attackStyleId);
                 }
             }
         }
@@ -481,7 +533,7 @@ $(function () {
                 if (!drawMap.has(this.npcs[i].pos.y))
                     drawMap.set(this.npcs[i].pos.y, []);
                 drawMap.get(this.npcs[i].pos.y).push({
-                    id: this.npcs[i].id,
+                    id: this.npcs[i].instanceId,
                     name: this.npcs[i].name,
                     x: this.npcs[i].pos.x, 
                     sprite: this.npcs[i].getCurrentSpriteFrame(),
@@ -616,17 +668,25 @@ $(function () {
         }
 
         else if (Game.state === 'game') {
+
+            // TODO inventory, minimap, stats etc should all be contained within this
+            if (Game.HUD.mouseWithin(Game.mousePos)) {
+                Game.HUD.onMouseDown(e);
+            } 
+
             if (Game.ContextMenu.active && e.button == 0) {// left
                 var menuItem = Game.ContextMenu.handleMenuSelect();
                 if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
                     Game.getPlayer().inventory.handleSlotAction(menuItem.action, menuItem.originalPos);
                 }
-                // Game.currentPlayer.inventory.slotInUse = null;
-            } else if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
+            } 
+            else if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
                 Game.getPlayer().inventory.onMouseDown(e.button);
-            } else if (Game.Minimap.rect.pointWithin(Game.mousePos)) {
+            } 
+            else if (Game.Minimap.rect.pointWithin(Game.mousePos)) {
                 Game.Minimap.onMouseDown(e.button);
-            } else if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
+            } 
+            else if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
                 switch (e.button) {
                     case 0: // left
                         if (!Game.ContextMenu.active && room.player.inventory.slotInUse == null) {
@@ -740,18 +800,46 @@ $(function () {
                                 }
                             }
                         });
+
+                        for (let i = 0; i < room.npcs.length; ++i) {
+                            let npc = room.npcs[i];
+                            var spriteFrame = room.npcs[i].getCurrentSpriteFrame();
+                                var rect = new Game.Rectangle(
+                                    npc.pos.x - (spriteFrame.getCurrentFrame().width * spriteFrame.anchor.x), 
+                                    npc.pos.y - (spriteFrame.getCurrentFrame().height * spriteFrame.anchor.y), 
+                                    spriteFrame.getCurrentFrame().width, 
+                                    spriteFrame.getCurrentFrame().height);
+
+                                if (rect.pointWithin(cursor.mousePos)) {
+                                    if (npc.leftclickOption != 0) {
+                                        Game.ContextMenu.push([{
+                                            action: Game.ContextMenu.getContextOptionById(npc.leftclickOption).name,
+                                            objectId: npc.instanceId,
+                                            objectName: npc.name,
+                                            type: "npc",
+                                            label: npc.getLeftclickLabel()
+                                        }]);
+                                    }
+
+                                    for (var j = 0; j < Game.ContextMenu.contextOptions.length; ++j) {
+                                        var contextOption = Game.ContextMenu.contextOptions[j];
+                                        if (npc.otherOptions & contextOption.id) {
+                                            Game.ContextMenu.push([{
+                                                action: contextOption.name, 
+                                                objectId: npc.instanceId, 
+                                                objectName: npc.name, 
+                                                type: "npc"
+                                            }]);
+                                        }
+                                    }
+                                }
+                        }
                         break;
                 }
             }
             // all cases
             switch (e.button) {
                 case 0: // left
-                    // if (Game.ContextMenu.active) {
-                    //     var menuItem = Game.ContextMenu.handleMenuSelect();
-                    //     if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
-                    //         Game.getPlayer().inventory.handleSlotAction(menuItem.action, menuItem.originalPos);
-                    //     }
-                    // }
                     break;
                 case 2: // right
                     if (!Game.ContextMenu.active)
@@ -766,6 +854,11 @@ $(function () {
         }
 
         else if (Game.state === 'game') {
+            // TODO move inventory, minimap etc events into this
+            if (Game.HUD.mouseWithin(Game.mousePos)) {
+                Game.HUD.onMouseUp(e);
+            } 
+
             switch (e.button) {
                 case 0:
                     // this check is so when we right-click and select in the inventory, we don't select the slot under the context menu
@@ -800,6 +893,8 @@ $(function () {
     Game.worldCameraRect = new Game.Rectangle(0, 0, canvas.width - 250, canvas.height);
     var hudcamera = new Game.Camera(camera.viewportRect.width, 0, canvas.width - camera.viewportRect.width, canvas.height);
     Game.hudCameraRect = new Game.Rectangle(camera.viewportRect.width, 0, canvas.width - camera.viewportRect.width, canvas.height);
+    Game.HUD = new Game.HeadsUpDisplay(Game.hudCameraRect);
+
     Game.Minimap.setRect(hudcamera.viewportRect.left + 10, hudcamera.viewportRect.top + 10, 230, 230);
     Game.currentMap = room.map;
     var cursor = new Game.Cursor((hudcamera.xView + hudcamera.wView) - 10, hudcamera.yView + 20);
@@ -822,6 +917,7 @@ $(function () {
             cursor.process(STEP);
             camera.update(STEP);
             Game.ChatBox.process(STEP);
+            Game.HUD.process(STEP);
 
             if (Game.activeUiWindow)
                 Game.activeUiWindow.process(STEP);
@@ -846,6 +942,8 @@ $(function () {
             Game.Minimap.draw(context, camera.xView, camera.yView);
             room.player.inventory.draw(context, hudcamera.xView, hudcamera.yView + Game.Minimap.height + 20);
             room.player.stats.draw(context, hudcamera.xView, hudcamera.viewportRect.height - ((room.player.stats.stats.length + 2) * room.player.stats.y));
+            Game.HUD.draw(context);
+            
             if (room.currentShow <= 0.98) {
                 // fade out the logon screen background
                 context.save();
