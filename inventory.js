@@ -260,8 +260,11 @@
 				if (slot.item.id != 0)
 					this.slotInUse = slot;
 			} else {
-				if (this.slotInUse != slot)
-					Game.ws.send(Game.ContextMenu.leftclickMenuOption);
+				if (this.slotInUse != slot) {
+					let request = Game.ContextMenu.leftclickMenuOption;
+					request.slot = slot.id;
+					Game.ws.send(request);
+				}
 				this.slotInUse = null;
 			}
 		}

@@ -20,7 +20,6 @@
         this.x = 10;
         this.y = 20;
         this.healthBarTimer = 0;
-        this.currentHp = 1;
     }
     Stats.prototype.exp2lvl = function(exp) {
         return ~~Math.sqrt(exp);
@@ -72,7 +71,7 @@
             ctx.textBaseline = "middle";
             ctx.fillStyle = "red";
             if (name === "hp") {
-                ctx.fillText("{1}/{2}".format(name, this.currentHp, this.stats[i].lvl, exp), this.x + xview + 20 + xOffset, this.y + yview + (this.y * ~~(i/3)));
+                ctx.fillText("{1}/{2}".format(name, Game.currentPlayer.currentHp, this.stats[i].lvl, exp), this.x + xview + 20 + xOffset, this.y + yview + (this.y * ~~(i/3)));
             } else {
                 ctx.fillText("{1}/{1}".format(name, this.stats[i].lvl, exp), this.x + xview + 20 + xOffset, this.y + yview + (this.y * ~~(i/3)));
             }

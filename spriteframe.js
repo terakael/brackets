@@ -11,6 +11,7 @@
 		this.frameSpeed = 0.1;
 		this.frameTimer = 0.1;
 		this.anchor = {x: obj.anchorX || 0.5, y: obj.anchorY || 0.5};
+		this.scale = {x: obj.scaleX || 1, y: obj.scaleY || 1};
 
 		this.frames = [];
 		for (var i = 0; i < this.frameCount; ++i) {
@@ -29,10 +30,10 @@
 						this.frames[this.currentFrame].top, 
 						this.frames[this.currentFrame].width, 
 						this.frames[this.currentFrame].height, 
-						x-(this.frames[this.currentFrame].width * this.anchor.x), 
-						y-(this.frames[this.currentFrame].height * this.anchor.y), 
-						this.frames[this.currentFrame].width, 
-						this.frames[this.currentFrame].height);
+						x-((this.frames[this.currentFrame].width * this.scale.x) * this.anchor.x), 
+						y-((this.frames[this.currentFrame].height * this.scale.y) * this.anchor.y), 
+						this.frames[this.currentFrame].width * this.scale.x, 
+						this.frames[this.currentFrame].height * this.scale.y);
 	};
 
 	SpriteFrame.prototype.getCurrentFrame = function() {
@@ -45,6 +46,7 @@
             // time to switch frames        
             this.frameTimer = this.frameSpeed;    
             switch (this.animationTypeId) {
+				case 4:// fall through, this is ping pong but always animate
                 case 2: {// ping pong
                     if (this.forwards) {
                         if ((this.currentFrame + 1) >= this.frames.length) {
@@ -74,6 +76,10 @@
             }
         }
 	};
+
+	SpriteFrame.prototype.alwaysAnimate = function() {
+		return this.animationTypeId === 4;
+	}
 	
 	Game.SpriteFrame = SpriteFrame;
 })();

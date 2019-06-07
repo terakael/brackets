@@ -148,7 +148,7 @@
             if (this.deathSequence != true) {
                 context.save()
                 context.setTransform(1, 0, 0, 1, 0, 0);
-                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.maxHp);
+                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.stats.getLevelByStat("hp"));
                 if (this.chatMessage != "") {
                     context.font = "12pt Consolas";
                     context.textAlign = "center";
@@ -198,6 +198,8 @@
                 console.log("setting stat {0} to exp {1}".format(value, obj[key]));
                 stats.setExp(value, obj[key]);
             });
+
+            this.maxHp = this.stats.exp2lvl(this.stats.getLevelByStat("hp"));
         }
 
         Player.prototype.loadInventory = function(inv) {
@@ -290,7 +292,6 @@
                     damage: obj.damage,
                     lifetime: 1
                 };
-                this.stats.currentHp = this.currentHp;// so the healthbar can draw it
             }
         }
 

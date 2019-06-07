@@ -72,38 +72,44 @@ $(function () {
                 }
 
                 if (obj["action"] === "logon") {
-                    document.title = obj["name"];
-                    var playerXY = tileIdToXY(obj["tileId"]);
-                    room.player = new Game.Player(obj["tileId"]);
-                    Game.Player.prototype.image = Game.SpriteManager.getSpriteMapByName("characters");
+
+                    for (var i in obj.players) {
+                        if (obj.players[i].id === obj.id) {
+                            document.title = obj.players[i].name;
+
+                            room.player = new Game.Player(obj["tileId"]);
+                            room.player.id = obj.id;
+                            room.player.name = obj.players[i].name;
+                            room.player.currentHp = obj.players[i].currentHp;
+
+                            camera.follow(room.player, (canvas.width - 250 - (room.player.width / 2)) / 2, (canvas.height) / 2);
+
+                            var playerXY = tileIdToXY(obj["tileId"]);
+                            camera.xView = playerXY.x - (camera.xDeadZone * (1 / Game.scale));
+                            camera.yView = playerXY.y - (camera.yDeadZone * (1 / Game.scale));
+                        } else 
+                            room.addPlayer(obj.players[i]);
+                    }
+                    
                     room.player.loadStats(obj["stats"]);
                     room.player.loadInventory(obj["inventory"]);
                     room.player.setAnimations(obj["animations"]);
                     room.player.loadAttackStyles(obj["attackStyles"]);
                     room.player.setAttackStyle(obj["attackStyleId"]);
-                    room.player.currentHp = obj["currentHp"];
-                    room.player.stats.currentHp = room.player.currentHp;
-                    room.player.maxHp = obj["maxHp"];
-                    room.player.id = obj["id"];
-                    room.player.name = obj["name"];
-                    camera.follow(room.player, (canvas.width - 250 - (room.player.width / 2)) / 2, (canvas.height) / 2);
-
                     
-                    camera.xView = playerXY.x - (camera.xDeadZone * (1 / Game.scale));
-                    camera.yView = playerXY.y - (camera.yDeadZone * (1 / Game.scale));
                     room.updateGroundItems(obj["groundItems"]);
-                    for (var i in obj["players"]) {
-                        room.addPlayer(obj["players"][i]);
-                    }
+                    
                     
                     room.loadBackground(Game.SpriteManager.getSpriteMapByName("grass"));
                     room.init();
-                    Game.ChatBox.add("Welcome to the game, {0}.".format(obj["name"]));
+
+                    Game.ChatBox.add("Welcome to the game, {0}.".format(room.player.name));
                     Game.state = 'game';
                     Game.currentPlayer = room.player;
                 }
                 else if (obj["action"] === "logoff") {
                     // clean up and change state to logon screen
+                    room.player = null;
                     room.otherPlayers = [];
                     Game.state = 'logonscreen';
                 }
@@ -369,6 +375,15 @@ $(function () {
                 else if (obj["action"] === "toggle_attack_style") {
                     Game.currentPlayer.setAttackStyle(obj.attackStyleId);
                 }
+                else if (obj["action"] === "talk to") {
+                    for (let i = 0; i < room.npcs.length; ++i) {
+                        if (room.npcs[i].instanceId === obj["objectId"]) {
+                            room.npcs[i].setChatMessage(obj["message"]);
+                            break;
+                        }
+                    }
+                }
+
             }
         }
     }
@@ -394,6 +409,7 @@ $(function () {
         npcs: [],
         sceneryInstances: new Map(),
         drawableSceneryMap: new Map(),
+        drawableNpcs: [],
         t: new Game.Transform(),
         loadBackground: function(background) {
             this.map.load(context, background);
@@ -447,16 +463,17 @@ $(function () {
             }
         },
         addPlayer: function (obj) {
-            if (obj["id"] != this.player.id) {
-                var player = new Game.Player(obj["tileId"]);
-                player.currentHp = obj["currentHp"];
-                player.maxHp = obj["maxHp"];
-                player.id = obj["id"];
-                player.name = obj["name"];
-                player.combatLevel = obj["combatLevel"];
-                player.setAnimations(obj["animations"]);
-                this.otherPlayers.push(player);
-            }
+            var player = new Game.Player(obj.tileId);
+            player.id = obj.id;
+            player.name = obj.name;
+
+            player.currentHp = obj.currentHp;
+            player.maxHp = obj.maxHp;
+            player.combatLevel = obj.combatLevel;
+            
+            player.setAnimations(obj.animations);
+
+            this.otherPlayers.push(player);
         },
         addNPC: function(obj) {
             var npc = new Game.NPC(obj);
@@ -534,17 +551,18 @@ $(function () {
             }
 
             // add the NPCs
-            for (var i in this.npcs) {
-                if (!drawMap.has(this.npcs[i].pos.y))
-                    drawMap.set(this.npcs[i].pos.y, []);
-                drawMap.get(this.npcs[i].pos.y).push({
-                    id: this.npcs[i].instanceId,
-                    name: this.npcs[i].name,
-                    x: this.npcs[i].pos.x, 
-                    sprite: this.npcs[i].getCurrentSpriteFrame(),
+            this.compileDrawableNpcs(xview, yview);
+            for (var i in this.drawableNpcs) {
+                if (!drawMap.has(this.drawableNpcs[i].pos.y))
+                    drawMap.set(this.drawableNpcs[i].pos.y, []);
+                drawMap.get(this.drawableNpcs[i].pos.y).push({
+                    id: this.drawableNpcs[i].instanceId,
+                    name: this.drawableNpcs[i].name,
+                    x: this.drawableNpcs[i].pos.x, 
+                    sprite: this.drawableNpcs[i].getCurrentSpriteFrame(),
                     type: "npc",
-                    leftclickOption: this.npcs[i].leftclickOption,
-                    label: this.npcs[i].getLeftclickLabel()
+                    leftclickOption: this.drawableNpcs[i].leftclickOption,
+                    label: this.drawableNpcs[i].getLeftclickLabel()
                 });
             }
 
@@ -606,8 +624,8 @@ $(function () {
                 this.otherPlayers[i].draw(ctx, xview, yview);
             }
 
-            for (var i in this.npcs) {
-                this.npcs[i].draw(ctx, xview, yview);
+            for (var i in this.drawableNpcs) {
+                this.drawableNpcs[i].draw(ctx, xview, yview);
             }
 
             var mp = Game.mousePos || { x: 0, y: 0 };
@@ -623,12 +641,16 @@ $(function () {
             for (var i in this.otherPlayers) {
                 this.otherPlayers[i].process(dt, this.width, this.height);
             }
-            for (var i in this.npcs) {
-                this.npcs[i].process(dt);
+            for (var i in this.drawableNpcs) {
+                this.drawableNpcs[i].process(dt);
             }
+            this.drawableSceneryMap.forEach(function(value, key, map) {
+                for (var i in value)
+                    value[i].sprite.process(dt);
+            });
             Game.Minimap.setOtherPlayers(this.otherPlayers);
             Game.Minimap.setGroundItems(this.groundItems);
-            Game.Minimap.setNpcs(this.npcs);
+            Game.Minimap.setNpcs(this.drawableNpcs);
         },
         compileDrawableSceneryMap: function(xview, yview) {
             var drawBoundWidth = (camera.viewportRect.width * Game.maxScale);
@@ -649,6 +671,17 @@ $(function () {
                 }
             });
             this.drawableSceneryMap = drawableSceneryMap;
+        },
+        compileDrawableNpcs: function(xview, yview) {
+            var drawBoundWidth = (camera.viewportRect.width * Game.maxScale);
+            var drawBoundHeight = (camera.viewportRect.height * Game.maxScale);
+
+            var minX = (xview + (camera.viewportRect.width * 0.5)) - (drawBoundWidth * 0.5); 
+            var minY = (yview + (camera.viewportRect.height * 0.5)) - (drawBoundHeight * 0.5);
+ 
+            this.drawableNpcs = this.npcs.filter(npc => 
+                   npc.pos.x > minX && npc.pos.x < minX + drawBoundWidth 
+                && npc.pos.y > minY && npc.pos.y < minY + drawBoundHeight);
         },
         removePlayer: function (id) {
             for (var i in this.otherPlayers) {

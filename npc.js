@@ -15,6 +15,8 @@
         this.healthBarTimer = 0;
         this.hitsplat = null;
         this.inCombat = false;
+        this.chatMessage = "";
+        this.chatMessageTimer = 0;
         
         this.spriteframes = [];
         this.spriteframes["up"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.upId).frameData);
@@ -49,6 +51,14 @@
             if (this.hitsplat.lifetime <= 0)
                 this.hitsplat = null;
         }
+
+        if (this.chatMessageTimer > 0) {
+            this.chatMessageTimer -= step;
+            if (this.chatMessageTimer <= 0) {
+                this.chatMessageTimer = 0;
+                this.chatMessage = "";
+            }
+        }
     }
     
     NPC.prototype.draw = function(context, xView, yView) {
@@ -68,6 +78,13 @@
             context.textBaseline = "middle";
             context.font = "bold 20pt Consolas";
             context.fillText(this.hitsplat.damage, (this.pos.x - xView) * Game.scale, (this.pos.y - yView) * Game.scale);
+        }
+
+        if (this.chatMessage != "") {
+            context.font = "12pt Consolas";
+            context.textAlign = "center";
+            context.fillStyle = "yellow"
+            context.fillText(this.chatMessage, (this.pos.x - xView) * Game.scale, (this.pos.y - yView - frameHeight - (this.healthBarTimer > 0 ? 15 : 0)) * Game.scale);
         }
         context.restore();
     }
@@ -106,7 +123,7 @@
             moving = true;
         }
 
-        if (moving || this.inCombat)
+        if (moving || this.inCombat || this.getCurrentSpriteFrame().alwaysAnimate())
             this.spriteframes[this.currentAnimation].process(step);
         else
             this.spriteframes[this.currentAnimation].currentFrame = 1;
@@ -163,6 +180,11 @@
         ctx.fillRect(x - ~~(barLength/2) + currentHpLength, y - 2.5, barLength - currentHpLength, 5);
 
         return true;
+    }
+
+    NPC.prototype.setChatMessage = function(message) {
+        this.chatMessage = message;
+        this.chatMessageTimer = 3;
     }
     
     Game.NPC = NPC;		
