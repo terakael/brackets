@@ -231,12 +231,17 @@ $(function () {
                     }
                 }
                 else if (obj["action"] === "npc_update") {
+                    let foundNpc = false;
                     for (var i = 0; i < room.npcs.length; ++i) {
                         if (room.npcs[i].instanceId === obj["instanceId"]) {
                             room.npcs[i].handleNpcUpdate(obj)
+                            foundNpc = true;
                             break;
                         }
                     }
+
+                    if (!foundNpc && obj.npc)
+                        room.addNPC(obj.npc);
 
                     // clear out any dead npcs (they are re-added when the server respawns them)
                     room.npcs = room.npcs.filter(e => e.currentHp > 0);
