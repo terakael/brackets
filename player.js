@@ -148,7 +148,7 @@
             if (this.deathSequence != true) {
                 context.save()
                 context.setTransform(1, 0, 0, 1, 0, 0);
-                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.stats.getLevelByStat("hp"));
+                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.maxHp);
                 if (this.chatMessage != "") {
                     context.font = "12pt Consolas";
                     context.textAlign = "center";
@@ -198,8 +198,6 @@
                 console.log("setting stat {0} to exp {1}".format(value, obj[key]));
                 stats.setExp(value, obj[key]);
             });
-
-            this.maxHp = this.stats.exp2lvl(this.stats.getLevelByStat("hp"));
         }
 
         Player.prototype.loadInventory = function(inv) {
@@ -237,7 +235,6 @@
             this.respawnPos.y = xy.y;
             this.currentHp = hp;
             this.maxHp = hp;
-            this.stats.currentHp = hp;
         }
 		
         Player.prototype.setDeathSequence = function() {
@@ -283,6 +280,10 @@
             if (obj.hasOwnProperty("hp")) {
                 // set current hp
                 this.currentHp = obj.hp;
+            }
+
+            if (obj.hasOwnProperty("cmb")) {
+                this.combatLevel = obj.cmb;
             }
 
             if (obj.hasOwnProperty("damage")) {

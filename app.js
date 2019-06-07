@@ -81,6 +81,7 @@ $(function () {
                             room.player.id = obj.id;
                             room.player.name = obj.players[i].name;
                             room.player.currentHp = obj.players[i].currentHp;
+                            room.player.maxHp = obj.players[i].maxHp;
 
                             camera.follow(room.player, (canvas.width - 250 - (room.player.width / 2)) / 2, (canvas.height) / 2);
 
@@ -132,9 +133,8 @@ $(function () {
                     Game.ChatBox.add(obj["examineText"], "#fff");
                 }
                 else if (obj["action"] === "playerEnter") {
-                    var p = obj["player"];
-                    room.addPlayer(p);
-                    Game.ChatBox.add(p["name"] + " has logged in.", "#0ff");
+                    room.addPlayer(obj);
+                    Game.ChatBox.add(obj.name + " has logged in.", "#0ff");
                 }
                 else if (obj["action"] === "playerLeave") {
                     room.removePlayer(obj["id"]); // TODO should be session id; this is dangerous
@@ -149,14 +149,13 @@ $(function () {
                     Game.ChatBox.add("invalid action.", "#fff");
                 }
                 else if (obj["action"] === "dead") {
-                    if (obj["id"] == room.player.id) {
+                    if (obj.id === room.player.id) {
                         // you died lmfao
                         room.player.respawn(obj["tileId"], obj["currentHp"]);
                         room.player.setDeathSequence();
-                    }
-                    else {
+                    } else {
                         for (var i in room.otherPlayers) {
-                            if (obj["id"] == room.otherPlayers[i].id) {
+                            if (obj.id === room.otherPlayers[i].id) {
                                 // they died
                                 room.otherPlayers[i].respawn(obj["tileId"], obj["currentHp"]);
                                 // no death sequence so move them to respawn position straight away
@@ -353,7 +352,7 @@ $(function () {
                     }
                     if (player1 != null) {
                         player1.inCombat = false;
-                        player1.setDestPosAndSpeedByTileId(obj.tileId);
+                        player1.setDestPosAndSpeedByTileId(obj.playerTileId);
                     }
 
                     let player2 = null;
@@ -369,7 +368,7 @@ $(function () {
                     }
                     if (player2 != null) {
                         player2.inCombat = false;
-                        player2.setDestPosAndSpeedByTileId(obj.tileId);
+                        player2.setDestPosAndSpeedByTileId(obj.player2TileId);
                     }
                 }
                 else if (obj["action"] === "toggle_attack_style") {
