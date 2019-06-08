@@ -20,8 +20,8 @@
 
         for (var i = 0; i < this.uiButtons.length; ++i) {
             this.uiButtons[i].setLocalPosition(
-                this.rect.left + buffer + ((i % 4) * buffer) + ((i % 4) * this.uiButtons[i].rect.width),
-                this.rect.top + initialBuffer + (Math.floor(i / 4) * buffer) + (Math.floor(i / 4) * this.uiButtons[i].rect.height)
+                ~~(this.rect.left + buffer + ((i % 4) * buffer) + ((i % 4) * this.uiButtons[i].rect.width)) + 0.5,
+                ~~(this.rect.top + initialBuffer + (Math.floor(i / 4) * buffer) + (Math.floor(i / 4) * this.uiButtons[i].rect.height) + 0.5)
             );
         }
     }
@@ -30,6 +30,7 @@
         context.save();
         context.fillStyle = this.background || "black";
         context.strokeStyle = "red";
+        context.lineWidth = 1;
         context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
         context.strokeRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 

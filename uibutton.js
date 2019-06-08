@@ -33,6 +33,7 @@
         context.save();
         
         this.setFillStrokeStyle(context);
+        context.lineWidth = 1;
 
         var buttonOffsetX = this.state === ButtonStates.click ? 2 : 0;
         var buttonOffsetY = this.state === ButtonStates.click ? 2 : 0;

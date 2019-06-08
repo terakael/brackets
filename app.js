@@ -68,7 +68,7 @@ $(function () {
             }
             else {
                 if (obj.responseText.length > 0 && Game.state === "game") {
-                    Game.ChatBox.add(obj.responseText, obj.messageColour);
+                    Game.ChatBox.add(obj.responseText, obj.colour);
                 }
 
                 if (obj["action"] === "logon") {
@@ -756,13 +756,16 @@ $(function () {
                                             id: room.player.id,
                                             src: room.player.inventory.slotInUse.item.id,
                                             dest: tileId,
-                                            type: "scenery"
+                                            type: "scenery",
+                                            slot: room.player.inventory.slotInUse.id
                                         });
                                         room.player.inventory.slotInUse = null;
                                         return;
                                     }
                                 }
                             });
+
+                            // TODO player/npc
                             room.player.inventory.slotInUse = null;
                         }
 
@@ -940,8 +943,8 @@ $(function () {
 
     var uiWidth = (canvas.width - 250) / 2;
     var uiHeight = canvas.height / 2;
-    var uix = uiWidth - (uiWidth / 2);
-    var uiy = uiHeight - (uiHeight / 2);
+    var uix = ~~(uiWidth - (uiWidth / 2)) + 0.5;
+    var uiy = ~~(uiHeight - (uiHeight / 2)) + 0.5;
     var uiWindow = new Game.UIWindow(new Game.Rectangle(uix, uiy, uiWidth, uiHeight), hudcamera.pat);
     
     // Game update function
