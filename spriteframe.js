@@ -11,7 +11,7 @@
 		this.frameSpeed = 0.1;
 		this.frameTimer = 0.1;
 		this.anchor = {x: obj.anchorX || 0.5, y: obj.anchorY || 0.5};
-		this.scale = {x: obj.scaleX || 1, y: obj.scaleY || 1};
+		this.scale = {x: 1, y: 1};
 
 		this.frames = [];
 		for (var i = 0; i < this.frameCount; ++i) {
@@ -20,6 +20,10 @@
 
 		this.currentFrame = 0;
 	};
+
+	SpriteFrame.prototype.setScale = function(scale) {
+		this.scale = {x: scale.x, y: scale.y};
+	}
 
 	SpriteFrame.prototype.draw = function(ctx, x, y) {
 		let spriteMap = Game.SpriteManager.getSpriteMapById(this.spriteMapId);

@@ -7,15 +7,7 @@
         
         this.ws.onmessage = function(evt) {
             var json = JSON.parse(evt.data);
-            for (var i = 0; i < json.length; ++i) {
-                for (var j in json[i]) {
-                   for (var k in json[i][j]) {
-                        if (json[i][j][k].dataBase64)
-                            json[i][j][k].dataBase64 = "";
-                    }
-                }
-            }
-            console.log("onmessage: " + JSON.stringify(json));
+            //console.log("onmessage: " + JSON.stringify(json));
             callback(JSON.parse(evt.data));
         };
         

@@ -12,6 +12,7 @@ $(function () {
                 Game.SpriteManager.loadItems(obj["items"]);
                 Game.ContextMenu.loadContextOptions(obj["contextOptions"]);
                 room.loadScenery(obj["scenery"]);
+                room.loadNpcs(obj.npcs);
                 Game.statMap = new Map(Object.entries(obj["statMap"]));
             }
         }
@@ -58,12 +59,12 @@ $(function () {
     Game.processResponse = function(arr) {
         for (var ele = 0; ele < arr.length; ++ele) {
             var obj = arr[ele];
-            if (obj["success"] === 0) {
+            if (obj.success === 0) {
                 if (Game.state === 'logonscreen') {
-                    Game.LogonScreen.setError(obj["responseText"]);
+                    Game.LogonScreen.setError(obj.responseText);
                 }
                 else {
-                    Game.ChatBox.add(obj["responseText"]);
+                    Game.ChatBox.add(obj.responseText);
                 }
             }
             else {
@@ -71,318 +72,407 @@ $(function () {
                     Game.ChatBox.add(obj.responseText, obj.colour);
                 }
 
-                if (obj["action"] === "logon") {
+                switch (obj.action) {
+                    case "logon": {
 
-                    for (var i in obj.players) {
-                        if (obj.players[i].id === obj.id) {
-                            document.title = obj.players[i].name;
+                        for (var i in obj.players) {
+                            if (obj.players[i].id === obj.id) {
+                                document.title = obj.players[i].name;
 
-                            room.player = new Game.Player(obj["tileId"]);
-                            room.player.id = obj.id;
-                            room.player.name = obj.players[i].name;
-                            room.player.currentHp = obj.players[i].currentHp;
-                            room.player.maxHp = obj.players[i].maxHp;
+                                room.player = new Game.Player(obj.tileId);
+                                room.player.id = obj.id;
+                                room.player.name = obj.players[i].name;
+                                room.player.currentHp = obj.players[i].currentHp;
+                                room.player.maxHp = obj.players[i].maxHp;
 
-                            camera.follow(room.player, (canvas.width - 250 - (room.player.width / 2)) / 2, (canvas.height) / 2);
+                                camera.follow(room.player, (canvas.width - 250 - (room.player.width / 2)) / 2, (canvas.height) / 2);
 
-                            var playerXY = tileIdToXY(obj["tileId"]);
-                            camera.xView = playerXY.x - (camera.xDeadZone * (1 / Game.scale));
-                            camera.yView = playerXY.y - (camera.yDeadZone * (1 / Game.scale));
-                        } else 
-                            room.addPlayer(obj.players[i]);
+                                var playerXY = tileIdToXY(obj.tileId);
+                                camera.xView = playerXY.x - (camera.xDeadZone * (1 / Game.scale));
+                                camera.yView = playerXY.y - (camera.yDeadZone * (1 / Game.scale));
+                            } else 
+                                room.addPlayer(obj.players[i]);
+                        }
+                        
+                        room.player.loadStats(obj.stats);
+                        room.player.loadInventory(obj.inventory);
+                        room.player.setAnimations(obj.animations);
+                        room.player.loadAttackStyles(obj.attackStyles);
+                        room.player.setAttackStyle(obj.attackStyleId);
+                        
+                        room.updateGroundItems(obj.groundItems);
+                        
+                        
+                        room.loadBackground(Game.SpriteManager.getSpriteMapByName("grass"));
+                        room.init();
+
+                        Game.ChatBox.add("Welcome to the game, {0}.".format(room.player.name));
+                        Game.state = 'game';
+                        Game.currentPlayer = room.player;
+                        break;
                     }
                     
-                    room.player.loadStats(obj["stats"]);
-                    room.player.loadInventory(obj["inventory"]);
-                    room.player.setAnimations(obj["animations"]);
-                    room.player.loadAttackStyles(obj["attackStyles"]);
-                    room.player.setAttackStyle(obj["attackStyleId"]);
-                    
-                    room.updateGroundItems(obj["groundItems"]);
-                    
-                    
-                    room.loadBackground(Game.SpriteManager.getSpriteMapByName("grass"));
-                    room.init();
+                    case "logoff": {
+                        // clean up and change state to logon screen
+                        room.player = null;
+                        room.otherPlayers = [];
+                        Game.state = 'logonscreen';
+                        break;
+                    }
 
-                    Game.ChatBox.add("Welcome to the game, {0}.".format(room.player.name));
-                    Game.state = 'game';
-                    Game.currentPlayer = room.player;
-                }
-                else if (obj["action"] === "logoff") {
-                    // clean up and change state to logon screen
-                    room.player = null;
-                    room.otherPlayers = [];
-                    Game.state = 'logonscreen';
-                }
-                else if (obj["action"] === "message") {
-                    if (obj["message"]) {
-                        Game.ChatBox.add("{0}: {1}".format(obj["name"], obj["message"]), obj["colour"] == null ? 'yellow' : obj["colour"]);
-                        if (obj["id"] == room.player.id) {
-                            room.player.setChatMessage(obj["message"]);
-                        }
-                        else {
-                            for (var i in room.otherPlayers) {
-                                if (obj["id"] == room.otherPlayers[i].id) {
-                                    room.otherPlayers[i].setChatMessage(obj["message"]);
+                    case "message": {
+                        if (obj["message"]) {
+                            Game.ChatBox.add("{0}: {1}".format(obj.name, obj.message), obj.colour == null ? 'yellow' : obj.colour);
+                            if (obj.id == room.player.id) {
+                                room.player.setChatMessage(obj.message);
+                            }
+                            else {
+                                for (var i in room.otherPlayers) {
+                                    if (obj.id == room.otherPlayers[i].id) {
+                                        room.otherPlayers[i].setChatMessage(obj.message);
+                                    }
                                 }
                             }
                         }
+                        break;
                     }
-                }
-                else if (obj["action"] === "examine") {
-                    Game.ChatBox.add(obj["examineText"], "#fff");
-                }
-                else if (obj["action"] === "playerEnter") {
-                    room.addPlayer(obj);
-                    Game.ChatBox.add(obj.name + " has logged in.", "#0ff");
-                }
-                else if (obj["action"] === "playerLeave") {
-                    room.removePlayer(obj["id"]); // TODO should be session id; this is dangerous
-                    Game.ChatBox.add(obj["name"] + " has logged out.", "#0ff");
-                }
-                else if (obj["action"] === "addexp") {
-                    for (var key in obj["stats"]) {
-                        room.player.stats.gainExp(Game.statMap.get(key), obj.stats[key]);
+                    
+                    case "examine": {
+                        Game.ChatBox.add(obj["examineText"], "#fff");
+                        break;
                     }
-                }
-                else if (obj["action"] === "unknown") {
-                    Game.ChatBox.add("invalid action.", "#fff");
-                }
-                else if (obj["action"] === "dead") {
-                    if (obj.id === room.player.id) {
-                        // you died lmfao
-                        room.player.respawn(obj["tileId"], obj["currentHp"]);
-                        room.player.setDeathSequence();
-                    } else {
-                        for (var i in room.otherPlayers) {
-                            if (obj.id === room.otherPlayers[i].id) {
-                                // they died
-                                room.otherPlayers[i].respawn(obj["tileId"], obj["currentHp"]);
-                                // no death sequence so move them to respawn position straight away
-                                var playerXY = tileIdToXY(obj["tileId"]);
-                                room.otherPlayers[i].x = playerXY.x;
-                                room.otherPlayers[i].y = playerXY.y;
-                                room.otherPlayers[i].destPos.x = playerXY.x;
-                                room.otherPlayers[i].destPos.y = playerXY.y;
+
+                    case "playerEnter": {
+                        room.addPlayer(obj);
+                        Game.ChatBox.add(obj.name + " has logged in.", "#0ff");
+                        break;
+                    }
+
+                    case "playerLeave": {
+                        room.removePlayer(obj["id"]); // TODO should be session id; this is dangerous
+                        Game.ChatBox.add(obj["name"] + " has logged out.", "#0ff");
+                        break;
+                    }
+
+                    case "addexp": {
+                        for (var key in obj["stats"])
+                            room.player.stats.gainExp(Game.statMap.get(key), obj.stats[key]);
+                        break;
+                    }
+
+                    case "dead": {
+                        if (obj.id === room.player.id) {
+                            // you died lmfao
+                            room.player.respawn(obj["tileId"], obj["currentHp"]);
+                            room.player.setDeathSequence();
+                        } else {
+                            for (var i in room.otherPlayers) {
+                                if (obj.id === room.otherPlayers[i].id) {
+                                    // they died
+                                    room.otherPlayers[i].respawn(obj["tileId"], obj["currentHp"]);
+                                    // no death sequence so move them to respawn position straight away
+                                    var playerXY = tileIdToXY(obj["tileId"]);
+                                    room.otherPlayers[i].x = playerXY.x;
+                                    room.otherPlayers[i].y = playerXY.y;
+                                    room.otherPlayers[i].destPos.x = playerXY.x;
+                                    room.otherPlayers[i].destPos.y = playerXY.y;
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    }
+
+                    case "invmove":
+                    case "invupdate": {
+                        room.player.updateInventory(obj["inventory"]);
+                        room.player.setEquippedSlots(obj["equippedSlots"]);
+                        break;
+                    }
+
+                    case "equip": {
+                        room.player.setEquippedSlots(obj["equippedSlots"]);
+                        room.player.setBonuses(obj["bonuses"]);
+                        break;
+                    }
+
+                    case "drop":
+                    case "take": {
+                        room.updateGroundItems(obj["groundItems"]);
+                        break;
+                    }
+
+                    case "duel": {
+                        var fighter1, fighter2;
+                        if (obj["fighter1id"] === room.player.id) {
+                            fighter1 = room.player;
+                        }
+                        else {
+                            for (var i in room.otherPlayers) {
+                                if (room.otherPlayers[i].id === obj["fighter1id"])
+                                    fighter1 = room.otherPlayers[i];
+                                else if (room.otherPlayers[i].id === obj["fighter2id"])
+                                    fighter2 = room.otherPlayers[i];
+                            }
+                        }
+                        if (fighter1 && fighter2)
+                            Game.FightManager.addFight(fighter1, fighter2);
+                        break;
+                    }
+
+                    case "player_update": {
+                        if (obj["id"] == room.player.id) {
+                            room.player.handlePlayerUpdate(obj);
+                        } else {
+                            for (var i in room.otherPlayers) {
+                                if (obj["id"] == room.otherPlayers[i].id) {
+                                    room.otherPlayers[i].handlePlayerUpdate(obj);
+                                }
+                            }
+                        }
+                        break;
+                    }
+
+                    case "start_mining": {
+                        Game.ChatBox.add("you start mining the rock...");
+                        break;
+                    }
+
+                    case "finish_mining": {
+                        // keep mining automatically
+                        Game.ws.send({
+                            action: "mine",
+                            tileId: obj["tileId"]
+                        });
+                        break;
+                    }
+
+                    case "show_smithing_table": {
+                        Game.activeUiWindow = uiWindow;
+
+                        var buttons = [];
+                        for (var i = 0; i < obj["smithingOptions"].length; ++i) {
+                            buttons.push(new Game.UIButton(obj["smithingOptions"][i]));
+                        }
+                        uiWindow.setButtons(buttons.sort((a, b) => a.buttonInfo.level - b.buttonInfo.level));
+                        uiWindow.otherInfo = {
+                            storedCoal: obj["storedCoal"],
+                            furnaceTile: obj["furnaceTile"]
+                        };
+                        break;
+                    }
+
+                    case "npc_update": {
+                        for (var i = 0; i < room.npcs.length; ++i) {
+                            if (room.npcs[i].instanceId === obj["instanceId"]) {
+                                room.npcs[i].handleNpcUpdate(obj)
                                 break;
                             }
                         }
+                        break;
                     }
-                }
-                else if (obj["action"] === "invmove" || obj["action"] === "invupdate") {
-                    room.player.updateInventory(obj["inventory"]);
-                    room.player.setEquippedSlots(obj["equippedSlots"]);
-                }
-                else if (obj["action"] === "equip") {
-                    room.player.setEquippedSlots(obj["equippedSlots"]);
-                    room.player.setBonuses(obj["bonuses"]);
-                }
-                else if (obj["action"] === "drop" || obj["action"] === "take") {
-                    room.updateGroundItems(obj["groundItems"]);
-                }
-                else if (obj["action"] === "duel") {
-                    var fighter1, fighter2;
-                    if (obj["fighter1id"] === room.player.id) {
-                        fighter1 = room.player;
-                    }
-                    else {
-                        for (var i in room.otherPlayers) {
-                            if (room.otherPlayers[i].id === obj["fighter1id"])
-                                fighter1 = room.otherPlayers[i];
-                            else if (room.otherPlayers[i].id === obj["fighter2id"])
-                                fighter2 = room.otherPlayers[i];
-                        }
-                    }
-                    if (fighter1 && fighter2)
-                        Game.FightManager.addFight(fighter1, fighter2);
-                }
-                else if (obj["action"] === "player_update") {
-                    if (obj["id"] == room.player.id) {
-                        room.player.handlePlayerUpdate(obj);
-                    } else {
-                        for (var i in room.otherPlayers) {
-                            if (obj["id"] == room.otherPlayers[i].id) {
-                                room.otherPlayers[i].handlePlayerUpdate(obj);
+
+                    case "pvm_start": {
+                        let player = null, monster = null;
+                        if (obj.playerId == Game.currentPlayer.id) {
+                            player = Game.currentPlayer;
+                        } else {
+                            for (var i in room.otherPlayers) {
+                                if (room.otherPlayers[i].id == obj.playerId) {
+                                    player = room.otherPlayers[i];
+                                    break;
+                                }
                             }
                         }
-                    }
-                }
-                else if (obj["action"] === "start_mining") {
-                    Game.ChatBox.add("you start mining the rock...");
-                }
-                else if (obj["action"] === "finish_mining") {
-                    // keep mining automatically
-                    Game.ws.send({
-                        action: "mine",
-                        tileId: obj["tileId"]
-                    });
-                }
-                else if (obj["action"] === "show_smithing_table") {
-                    Game.activeUiWindow = uiWindow;
 
-                    var buttons = [];
-                    for (var i = 0; i < obj["smithingOptions"].length; ++i) {
-                        buttons.push(new Game.UIButton(obj["smithingOptions"][i]));
-                    }
-                    uiWindow.setButtons(buttons.sort((a, b) => a.buttonInfo.level - b.buttonInfo.level));
-                    uiWindow.otherInfo = {
-                        storedCoal: obj["storedCoal"],
-                        furnaceTile: obj["furnaceTile"]
-                    };
-                }
-                else if (obj["action"] === "npc_full_update") {
-                    for (var i in obj["npcs"]) {
-                        room.addNPC(obj["npcs"][i]);
-                    }
-                }
-                else if (obj["action"] === "npc_update") {
-                    let foundNpc = false;
-                    for (var i = 0; i < room.npcs.length; ++i) {
-                        if (room.npcs[i].instanceId === obj["instanceId"]) {
-                            room.npcs[i].handleNpcUpdate(obj)
-                            foundNpc = true;
-                            break;
-                        }
-                    }
-
-                    if (!foundNpc && obj.npc)
-                        room.addNPC(obj.npc);
-
-                    // clear out any dead npcs (they are re-added when the server respawns them)
-                    room.npcs = room.npcs.filter(e => e.currentHp > 0);
-                }
-                else if (obj["action"] === "pvm_start") {
-                    let player = null, monster = null;
-                    if (obj.playerId == Game.currentPlayer.id) {
-                        player = Game.currentPlayer;
-                    } else {
-                        for (var i in room.otherPlayers) {
-                            if (room.otherPlayers[i].id == obj.playerId) {
-                                player = room.otherPlayers[i];
+                        for (var i = 0; i < room.npcs.length; ++i) {
+                            if (room.npcs[i].instanceId === obj.monsterId) {
+                                monster = room.npcs[i];
                                 break;
                             }
                         }
-                    }
 
-                    for (var i = 0; i < room.npcs.length; ++i) {
-                        if (room.npcs[i].instanceId === obj.monsterId) {
-                            monster = room.npcs[i];
-                            break;
+                        if (player !== null && monster !== null) {
+                            // handle fight
+                            player.setDestPosAndSpeedByTileId(obj.tileId, -(player.getCurrentSpriteFrame().getCurrentFrame().width / 2));
+                            player.inCombat = true;
+                            
+                            monster.setDestPosAndSpeedByTileId(obj.tileId, monster.getCurrentSpriteFrame().getCurrentFrame().width / 2);
+                            monster.inCombat = true;
                         }
+                        break;
                     }
 
-                    if (player !== null && monster !== null) {
-                        // handle fight
-                        player.setDestPosAndSpeedByTileId(obj.tileId, -12);
-                        player.inCombat = true;
-                        
-                        monster.setDestPosAndSpeedByTileId(obj.tileId, 12);
-                        monster.inCombat = true;
-                    }
-                }
-                else if (obj["action"] === "pvm_end") {
-                    let player = null;
-                    if (obj.playerId == Game.currentPlayer.id) {
-                        player = Game.currentPlayer;
-                    } else {
-                        for (var i in room.otherPlayers) {
-                            if (room.otherPlayers[i].id == obj.playerId) {
-                                player = room.otherPlayers[i];
+                    case "pvm_end": {
+                        let player = null;
+                        if (obj.playerId == Game.currentPlayer.id) {
+                            player = Game.currentPlayer;
+                        } else {
+                            for (var i in room.otherPlayers) {
+                                if (room.otherPlayers[i].id == obj.playerId) {
+                                    player = room.otherPlayers[i];
+                                    break;
+                                }
+                            }
+                        }
+                        if (player != null) {
+                            player.inCombat = false;
+                            player.setDestPosAndSpeedByTileId(obj.playerTileId);
+                        }
+
+                        for (var i = 0; i < room.npcs.length; ++i) {
+                            if (room.npcs[i].instanceId === obj.monsterId) {
+                                room.npcs[i].inCombat = false;
+                                room.npcs[i].setDestPosAndSpeedByTileId(obj.monsterTileId);
                                 break;
                             }
                         }
-                    }
-                    if (player != null) {
-                        player.inCombat = false;
-                        player.setDestPosAndSpeedByTileId(obj.playerTileId);
+                        break;
                     }
 
-                    for (var i = 0; i < room.npcs.length; ++i) {
-                        if (room.npcs[i].instanceId === obj.monsterId) {
-                            room.npcs[i].inCombat = false;
-                            room.npcs[i].setDestPosAndSpeedByTileId(obj.monsterTileId);
-                            break;
+                    case "pvp_start": {
+                        let player1 = null, player2 = null;
+                        if (obj.player1Id == Game.currentPlayer.id) {
+                            player1 = Game.currentPlayer;
+                        } else {
+                            for (var i in room.otherPlayers) {
+                                if (room.otherPlayers[i].id == obj.player1Id) {
+                                    player1 = room.otherPlayers[i];
+                                    break;
+                                }
+                            }
                         }
+
+                        if (obj.player2Id == Game.currentPlayer.id) {
+                            player2 = Game.currentPlayer;
+                        } else {
+                            for (var i in room.otherPlayers) {
+                                if (room.otherPlayers[i].id == obj.player2Id) {
+                                    player2 = room.otherPlayers[i];
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (player1 !== null && player2 !== null) {
+                            // handle fight
+                            player1.setDestPosAndSpeedByTileId(obj.tileId, -(player1.getCurrentSpriteFrame().getCurrentFrame().width / 2));
+                            player1.inCombat = true;
+                            
+                            player2.setDestPosAndSpeedByTileId(obj.tileId, player2.getCurrentSpriteFrame().getCurrentFrame().width / 2);
+                            player2.inCombat = true;
+                        }
+
+                        break;
                     }
-                }
-                else if (obj["action"] === "pvp_start") {
-                    let player1 = null, player2 = null;
-                    if (obj.player1Id == Game.currentPlayer.id) {
-                        player1 = Game.currentPlayer;
-                    } else {
-                        for (var i in room.otherPlayers) {
-                            if (room.otherPlayers[i].id == obj.player1Id) {
-                                player1 = room.otherPlayers[i];
+
+                    case "pvp_end": {
+                        let player1 = null;
+                        if (obj.player1Id == Game.currentPlayer.id) {
+                            player1 = Game.currentPlayer;
+                        } else {
+                            for (var i in room.otherPlayers) {
+                                if (room.otherPlayers[i].id == obj.player1Id) {
+                                    player1 = room.otherPlayers[i];
+                                    break;
+                                }
+                            }
+                        }
+                        if (player1 != null) {
+                            player1.inCombat = false;
+                            player1.setDestPosAndSpeedByTileId(obj.playerTileId);
+                        }
+
+                        let player2 = null;
+                        if (obj.player2Id == Game.currentPlayer.id) {
+                            player2 = Game.currentPlayer;
+                        } else {
+                            for (var i in room.otherPlayers) {
+                                if (room.otherPlayers[i].id == obj.player2Id) {
+                                    player2 = room.otherPlayers[i];
+                                    break;
+                                }
+                            }
+                        }
+                        if (player2 != null) {
+                            player2.inCombat = false;
+                            player2.setDestPosAndSpeedByTileId(obj.player2TileId);
+                        }
+
+                        break;
+                    }
+
+                    case "toggle_attack_style": {
+                        Game.currentPlayer.setAttackStyle(obj.attackStyleId);
+                        break;
+                    }
+
+                    case "talk to": {
+                        for (let i = 0; i < room.npcs.length; ++i) {
+                            if (room.npcs[i].instanceId === obj["objectId"]) {
+                                room.npcs[i].setChatMessage(obj["message"]);
                                 break;
                             }
                         }
+                        break;
                     }
 
-                    if (obj.player2Id == Game.currentPlayer.id) {
-                        player2 = Game.currentPlayer;
-                    } else {
-                        for (var i in room.otherPlayers) {
-                            if (room.otherPlayers[i].id == obj.player2Id) {
-                                player2 = room.otherPlayers[i];
-                                break;
+                    case "npc_location_refresh": {
+                        let newNpcs = [];
+                        for (let i = 0; i < obj.npcs.length; ++i) {
+                            let refreshNpc = obj.npcs[i];
+                            let found = false;
+                            for (let j = 0; j < room.npcs.length; ++j) {
+                                if (room.npcs[j].instanceId === refreshNpc.instanceId) {
+
+                                    if (room.npcs[j].tileId !== refreshNpc.tileId)
+                                        room.npcs[j].setDestPosAndSpeedByTileId(refreshNpc.tileId);
+
+                                    newNpcs.push(room.npcs[j]);
+                                    found = true;
+                                    break;
+                                }
+                            }
+
+                            if (!found) {
+                                newNpcs.push(new Game.NPC(obj.npcs[i]));
                             }
                         }
+
+                        room.npcs = newNpcs;
+                        break;
                     }
 
-                    if (player1 !== null && player2 !== null) {
-                        // handle fight
-                        player1.setDestPosAndSpeedByTileId(obj.tileId, -12);
-                        player1.inCombat = true;
-                        
-                        player2.setDestPosAndSpeedByTileId(obj.tileId, 12);
-                        player2.inCombat = true;
-                    }
-                }
-                else if (obj["action"] === "pvp_end") {
-                    let player1 = null;
-                    if (obj.player1Id == Game.currentPlayer.id) {
-                        player1 = Game.currentPlayer;
-                    } else {
-                        for (var i in room.otherPlayers) {
-                            if (room.otherPlayers[i].id == obj.player1Id) {
-                                player1 = room.otherPlayers[i];
-                                break;
-                            }
-                        }
-                    }
-                    if (player1 != null) {
-                        player1.inCombat = false;
-                        player1.setDestPosAndSpeedByTileId(obj.playerTileId);
+                    case "dialogue": {
+                        console.log(obj);
+                        let gameWindowWidth = canvas.width - 250;
+                        let uiWidth = gameWindowWidth / 1.25;
+                        let uiHeight = canvas.height / 8;
+                        let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
+                        let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
+                        let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+                        Game.activeUiWindow = obj.dialogue === "" ? null : new Game.DialogueWindow(rect, obj.dialogue);
+                        break;
                     }
 
-                    let player2 = null;
-                    if (obj.player2Id == Game.currentPlayer.id) {
-                        player2 = Game.currentPlayer;
-                    } else {
-                        for (var i in room.otherPlayers) {
-                            if (room.otherPlayers[i].id == obj.player2Id) {
-                                player2 = room.otherPlayers[i];
-                                break;
-                            }
-                        }
+                    case "dialogue_option": {
+                        console.log(obj);
+                        let gameWindowWidth = canvas.width - 250;
+                        let uiWidth = gameWindowWidth / 2;
+                        let uiHeight = canvas.height / 4;
+                        let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
+                        let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
+                        let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+                        Game.activeUiWindow = new Game.DialogueOptionWindow(rect, obj.options);
+                        break;
                     }
-                    if (player2 != null) {
-                        player2.inCombat = false;
-                        player2.setDestPosAndSpeedByTileId(obj.player2TileId);
-                    }
-                }
-                else if (obj["action"] === "toggle_attack_style") {
-                    Game.currentPlayer.setAttackStyle(obj.attackStyleId);
-                }
-                else if (obj["action"] === "talk to") {
-                    for (let i = 0; i < room.npcs.length; ++i) {
-                        if (room.npcs[i].instanceId === obj["objectId"]) {
-                            room.npcs[i].setChatMessage(obj["message"]);
-                            break;
-                        }
-                    }
-                }
 
+                    default: {
+                        Game.ChatBox.add("invalid action.", "#fff");
+                        console.log(obj);
+                        break;
+                    }
+                }
             }
         }
     }
@@ -395,6 +485,7 @@ $(function () {
     Game.maxScale = 2;
     Game.minScale = 1;
     Game.sceneryMap = new Map();
+    Game.npcMap = new Map();
     // game settings:	
     var FPS = 50, INTERVAL = 1000 / FPS, // milliseconds
     STEP = INTERVAL / 1000; // seconds
@@ -461,6 +552,25 @@ $(function () {
                 }
             }
         },
+        loadNpcs: function(npcJson) {
+            for (let i = 0; i < npcJson.length; ++i) {
+                Game.npcMap.set(npcJson[i].id, {
+                    id: npcJson[i].id,
+                    name: npcJson[i].name,
+                    upId: npcJson[i].upId,
+                    downId: npcJson[i].downId,
+                    leftId: npcJson[i].leftId,
+                    rightId: npcJson[i].rightId,
+                    attackId: npcJson[i].attackId,
+                    scaleX: npcJson[i].scaleX,
+                    scaleY: npcJson[i].scaleY,
+                    maxHp: npcJson[i].hp,
+                    cmb: npcJson[i].cmb,
+                    leftclickOption: npcJson[i].leftclickOption,
+                    otherOptions: npcJson[i].otherOptions
+                });
+            }
+        },
         addPlayer: function (obj) {
             var player = new Game.Player(obj.tileId);
             player.id = obj.id;
@@ -473,10 +583,6 @@ $(function () {
             player.setAnimations(obj.animations);
 
             this.otherPlayers.push(player);
-        },
-        addNPC: function(obj) {
-            var npc = new Game.NPC(obj);
-            this.npcs.push(npc);
         },
         draw: function (ctx, xview, yview) {
             if (room.currentShow === 0)
@@ -551,16 +657,17 @@ $(function () {
 
             // add the NPCs
             this.compileDrawableNpcs(xview, yview);
-            for (var i in this.drawableNpcs) {
+            for (var i = 0; i < this.drawableNpcs.length; ++i) {
                 if (!drawMap.has(this.drawableNpcs[i].pos.y))
                     drawMap.set(this.drawableNpcs[i].pos.y, []);
+
                 drawMap.get(this.drawableNpcs[i].pos.y).push({
                     id: this.drawableNpcs[i].instanceId,
-                    name: this.drawableNpcs[i].name,
+                    name: this.drawableNpcs[i].get("name"),
                     x: this.drawableNpcs[i].pos.x, 
                     sprite: this.drawableNpcs[i].getCurrentSpriteFrame(),
                     type: "npc",
-                    leftclickOption: this.drawableNpcs[i].leftclickOption,
+                    leftclickOption: this.drawableNpcs[i].get("leftclickOption"),
                     label: this.drawableNpcs[i].getLeftclickLabel()
                 });
             }
@@ -713,7 +820,7 @@ $(function () {
 
             if (Game.ContextMenu.active && e.button == 0) {// left
                 var menuItem = Game.ContextMenu.handleMenuSelect();
-                if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
+                if (Game.getPlayer().inventory.rect.pointWithin(menuItem.originalPos)) {
                     Game.getPlayer().inventory.handleSlotAction(menuItem.action, menuItem.originalPos);
                 }
             } 
@@ -851,11 +958,11 @@ $(function () {
                                     spriteFrame.getCurrentFrame().height);
 
                                 if (rect.pointWithin(cursor.mousePos)) {
-                                    if (npc.leftclickOption != 0) {
+                                    if (npc.get("leftclickOption") != 0) {
                                         Game.ContextMenu.push([{
-                                            action: Game.ContextMenu.getContextOptionById(npc.leftclickOption).name,
+                                            action: Game.ContextMenu.getContextOptionById(npc.get("leftclickOption")).name,
                                             objectId: npc.instanceId,
-                                            objectName: npc.name,
+                                            objectName: npc.get("name"),
                                             type: "npc",
                                             label: npc.getLeftclickLabel()
                                         }]);
@@ -863,11 +970,11 @@ $(function () {
 
                                     for (var j = 0; j < Game.ContextMenu.contextOptions.length; ++j) {
                                         var contextOption = Game.ContextMenu.contextOptions[j];
-                                        if (npc.otherOptions & contextOption.id) {
+                                        if (npc.get("otherOptions") & contextOption.id) {
                                             Game.ContextMenu.push([{
                                                 action: contextOption.name, 
                                                 objectId: npc.instanceId, 
-                                                objectName: npc.name, 
+                                                objectName: npc.get("name"), 
                                                 type: "npc"
                                             }]);
                                         }

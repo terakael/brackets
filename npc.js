@@ -1,17 +1,14 @@
 (function(){
     function NPC(obj){
+        let npc = Game.npcMap.get(obj.npcId);
+
         var xy = tileIdToXY(obj.tileId);
-        this.id = obj.dto.id;
-        this.instanceId = obj.dto.tileId;// npc instance id is the spawn tile
-        this.name = obj.dto.name;
-        this.cmb = obj.dto.cmb;
+        this.id = npc.id,
+        this.instanceId = obj.instanceId;// npc instance id is the spawn tile
         this.pos = {x: xy.x, y: xy.y};
         this.dest = {x: xy.x, y: xy.y};
-        this.leftclickOption = obj.dto.leftclickOption;
-        this.otherOptions = obj.dto.otherOptions;
         this.speed = 0;
         this.currentHp = obj.currentHp;
-        this.maxHp = obj.dto.hp;
         this.healthBarTimer = 0;
         this.hitsplat = null;
         this.inCombat = false;
@@ -19,25 +16,36 @@
         this.chatMessageTimer = 0;
         
         this.spriteframes = [];
-        this.spriteframes["up"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.upId).frameData);
-        this.spriteframes["down"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.downId).frameData);
-        this.spriteframes["left"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.leftId).frameData);
-        this.spriteframes["right"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.rightId).frameData);
-        this.spriteframes["attack"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(obj.dto.leftId).frameData);
+        this.spriteframes["up"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.upId).frameData);
+        this.spriteframes["up"].setScale({x: npc.scaleX, y: npc.scaleY});
+        
+        this.spriteframes["down"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.downId).frameData);
+        this.spriteframes["down"].setScale({x: npc.scaleX, y: npc.scaleY});
+        
+        this.spriteframes["left"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.leftId).frameData);
+        this.spriteframes["left"].setScale({x: npc.scaleX, y: npc.scaleY});
+        
+        this.spriteframes["right"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.rightId).frameData);
+        this.spriteframes["right"].setScale({x: npc.scaleX, y: npc.scaleY});
+
+        this.spriteframes["attack"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.leftId).frameData);
+        this.spriteframes["attack"].setScale({x: npc.scaleX, y: npc.scaleY});
+
+        this.combatOffset = (this.spriteframes["attack"].getCurrentFrame().width * npc.scaleX) / 2;
 
         this.currentAnimation = "down";
     }
 
     NPC.prototype.getLeftclickLabel = function() {
-        if (this.leftclickOption === 4096) // attack
-            return "attack {0} (lvl {1})".format(this.name, this.cmb);
+        if (this.get("leftclickOption") === 4096) // attack
+            return "attack {0} (lvl {1})".format(this.get("name"), this.get("cmb"));
         return "";
     }
     
     NPC.prototype.process = function(step){
         this.processMovement(step);
 
-        if (this.inCombat && Math.abs(this.dest.x - this.pos.x) < 1 && Math.abs(this.dest.y - this.pos.y) < 1)
+        if (this.inCombat && Math.abs((this.dest.x + this.combatOffset) - this.pos.x) < 1 && Math.abs(this.dest.y - this.pos.y) < 1)
             this.currentAnimation = "attack";
 
         if (this.healthBarTimer > 0) {
@@ -67,7 +75,7 @@
         context.save();
         context.setTransform(1, 0, 0, 1, 0, 0);
         let frameHeight = this.spriteframes[this.currentAnimation].getCurrentFrame().height;
-        this.drawHealthBar(context, (this.pos.x - xView) * Game.scale, (this.pos.y - yView - frameHeight - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.maxHp);
+        this.drawHealthBar(context, (this.pos.x - xView) * Game.scale, (this.pos.y - yView - frameHeight - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.get("maxHp"));
 
         if (this.hitsplat) {
             context.fillStyle = this.hitsplat.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";
@@ -90,14 +98,14 @@
     }
 
     NPC.prototype.processMovement = function(step) {
-        var diffx = this.dest.x - this.pos.x;
+        var diffx = (this.dest.x + (this.inCombat ? this.combatOffset : 0)) - this.pos.x;
         var diffy = this.dest.y - this.pos.y;
         
         let moving = false;
         if (Math.abs(diffx) > 1 || Math.abs(diffy) > 1) {
             var n = Math.getVectorNormal({x: diffx, y: diffy});
             if (Math.abs(n.x * step * this.speed) > Math.abs(diffx) || Math.abs(diffx) > 64)
-                this.pos.x = this.dest.x;
+                this.pos.x = this.dest.x + (this.inCombat ? this.combatOffset : 0);
             else
                 this.pos.x += n.x * step * this.speed;
             
@@ -133,23 +141,19 @@
         return this.spriteframes[this.currentAnimation];
     }
 
-    NPC.prototype.setDestPosAndSpeedByTileId = function(tileId, xOffset) {
+    NPC.prototype.setDestPosAndSpeedByTileId = function(tileId) {
         var xy = tileIdToXY(tileId);
-        xy.x += xOffset || 0;// if in combat
 
         this.dest.x = xy.x;
         this.dest.y = xy.y;
 
-        var diffx = xy.x - this.pos.x;
+        var diffx = xy.x - this.pos.x + (this.inCombat ? this.combatOffset : 0);
         var diffy = xy.y - this.pos.y;
         var mag = Math.getVectorMagnitude({x: diffx, y: diffy});
         this.speed = mag / 0.6;
     }
 
     NPC.prototype.handleNpcUpdate = function(obj) {
-        if (obj.hasOwnProperty("tileId") && !this.inCombat)
-            this.setDestPosAndSpeedByTileId(obj.tileId);
-        
         if (obj.hasOwnProperty("hp")) {
             // set current hp
             this.currentHp = obj.hp;
@@ -157,7 +161,6 @@
 
         if (obj.hasOwnProperty("damage")) {
             // damage hitsplat on top of the npc, set health bar timer
-            // this.stats.showHealthBar();
             this.hitsplat = {
                 damage: obj.damage,
                 lifetime: 1
@@ -186,6 +189,11 @@
         this.chatMessage = message;
         this.chatMessageTimer = 3;
     }
+
+    NPC.prototype.get = function(val) {
+        return Game.npcMap.get(this.id)[val];
+    }
+
     
     Game.NPC = NPC;		
 })();

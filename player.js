@@ -195,7 +195,6 @@
         Player.prototype.loadStats = function(obj) {
             var stats = this.stats;
             Game.statMap.forEach(function(value, key, map) {
-                console.log("setting stat {0} to exp {1}".format(value, obj[key]));
                 stats.setExp(value, obj[key]);
             });
         }
@@ -235,6 +234,7 @@
             this.respawnPos.y = xy.y;
             this.currentHp = hp;
             this.maxHp = hp;
+            this.stats.bonuses = null;
         }
 		
         Player.prototype.setDeathSequence = function() {
