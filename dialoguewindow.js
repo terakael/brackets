@@ -1,7 +1,11 @@
 (function() {
-    function DialogueWindow(rect, message) {
+    function DialogueWindow(rect, obj) {
         this.rect = rect;
-        this.dialogue = message;
+        this.dialogue = obj.dialogue;
+        this.speaker = obj.speaker;
+
+        let maxCharsPerLine = 60;
+        this.lines = wordWrap(this.dialogue, maxCharsPerLine).split('\n');
     }
     
     DialogueWindow.prototype.draw = function(context, xview, yview) {
@@ -14,27 +18,21 @@
         context.fillRect(~~(this.rect.left) + 0.5, ~~(this.rect.top) + 0.5, this.rect.width, this.rect.height);
         context.strokeRect(~~(this.rect.left) + 0.5, ~~(this.rect.top) + 0.5, this.rect.width, this.rect.height);
 
-        context.font = "20pt Consolas";
+        context.font = "12pt Consolas";
         context.textAlign = "center";
         context.textBaseline = "middle";
+        context.fillStyle = "white";
+
+        context.fillText(this.speaker, this.rect.left + (this.rect.width / 2), this.rect.top + 15);
+        
+        let lineHeight = 20;
+        let totalLineHeight = (this.lines.length - 1) * lineHeight;
+
         context.fillStyle = "red";
-
-        // split dialogue into multiple lines if necessary
-        context.fillText(this.dialogue, this.rect.left + (this.rect.width / 2), this.rect.top + (this.rect.height / 2));
-
-        // let counter = 0;
-        // let dialogue = this.dialogue;
-        // while (true) {
-        //     let idx = dialogue.indexOf(" ", 10);
-        //     if (idx >= 0) {
-        //         let toDisplay = dialogue.substr(0, idx);
-        //         dialogue = dialogue.substr(idx);
-        //         context.fillText(toDisplay, this.rect.left + (this.rect.width / 2), this.rect.top + (this.rect.height / 2) + (counter++ * 20));
-        //     }
-
-        //     if (!dialogue.length)
-        //         break;
-        // }
+        context.font = "15pt Consolas";
+        for (let i = 0; i < this.lines.length; ++i) {
+            context.fillText(this.lines[i], this.rect.left + (this.rect.width / 2), this.rect.top + (this.rect.height / 2) - (totalLineHeight / 2) + (i * lineHeight));
+        }
         context.restore();
     }
 

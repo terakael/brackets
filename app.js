@@ -100,7 +100,7 @@ $(function () {
                         room.player.loadAttackStyles(obj.attackStyles);
                         room.player.setAttackStyle(obj.attackStyleId);
                         
-                        room.updateGroundItems(obj.groundItems);
+                        // room.updateGroundItems(obj.groundItems);
                         
                         
                         room.loadBackground(Game.SpriteManager.getSpriteMapByName("grass"));
@@ -196,11 +196,11 @@ $(function () {
                         break;
                     }
 
-                    case "drop":
-                    case "take": {
-                        room.updateGroundItems(obj["groundItems"]);
-                        break;
-                    }
+                    // case "drop":
+                    // case "take": {
+                    //     room.updateGroundItems(obj["groundItems"]);
+                    //     break;
+                    // }
 
                     case "duel": {
                         var fighter1, fighter2;
@@ -444,19 +444,17 @@ $(function () {
                     }
 
                     case "dialogue": {
-                        console.log(obj);
                         let gameWindowWidth = canvas.width - 250;
                         let uiWidth = gameWindowWidth / 1.25;
                         let uiHeight = canvas.height / 8;
                         let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
                         let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
                         let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
-                        Game.activeUiWindow = obj.dialogue === "" ? null : new Game.DialogueWindow(rect, obj.dialogue);
+                        Game.activeUiWindow = obj.dialogue === "" ? null : new Game.DialogueWindow(rect, obj);
                         break;
                     }
 
                     case "dialogue_option": {
-                        console.log(obj);
                         let gameWindowWidth = canvas.width - 250;
                         let uiWidth = gameWindowWidth / 2;
                         let uiHeight = canvas.height / 4;
@@ -464,6 +462,11 @@ $(function () {
                         let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
                         let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
                         Game.activeUiWindow = new Game.DialogueOptionWindow(rect, obj.options);
+                        break;
+                    }
+
+                    case "ground_item_refresh": {
+                        room.refreshGroundItems(obj.groundItems);
                         break;
                     }
 
@@ -619,7 +622,8 @@ $(function () {
                                 id: Game.currentPlayer.id,
                                 action: "take", 
                                 objectName: this.groundItems[i].item.name, 
-                                groundItemId: this.groundItems[i].groundItemId
+                                itemId: this.groundItems[i].item.id,
+                                tileId: this.groundItems[i].tileId
                             });
                         }
                     }
@@ -797,13 +801,26 @@ $(function () {
                 }
             }
         },
-        updateGroundItems: function (groundItemArray) {
-            this.groundItems = [];
-            for (var i in groundItemArray) {
-                var item = Game.SpriteManager.getItemById(groundItemArray[i].id);
-                var xy = tileIdToXY(groundItemArray[i].tileId);
-                this.groundItems.push(new Game.GroundItem(item, xy.x, xy.y, groundItemArray[i].groundItemId));
+        // updateGroundItems: function (groundItemArray) {
+        //     this.groundItems = [];
+        //     for (var i in groundItemArray) {
+        //         var item = Game.SpriteManager.getItemById(groundItemArray[i].id);
+        //         var xy = tileIdToXY(groundItemArray[i].tileId);
+        //         this.groundItems.push(new Game.GroundItem(item, xy.x, xy.y, groundItemArray[i].groundItemId));
+        //     }
+        // },
+        refreshGroundItems: function(obj) {
+            // {tileId: [itemId, itemId, itemId, ...]}
+            // {31221: [55, 27, ...]}
+
+            let groundItems = [];
+            for (let tileId in obj) {
+                console.log(tileId);
+                for (let i = 0; i < obj[tileId].length; ++i) {
+                    groundItems.push(new Game.GroundItem(tileId, obj[tileId][i]));
+                }
             }
+            this.groundItems = groundItems;
         }
     };
     canvas.addEventListener("mousedown", function (e) {
@@ -892,7 +909,7 @@ $(function () {
                             var groundItem = room.groundItems[i];
                             if (groundItem.clickBox.pointWithin(cursor.mousePos)) {
                                 Game.ContextMenu.push([
-                                    { action: "take", objectName: groundItem.item.name, groundItemId: groundItem.groundItemId },
+                                    { action: "take", objectName: groundItem.item.name, itemId: groundItem.item.id, tileId: groundItem.tileId },
                                     { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, type: "item" }
                                 ]);
                             }
