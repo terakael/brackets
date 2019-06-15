@@ -240,6 +240,7 @@
         Player.prototype.setDeathSequence = function() {
             this.deathSequence = true;
             this.deathsCurtainMaxTimer = 1;
+            this.deathsCurtain = 1;
         }
 
         Player.prototype.updateInventory = function(invArray) {

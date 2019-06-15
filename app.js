@@ -95,7 +95,7 @@ $(function () {
                         }
                         
                         room.player.loadStats(obj.stats);
-                        room.player.loadInventory(obj.inventory);
+                        room.player.updateInventory(obj.inventory);
                         room.player.setAnimations(obj.animations);
                         room.player.loadAttackStyles(obj.attackStyles);
                         room.player.setAttackStyle(obj.attackStyleId);
@@ -195,12 +195,6 @@ $(function () {
                         room.player.setBonuses(obj["bonuses"]);
                         break;
                     }
-
-                    // case "drop":
-                    // case "take": {
-                    //     room.updateGroundItems(obj["groundItems"]);
-                    //     break;
-                    // }
 
                     case "duel": {
                         var fighter1, fighter2;
@@ -469,6 +463,25 @@ $(function () {
                         room.refreshGroundItems(obj.groundItems);
                         break;
                     }
+
+                    case "shop": {
+                        console.log(obj);
+
+                        let gameWindowWidth = canvas.width - 250;
+                        let uiWidth = gameWindowWidth / 2;
+                        let uiHeight = canvas.height / 2;
+
+                        let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
+                        let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
+                        let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+
+                        Game.activeUiWindow = new Game.ShopWindow(rect, obj.shopStock);
+                        break;
+                    }
+
+                    case "value":
+                    case "buy":
+                        break;
 
                     default: {
                         Game.ChatBox.add("invalid action.", "#fff");
@@ -801,21 +814,12 @@ $(function () {
                 }
             }
         },
-        // updateGroundItems: function (groundItemArray) {
-        //     this.groundItems = [];
-        //     for (var i in groundItemArray) {
-        //         var item = Game.SpriteManager.getItemById(groundItemArray[i].id);
-        //         var xy = tileIdToXY(groundItemArray[i].tileId);
-        //         this.groundItems.push(new Game.GroundItem(item, xy.x, xy.y, groundItemArray[i].groundItemId));
-        //     }
-        // },
         refreshGroundItems: function(obj) {
             // {tileId: [itemId, itemId, itemId, ...]}
             // {31221: [55, 27, ...]}
 
             let groundItems = [];
             for (let tileId in obj) {
-                console.log(tileId);
                 for (let i = 0; i < obj[tileId].length; ++i) {
                     groundItems.push(new Game.GroundItem(tileId, obj[tileId][i]));
                 }
@@ -824,23 +828,20 @@ $(function () {
         }
     };
     canvas.addEventListener("mousedown", function (e) {
-        if (Game.activeUiWindow) {
-            Game.activeUiWindow.onMouseDown(e);
-        }
-
-        else if (Game.state === 'game') {
+        if (Game.state === 'game') {
 
             // TODO inventory, minimap, stats etc should all be contained within this
             if (Game.HUD.mouseWithin(Game.mousePos)) {
                 Game.HUD.onMouseDown(e);
             } 
 
-            if (Game.ContextMenu.active && e.button == 0) {// left
-                var menuItem = Game.ContextMenu.handleMenuSelect();
-                if (Game.getPlayer().inventory.rect.pointWithin(menuItem.originalPos)) {
-                    Game.getPlayer().inventory.handleSlotAction(menuItem.action, menuItem.originalPos);
-                }
-            } 
+            if (Game.activeUiWindow) {
+                Game.activeUiWindow.onMouseDown(e);
+            }
+            else if (Game.ContextMenu.active && e.button == 0) {// left
+                // selecting a context option within the game world
+                Game.ContextMenu.handleMenuSelect();
+            }
             else if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
                 Game.getPlayer().inventory.onMouseDown(e.button);
             } 

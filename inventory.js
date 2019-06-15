@@ -6,6 +6,7 @@
 		this.selected = false;
 		this.id = id;
 		this.equipped = false;
+		this.count = 1;
 	};
 	InventorySlot.prototype = {
 		constructor: InventorySlot,
@@ -18,6 +19,14 @@
 					context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 				}
 				this.item.draw(context, this.rect.left + (this.rect.width/2), this.rect.top + (this.rect.height/2));
+
+				if (this.item.isStackable()) {
+					context.textAlign = "right";
+					context.textBaseline = "top";
+					context.font = "10pt Consolas";
+					context.fillStyle = "yellow";
+					context.fillText(this.count, this.rect.left + this.rect.width - 5, this.rect.top + 5);
+				}
 			}
 		}
 	};
@@ -55,7 +64,9 @@
 				this.slots[i].draw(context, xview, yview);
 
 				if (this.slots[i].rect.pointWithin(Game.mousePos) && this.slots[i].item.id != 0) {
-					if (!this.slotInUse) {// if the slot is not in use then show the left-click hover option
+					if (Game.activeUiWindow && Game.activeUiWindow.type === "shop") {
+						Game.ContextMenu.setLeftclick(Game.mousePos, this.getSellLeftclickOption(this.slots[i]));
+					} else if (!this.slotInUse) {// if the slot is not in use then show the left-click hover option
 						var contextOpt = Game.ContextMenu.getContextOptionById(this.slots[i].item.leftclickOption);
 
 						Game.ContextMenu.setLeftclick(Game.mousePos, {
@@ -114,13 +125,51 @@
 				label: "use {0} -> {1}".format(srcItem.name, descItem.name)
 			};
 		},
+		getSellLeftclickOption: function(slot) {
+			if (!slot || !slot.item)
+				return {};
+
+			return {
+				id: Game.currentPlayer.id,
+				action: "value",
+				slot: slot.id,
+				objectId: slot.item.id,
+				objectName: slot.item.name,
+				type: "item",
+				valueTypeId: 1,// sell-value
+				priority: 10
+			};
+		},
+		getSellContextMenuOptions: function(slot) {
+			// when a shop is open
+			let options = [];
+			options.push(this.getSellLeftclickOption(slot));
+			
+			let sellAmounts = [1, 5, 10];
+			for (let i = 0; i < sellAmounts.length; ++i) {
+				options.push({
+					action: "sell",
+					objectId: slot.item.id,
+					objectName: slot.item.name,
+					amount: sellAmounts[i],
+					label: `sell ${sellAmounts[i]} ${slot.item.name}`,
+					priority: 10
+				});
+			}
+
+			return options;
+		},
 		loadContextMenuOptions: function(slot) {
 			// slot.item has a contextOptions int.  parse that to retrieve the correct actions
 			var options = []
 
-			if (this.slotInUse) {
+			if (Game.activeUiWindow && Game.activeUiWindow.type === "shop") {
+				options = options.concat(this.getSellContextMenuOptions(slot));
+			}
+			else if (this.slotInUse) {
 				options.push(this.getUseContextMenuOption(this.slotInUse.item, slot.item));
-			} else {
+			} 
+			else {
 				var contextOption = Game.ContextMenu.getContextOptionById(slot.item.leftclickOption);
 				options.push({
 					action: contextOption.name, 
@@ -151,11 +200,24 @@
 			// Game.ContextMenu.addOptionsByInventorySlot(slot);
 		},
 		onMouseDown: function(button) {
-			if (Game.ContextMenu.active)
-				return;
-
 			switch (button) {
 				case 0:// left
+					if (Game.ContextMenu.active) {
+						// handle context menu click
+						this.selectedMenuItem = true;
+						let menuItem = Game.ContextMenu.handleMenuSelect();
+						if (menuItem.action === "use")
+							this.handleSlotAction(menuItem.action, menuItem.originalPos);
+						Game.ContextMenu.hide();
+						break;
+					}
+					else if (Game.activeUiWindow && Game.activeUiWindow.type === "shop") {
+						let slot = this.getMouseOverSlot(Game.mousePos);
+						if (slot && slot.item)
+							Game.ws.send(this.getSellLeftclickOption(slot));
+						break;
+					}
+
 					this.mouseDown = true;
 					if (this.dragging) {// if you drag out of the window then this can happen as the up event isn't hit
 						this.slots[this.selectedSlot.id].item = this.selectedSlot.item;
@@ -164,23 +226,29 @@
 						this.dragging = false;
 					}
 					this.mousePosOnClick = Game.mousePos;
-					var slot = this.getMouseOverSlot(Game.mousePos);
+					let slot = this.getMouseOverSlot(Game.mousePos);
 					if (slot.item.id != 0) {
-						this.selectedSlot = {id: slot.id, item: slot.item, equipped: slot.equipped};
+						this.selectedSlot = {id: slot.id, item: slot.item, equipped: slot.equipped, count: slot.count};
 					}
 
 					break;
 				case 2:// right
-					var slot = this.getMouseOverSlot(Game.mousePos);
-					if (slot && slot.item) {
-						this.loadContextMenuOptions(slot);
+					if (!Game.ContextMenu.active) {
+						let slot = this.getMouseOverSlot(Game.mousePos);
+						if (slot && slot.item) {
+							this.loadContextMenuOptions(slot);
+						}
 					}
 					break;
 			}
 		},
 		onMouseUp: function(button) {
-			if (Game.ContextMenu.active)
+			// we just selected something from the context menu so ignore the mouse-up
+			if (this.selectedMenuItem) {
+				this.selectedMenuItem = false;
 				return;
+			}
+				
 
 			switch (button) {
 				case 0:// left
@@ -215,12 +283,15 @@
 				if (slot.item) {
 					this.slots[this.selectedSlot.id].item = slot.item;
 					this.slots[this.selectedSlot.id].equipped = slot.equipped;
+					this.slots[this.selectedSlot.id].count = slot.count;
 				}
 				slot.item = this.selectedSlot.item;
 				slot.equipped = this.selectedSlot.equipped;
+				slot.count = this.selectedSlot.count;
 			} else {
 				this.slots[this.selectedSlot.id].item = this.selectedSlot.item;
 				this.slots[this.selectedSlot.id].equipped = this.selectedSlot.equipped;
+				this.slots[this.selectedSlot.id].count = this.selectedSlot.count;
 			}
 
 			if (slot) {// if the mouse isnt' over a slot then the item won't move, so don't send a move request.
@@ -238,14 +309,11 @@
 					return this.slots[i];
 			}
 		},
-		loadInventory: function(invArray) {
-			for (var i in this.slots) {
-				this.slots[i].item = Game.SpriteManager.getItemById(invArray[i] || 0);
-			}
-		},
-		updateInventory: function(invArray) {
-			for (var i in invArray) {
-				this.slots[i].item = Game.SpriteManager.getItemById(invArray[i]);
+		updateInventory: function(inv) {
+			for (let i in this.slots) {
+				let invItem = inv[i];
+				this.slots[i].item = Game.SpriteManager.getItemById(invItem.itemId);
+				this.slots[i].count = invItem.count;
 			}
 		},
 		setEquippedSlots: function(equippedArray) {

@@ -147,13 +147,15 @@
 	    			obj[i].label = "{0} {1}".format(obj[i].action, obj[i].objectName || "");
 
 				obj[i].id = Game.getPlayer().id;
-				obj[i].priority = this.getPriorityByAction(obj[i].action);
+				if (!obj[i].priority)
+					obj[i].priority = this.getPriorityByAction(obj[i].action);
 	    		this.menuOptions.push(obj[i]);
 			}
     	},
         handleMenuSelect: function() {
         	// send action based on context menu selection
-            var menuItem = Game.ContextMenu.getSelectedAction();
+			var menuItem = Game.ContextMenu.getSelectedAction();
+			// menuItem.originalPos = this.originalPos;
 			if (menuItem.action === "cancel") {
 				// do nothing
             } else if (menuItem.action === "use" && !Game.currentPlayer.inventory.slotInUse) {

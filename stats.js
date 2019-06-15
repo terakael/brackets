@@ -50,6 +50,10 @@
 		ctx.strokeStyle = "rgba(100, 100, 100, 0.6)";
         var statBoxWidth = 230;
 
+        ctx.textAlign = "right";
+        ctx.fillStyle = "red";
+        ctx.fillText("cmb: " + Game.currentPlayer.combatLevel, ~~(this.x + xview + statBoxWidth - 10) + 0.5, ~~(yview - 5) + 0.5);
+
         var spritemap = Game.SpriteManager.getSpriteMapById(10);
         
         var hoverStatId = null;
@@ -68,6 +72,7 @@
 
             ctx.drawImage(spritemap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 16, 16);
 
+            ctx.textAlign = "left";
             ctx.textBaseline = "middle";
             ctx.fillStyle = "red";
             if (name === "hp") {

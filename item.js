@@ -5,7 +5,7 @@
 		this.leftclickOption = obj.leftclickOption;
 		this.otherOptions = obj.otherOptions;
 		this.spriteFrame = obj.spriteFrame;
-
+		this.attributes = obj.attributes;
 	};
 
 	Item.prototype.draw = function(ctx, x, y) {
@@ -15,6 +15,10 @@
 	Item.prototype.process = function(dt) {
 
 	};
+
+	Item.prototype.isStackable = function() {
+		return this.attributes & 1;
+	}
 	
 	Game.Item = Item;
 })();
