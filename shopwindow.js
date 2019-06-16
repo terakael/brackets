@@ -1,13 +1,19 @@
 (function() {
-    function ShopWindow(rect, stock) {
+    function ShopWindow(rect, stock, name) {
         this.type = "shop";// used to check which uiWindow is open (dialogue, smithing window etc)
         this.rect = rect;
+        this.name = name;
+        this.slots = [];
+        this.updateStock(stock);
+    }
+
+    ShopWindow.prototype.updateStock = function(stock) {
         this.slots = [];
         for (let slot in stock) {
-            let shopSlot = new Game.ShopSlot(stock[slot].itemId, stock[slot].maxStock);
-
-            shopSlot.setLocalPosition(this.rect.left + 20 + (slot * 100), this.rect.top + 50);
-            
+            let shopSlot = new Game.ShopSlot(stock[slot].itemId, stock[slot].currentStock);
+            let currentRow = ~~(slot / 4);// four items per row
+            let currentColumn = slot % 4;
+            shopSlot.setLocalPosition(this.rect.left + 20 + (currentColumn * 100), this.rect.top + 30 + (currentRow * 80));
             this.slots.push(shopSlot);
         }
     }
@@ -24,7 +30,7 @@
         context.textAlign = "center";
         context.font = "15px Consolas";
         context.fillStyle = "white";
-        context.fillText("shop stock", ~~(this.rect.left + (this.rect.width / 2)) + 0.5, ~~(this.rect.top + 10) + 0.5);
+        context.fillText(this.name, ~~(this.rect.left + (this.rect.width / 2)) + 0.5, ~~(this.rect.top + 10) + 0.5);
 
         for (var i = 0; i < this.slots.length; ++i) {
             this.slots[i].draw(context);
@@ -42,6 +48,15 @@
     }
 
     ShopWindow.prototype.onMouseDown = function(e) {
+        if (e.button == 0) {// leftclick
+            if (Game.ContextMenu.active) {
+                Game.ContextMenu.handleMenuSelect();
+                Game.ContextMenu.hide();
+                this.selectedContextOption = true;
+                return;
+            }
+        }
+
         // shop window
         if (this.rect.pointWithin(Game.mousePos)) {
             for (var i = 0; i < this.slots.length; ++i)
@@ -53,11 +68,16 @@
             Game.currentPlayer.inventory.onMouseDown(e.button);
         }
         else {
+            Game.ws.send({action: "close_shop"});
             Game.activeUiWindow = null;
         }
     }
 
     ShopWindow.prototype.onMouseUp = function(e) {
+        if (this.selectedContextOption) {
+            this.selectedContextOption = false;
+            return;
+        }
         for (var i = 0; i < this.slots.length; ++i) {
             this.slots[i].onMouseUp(e);
         }

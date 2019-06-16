@@ -6,10 +6,10 @@
         disabled: 3
     }
 
-    function ShopSlot(itemId, maxStock) {
+    function ShopSlot(itemId, currentStock) {
         this.rect = new Game.Rectangle(0, 0, 100, 75);
         this.item = Game.SpriteManager.getItemById(itemId);
-        this.maxStock = maxStock;
+        this.currentStock = currentStock;
 
         this.leftclickOption = {
             id: Game.currentPlayer.id,
@@ -50,7 +50,7 @@
         context.fillStyle = "yellow";
 
         // current stock
-        context.fillText(this.maxStock, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
+        context.fillText(this.currentStock, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
 
         // draw the icon
         var itemWidth = this.item.spriteFrame.getCurrentFrame().width;
@@ -108,13 +108,8 @@
 
         switch (e.button) {
             case 0: // left
-                if (Game.ContextMenu.active) {
-                    Game.ContextMenu.handleMenuSelect();
-                    Game.ContextMenu.hide();
-                } else {
-                    if (this.rect.pointWithin(Game.mousePos)) {
-                        this.state = ButtonStates.click;
-                    }
+                if (this.rect.pointWithin(Game.mousePos)) {
+                    this.state = ButtonStates.click;
                 }
             break;
 

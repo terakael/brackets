@@ -24,7 +24,7 @@
 					context.textAlign = "right";
 					context.textBaseline = "top";
 					context.font = "10pt Consolas";
-					context.fillStyle = "yellow";
+					context.fillStyle = this.count.includes("M") ? "#8f8" : "yellow";
 					context.fillText(this.count, this.rect.left + this.rect.width - 5, this.rect.top + 5);
 				}
 			}
@@ -313,7 +313,7 @@
 			for (let i in this.slots) {
 				let invItem = inv[i];
 				this.slots[i].item = Game.SpriteManager.getItemById(invItem.itemId);
-				this.slots[i].count = invItem.count;
+				this.slots[i].count = invItem.friendlyCount;
 			}
 		},
 		setEquippedSlots: function(equippedArray) {

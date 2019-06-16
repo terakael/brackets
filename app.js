@@ -475,7 +475,7 @@ $(function () {
                         let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
                         let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
 
-                        Game.activeUiWindow = new Game.ShopWindow(rect, obj.shopStock);
+                        Game.activeUiWindow = new Game.ShopWindow(rect, obj.shopStock, obj.shopName);
                         break;
                     }
 
