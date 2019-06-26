@@ -28,7 +28,7 @@
         this.spriteframes["right"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.rightId).frameData);
         this.spriteframes["right"].setScale({x: npc.scaleX, y: npc.scaleY});
 
-        this.spriteframes["attack"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.leftId).frameData);
+        this.spriteframes["attack"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.attackId).frameData);
         this.spriteframes["attack"].setScale({x: npc.scaleX, y: npc.scaleY});
 
         this.combatOffset = (this.spriteframes["attack"].getCurrentFrame().width * npc.scaleX) / 2;
@@ -75,7 +75,7 @@
         context.save();
         context.setTransform(1, 0, 0, 1, 0, 0);
         let frameHeight = this.spriteframes[this.currentAnimation].getCurrentFrame().height;
-        this.drawHealthBar(context, (this.pos.x - xView) * Game.scale, (this.pos.y - yView - frameHeight - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.get("maxHp"));
+        this.drawHealthBar(context, (this.pos.x - xView + 2.5) * Game.scale, (this.pos.y - yView - frameHeight - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.get("maxHp"));
 
         if (this.hitsplat) {
             context.fillStyle = this.hitsplat.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";

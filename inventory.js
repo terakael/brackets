@@ -205,6 +205,7 @@
 					if (Game.ContextMenu.active) {
 						// handle context menu click
 						this.selectedMenuItem = true;
+						console.log("use");
 						let menuItem = Game.ContextMenu.handleMenuSelect();
 						if (menuItem.action === "use")
 							this.handleSlotAction(menuItem.action, menuItem.originalPos);

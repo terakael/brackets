@@ -30,7 +30,8 @@
             this.deathsCurtain = 1;
             this.deathSequence = false;
 
-            this.spriteframes = [];
+            this.spriteframes = new Map();// things that aren't base character parts (weapons/armour etc)
+            this.baseframes = new Map();// base character parts; shows if you're not equipping anything
             this.currentAnimation = "down";
             
             this.attackStyles = {};
@@ -76,8 +77,8 @@
             }
 
             if (this.inCombat && Math.abs(this.destPos.x - this.x) < 1 && Math.abs(this.destPos.y - this.y) < 1) {
-                this.currentAnimation = "attack";
-                // TODO mirror attack animation if on the right-hand side of the fight
+                // if you're attacking FROM the right, you should be facing left.
+                this.currentAnimation = this.attackingFromRight ? "attack_left" : "attack_right";
             }
 			
 			// don't let player leaves the world's boundary
@@ -129,7 +130,19 @@
             }
             
             if (moving || this.inCombat) {
-                this.spriteframes[this.currentAnimation].process(step);
+                let current = this.currentAnimation;
+
+                // only process one part of the player, then reflect the current frame through all the rest
+                this.getBaseSpriteFrame().process(step);
+                let currentFrame = this.getBaseSpriteFrame().currentFrame;
+
+                this.spriteframes.forEach((value, key, map) => {
+                    value[current].currentFrame = currentFrame;
+                });
+
+                this.baseframes.forEach((value, key, map) => {
+                    value[current].currentFrame = currentFrame;
+                });
             }
 
             this.stats.process(step);
@@ -148,7 +161,8 @@
             if (this.deathSequence != true) {
                 context.save()
                 context.setTransform(1, 0, 0, 1, 0, 0);
-                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.maxHp);
+                let healthBarOffset = this.inCombat ? (this.attackingFromRight ? 2.5 : -2.5) : 0;
+                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView + healthBarOffset) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.maxHp);
                 if (this.chatMessage != "") {
                     context.font = "12pt Consolas";
                     context.textAlign = "center";
@@ -188,8 +202,31 @@
             context.restore();
         }
         
-        Player.prototype.getCurrentSpriteFrame = function() {
-            return this.spriteframes[this.currentAnimation];
+        Player.prototype.getCurrentSpriteFrame = function(part) {
+            if (this.spriteframes.has(part))
+                return this.spriteframes.get(part)[this.currentAnimation];
+            return this.getBaseSpriteFrame(part);
+        }
+
+        Player.prototype.getCurrentSpriteFrames = function() {
+            let frames = [
+                this.getCurrentSpriteFrame("HEAD"),
+                this.getCurrentSpriteFrame("TORSO"),
+                this.getCurrentSpriteFrame("LEGS")
+            ];
+
+            let otherFrames = ["ONHAND", "OFFHAND"];
+            for (let i = 0; i < otherFrames.length; ++i) {
+                if (this.spriteframes.has(otherFrames[i])) {
+                    frames.push(this.getCurrentSpriteFrame(otherFrames[i]));
+                }
+            }
+
+            return frames;
+        }
+
+        Player.prototype.getBaseSpriteFrame = function(part) {
+            return this.baseframes.get(part || "HEAD")[this.currentAnimation];
         }
         
         Player.prototype.loadStats = function(obj) {
@@ -256,14 +293,34 @@
         }
 
         Player.prototype.setAnimations = function(animations) {
-            for (var i in animations) {
-                this.spriteframes[i] = Game.SpriteManager.getSpriteFrameById(animations[i]);
+            for (let part in animations) {// head, torso, legs
+                for (let type in animations[part]) {// up, down, left, right, attack
+                    if (!this.baseframes.has(part))
+                        this.baseframes.set(part, []);
+            
+                    this.baseframes.get(part)[type] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(animations[part][type]).frameData);
+                }
+            }
+        }
+
+        Player.prototype.setEquipAnimations = function(animations) {
+            this.spriteframes.clear();// clear everything for a refresh
+
+            for (let part in animations) {// head, torso, legs
+                this.spriteframes.set(part, []);
+
+                for (let type in animations[part]) {// up, down, left, right, attack
+                    this.spriteframes.get(part)[type] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(animations[part][type]).frameData);
+                    this.spriteframes.get(part)[type].currentFrame=this.getBaseSpriteFrame().currentFrame;
+                }
             }
         }
 
         Player.prototype.setDestPosAndSpeedByTileId = function(tileId, xOffset) {
             var xy = tileIdToXY(tileId);
             xy.x += xOffset || 0;
+
+            this.attackingFromRight = xOffset > 0;
             
             this.destPos.x = xy.x;
             this.destPos.y = xy.y;
@@ -294,6 +351,10 @@
                     damage: obj.damage,
                     lifetime: 1
                 };
+            }
+
+            if (obj.hasOwnProperty("equipAnimations")) {
+                this.setEquipAnimations(obj.equipAnimations);
             }
         }
 

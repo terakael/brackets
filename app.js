@@ -5,7 +5,6 @@ $(function () {
         if (obj["success"] == 0) {
 
         } else {
-            
             if (obj["action"] === "cached_resources") {
                 Game.SpriteManager.loadSpriteMaps(obj["spriteMaps"]);
                 Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
@@ -96,7 +95,8 @@ $(function () {
                         
                         room.player.loadStats(obj.stats);
                         room.player.updateInventory(obj.inventory);
-                        room.player.setAnimations(obj.animations);
+                        room.player.setAnimations(obj.baseAnimations);
+                        room.player.setEquipAnimations(obj.equipAnimations);
                         room.player.loadAttackStyles(obj.attackStyles);
                         room.player.setAttackStyle(obj.attackStyleId);
                         
@@ -193,6 +193,7 @@ $(function () {
                     case "equip": {
                         room.player.setEquippedSlots(obj["equippedSlots"]);
                         room.player.setBonuses(obj["bonuses"]);
+                        room.player.setEquipAnimations(obj["equipAnimations"]);
                         break;
                     }
 
@@ -288,10 +289,10 @@ $(function () {
 
                         if (player !== null && monster !== null) {
                             // handle fight
-                            player.setDestPosAndSpeedByTileId(obj.tileId, -(player.getCurrentSpriteFrame().getCurrentFrame().width / 2));
+                            player.setDestPosAndSpeedByTileId(obj.tileId, -1);
                             player.inCombat = true;
                             
-                            monster.setDestPosAndSpeedByTileId(obj.tileId, monster.getCurrentSpriteFrame().getCurrentFrame().width / 2);
+                            monster.setDestPosAndSpeedByTileId(obj.tileId, 1);
                             monster.inCombat = true;
                         }
                         break;
@@ -311,6 +312,7 @@ $(function () {
                         }
                         if (player != null) {
                             player.inCombat = false;
+                            player.currentAnimation = player.attackingFromRight ? "left" : "right";
                             player.setDestPosAndSpeedByTileId(obj.playerTileId);
                         }
 
@@ -350,10 +352,10 @@ $(function () {
 
                         if (player1 !== null && player2 !== null) {
                             // handle fight
-                            player1.setDestPosAndSpeedByTileId(obj.tileId, -(player1.getCurrentSpriteFrame().getCurrentFrame().width / 2));
+                            player1.setDestPosAndSpeedByTileId(obj.tileId, -1);
                             player1.inCombat = true;
                             
-                            player2.setDestPosAndSpeedByTileId(obj.tileId, player2.getCurrentSpriteFrame().getCurrentFrame().width / 2);
+                            player2.setDestPosAndSpeedByTileId(obj.tileId, 1);
                             player2.inCombat = true;
                         }
 
@@ -562,7 +564,7 @@ $(function () {
                         x: xy.x, 
                         tileId: sceneryJson[i].instances[j], 
                         leftclickOption: sceneryJson[i].leftclickOption,
-                        sprite: spriteFrame,
+                        sprite: [spriteFrame],
                         type: "scenery"
                     });
                 }
@@ -596,7 +598,8 @@ $(function () {
             player.maxHp = obj.maxHp;
             player.combatLevel = obj.combatLevel;
             
-            player.setAnimations(obj.animations);
+            player.setAnimations(obj.baseAnimations);
+            player.setEquipAnimations(obj.equipAnimations);
 
             this.otherPlayers.push(player);
         },
@@ -653,7 +656,7 @@ $(function () {
                 id: this.player.id,
                 name: this.player.name,
                 x: this.player.x, 
-                sprite: this.player.getCurrentSpriteFrame(),
+                sprite: this.player.getCurrentSpriteFrames(),
                 type: "player",
                 leftclickOption: 0
             });
@@ -662,11 +665,12 @@ $(function () {
             for (var i in this.otherPlayers) {
                 if (!drawMap.has(this.otherPlayers[i].y))
                     drawMap.set(this.otherPlayers[i].y, []);
+
                 drawMap.get(this.otherPlayers[i].y).push({
                     id: this.otherPlayers[i].id,
                     name: this.otherPlayers[i].name,
                     x: this.otherPlayers[i].x, 
-                    sprite: this.otherPlayers[i].getCurrentSpriteFrame(),
+                    sprite: this.otherPlayers[i].getCurrentSpriteFrames(),
                     type: "player",
                     leftclickOption: 0
                 });
@@ -682,7 +686,7 @@ $(function () {
                     id: this.drawableNpcs[i].instanceId,
                     name: this.drawableNpcs[i].get("name"),
                     x: this.drawableNpcs[i].pos.x, 
-                    sprite: this.drawableNpcs[i].getCurrentSpriteFrame(),
+                    sprite: [this.drawableNpcs[i].getCurrentSpriteFrame()],
                     type: "npc",
                     leftclickOption: this.drawableNpcs[i].get("leftclickOption"),
                     label: this.drawableNpcs[i].getLeftclickLabel()
@@ -699,14 +703,15 @@ $(function () {
 
             var orderedDrawMap = new Map([...drawMap.entries()].sort());// order by ypos
             orderedDrawMap.forEach(function(value, key, map) {
-                for (var i = 0; i < value.length; ++i) { 
-                    value[i].sprite.draw(ctx, value[i].x - xview, key - yview);
-                    var currentFrame = value[i].sprite.getCurrentFrame();
+                for (var i = 0; i < value.length; ++i) {
+                    for (var j = 0; j < value[i].sprite.length; ++j)
+                        value[i].sprite[j].draw(ctx, value[i].x - xview, key - yview);
+                    var currentFrame = value[i].sprite[0].getCurrentFrame();
 
                     if (Game.activeUiWindow == null) {
                         var rect = new Game.Rectangle(
-                            value[i].x - xview - (value[i].sprite.anchor.x * currentFrame.width), 
-                            key - yview - (value[i].sprite.anchor.y * currentFrame.height), 
+                            value[i].x - xview - (value[i].sprite[0].anchor.x * currentFrame.width), 
+                            key - yview - (value[i].sprite[0].anchor.y * currentFrame.height), 
                             currentFrame.width, currentFrame.height);
 
                         // mouse position needs to account for scale because the whole context is currently scaled
@@ -769,7 +774,7 @@ $(function () {
             }
             this.drawableSceneryMap.forEach(function(value, key, map) {
                 for (var i in value)
-                    value[i].sprite.process(dt);
+                    value[i].sprite[0].process(dt);
             });
             Game.Minimap.setOtherPlayers(this.otherPlayers);
             Game.Minimap.setGroundItems(this.groundItems);
@@ -838,13 +843,13 @@ $(function () {
             if (Game.activeUiWindow) {
                 Game.activeUiWindow.onMouseDown(e);
             }
+            else if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
+                Game.getPlayer().inventory.onMouseDown(e.button);
+            } 
             else if (Game.ContextMenu.active && e.button == 0) {// left
                 // selecting a context option within the game world
                 Game.ContextMenu.handleMenuSelect();
             }
-            else if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
-                Game.getPlayer().inventory.onMouseDown(e.button);
-            } 
             else if (Game.Minimap.rect.pointWithin(Game.mousePos)) {
                 Game.Minimap.onMouseDown(e.button);
             } 
@@ -865,7 +870,7 @@ $(function () {
                             // are we hovering over a player/scenery/npc?
                             room.drawableSceneryMap.forEach(function(value, key, map) {
                                 for (var i in value) {
-                                    var sprite = value[i].sprite;
+                                    var sprite = value[i].sprite[0];
                                     var spriteFrame = sprite.getCurrentFrame();
                                     var rect = new Game.Rectangle(
                                         value[i].x - (spriteFrame.width * sprite.anchor.x), 
@@ -917,7 +922,7 @@ $(function () {
                         }
                         room.drawableSceneryMap.forEach(function(value, key, map) {
                             for (var i in value) {
-                                var sprite = value[i].sprite;
+                                var sprite = value[i].sprite[0];
                                 var spriteFrame = sprite.getCurrentFrame();
                                 var rect = new Game.Rectangle(
                                     value[i].x - (spriteFrame.width * sprite.anchor.x), 
