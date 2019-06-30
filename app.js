@@ -100,9 +100,6 @@ $(function () {
                         room.player.loadAttackStyles(obj.attackStyles);
                         room.player.setAttackStyle(obj.attackStyleId);
                         
-                        // room.updateGroundItems(obj.groundItems);
-                        
-                        
                         room.loadBackground(Game.SpriteManager.getSpriteMapByName("grass"));
                         room.init();
 
@@ -212,6 +209,49 @@ $(function () {
                         }
                         if (fighter1 && fighter2)
                             Game.FightManager.addFight(fighter1, fighter2);
+                        break;
+                    }
+
+                    case "accept_trade": {// both players have agreed to trade with eachother
+                        let gameWindowWidth = canvas.width - 250;
+                        let uiWidth = gameWindowWidth / 1.25;
+                        let uiHeight = canvas.height / 2;
+                        let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
+                        let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
+                        let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+
+                        let otherPlayerName = null;
+                        for (let i in room.otherPlayers) {
+                            if (room.otherPlayers[i].id === obj.otherPlayerId) {
+                                otherPlayerName = room.otherPlayers[i].name;
+                                break;
+                            }
+                        }
+
+                        Game.activeUiWindow = new Game.TradeWindow(rect, otherPlayerName);
+                        break;
+                    }
+
+                    case "accept_trade_offer": {// player clicks "accept" button in trade screen
+                        if (Game.activeUiWindow.type === "trade") {
+                            Game.activeUiWindow.handleAccept(obj)
+                        }
+                        break;
+                    }
+
+                    case "trade_update": {
+                        if (Game.activeUiWindow.type !== "trade") {
+                            Game.activeUiWindow = null;
+                            break;
+                        }
+
+                        Game.activeUiWindow.update(obj);
+                        
+                        break;
+                    }
+
+                    case "cancel_trade": {
+                        Game.activeUiWindow = null;
                         break;
                     }
 
@@ -481,6 +521,7 @@ $(function () {
                         break;
                     }
 
+                    case "trade":                    
                     case "value":
                     case "buy":
                         break;

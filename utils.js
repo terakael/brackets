@@ -81,4 +81,14 @@
         var white = new RegExp(/^\s$/);
         return white.test(x.charAt(0));
     };
+
+    countToFriendly = function(count) {
+        if (count < 100000)
+            return String(count);
+        else if (count >= 100000 && count < 10000000) {
+            return ~~(count / 1000) + "k";
+        } else {
+            return ~~(count / 1000000) + 'M';
+        }
+    }
 }());

@@ -64,8 +64,8 @@
 				this.slots[i].draw(context, xview, yview);
 
 				if (this.slots[i].rect.pointWithin(Game.mousePos) && this.slots[i].item.id != 0) {
-					if (Game.activeUiWindow && Game.activeUiWindow.type === "shop") {
-						Game.ContextMenu.setLeftclick(Game.mousePos, this.getSellLeftclickOption(this.slots[i]));
+					if (Game.activeUiWindow) {
+						Game.ContextMenu.setLeftclick(Game.mousePos, this.getLeftclickOption(this.slots[i], Game.activeUiWindow.type));
 					} else if (!this.slotInUse) {// if the slot is not in use then show the left-click hover option
 						var contextOpt = Game.ContextMenu.getContextOptionById(this.slots[i].item.leftclickOption);
 
@@ -125,36 +125,72 @@
 				label: "use {0} -> {1}".format(srcItem.name, descItem.name)
 			};
 		},
-		getSellLeftclickOption: function(slot) {
+		getLeftclickOption: function(slot, state) {
 			if (!slot || !slot.item)
 				return {};
-
-			return {
-				id: Game.currentPlayer.id,
-				action: "value",
-				slot: slot.id,
-				objectId: slot.item.id,
-				objectName: slot.item.name,
-				type: "item",
-				valueTypeId: 1,// sell-value
-				priority: 10
-			};
-		},
-		getSellContextMenuOptions: function(slot) {
-			// when a shop is open
-			let options = [];
-			options.push(this.getSellLeftclickOption(slot));
 			
-			let sellAmounts = [1, 5, 10];
-			for (let i = 0; i < sellAmounts.length; ++i) {
-				options.push({
-					action: "sell",
-					objectId: slot.item.id,
-					objectName: slot.item.name,
-					amount: sellAmounts[i],
-					label: `sell ${sellAmounts[i]} ${slot.item.name}`,
-					priority: 10
-				});
+			switch (state) {
+				case "shop":
+					return {
+						id: Game.currentPlayer.id,
+						action: "value",
+						slot: slot.id,
+						objectId: slot.item.id,
+						objectName: slot.item.name,
+						type: "item",
+						valueTypeId: 1,// sell-value
+						priority: 10
+					};
+
+				case "trade":
+					return {
+						action: "offer",
+						objectId: slot.item.id,
+						objectName: slot.item.name,
+						amount: 1,
+						label: `offer 1 ${slot.item.name}`,
+						slot: slot.id,
+						priority: 10
+					}
+
+				default:
+					break;
+			}
+		},
+		getContextMenuOptions: function(slot, state) {
+			let options = [];
+			options.push(this.getLeftclickOption(slot, state));
+
+			switch (state) {
+				case "shop":
+					let sellAmounts = [1, 5, 10];
+					for (let i = 0; i < sellAmounts.length; ++i) {
+						options.push({
+							action: "sell",
+							objectId: slot.item.id,
+							objectName: slot.item.name,
+							amount: sellAmounts[i],
+							label: `sell ${sellAmounts[i]} ${slot.item.name}`,
+							priority: 10
+						});
+					}
+					break;
+				case "trade":
+					let offerAmounts = [5, 10, -1];
+					for (let i = 0; i < offerAmounts.length; ++i) {
+						options.push({
+							action: "offer",
+							objectId: slot.item.id,
+							objectName: slot.item.name,
+							amount: offerAmounts[i],
+							label: `offer ${offerAmounts[i] == -1 ? "all" : offerAmounts[i]} ${slot.item.name}`,
+							slot: slot.id,
+							priority: 10
+						});
+					}
+					break;
+				default:
+					break;
 			}
 
 			return options;
@@ -163,8 +199,8 @@
 			// slot.item has a contextOptions int.  parse that to retrieve the correct actions
 			var options = []
 
-			if (Game.activeUiWindow && Game.activeUiWindow.type === "shop") {
-				options = options.concat(this.getSellContextMenuOptions(slot));
+			if (Game.activeUiWindow) {
+				options = options.concat(this.getContextMenuOptions(slot, Game.activeUiWindow.type));
 			}
 			else if (this.slotInUse) {
 				options.push(this.getUseContextMenuOption(this.slotInUse.item, slot.item));
@@ -212,10 +248,10 @@
 						Game.ContextMenu.hide();
 						break;
 					}
-					else if (Game.activeUiWindow && Game.activeUiWindow.type === "shop") {
+					else if (Game.activeUiWindow) {
 						let slot = this.getMouseOverSlot(Game.mousePos);
 						if (slot && slot.item)
-							Game.ws.send(this.getSellLeftclickOption(slot));
+							Game.ws.send(this.getLeftclickOption(slot, Game.activeUiWindow.type));
 						break;
 					}
 
