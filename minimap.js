@@ -82,8 +82,20 @@
 				ctx.drawImage(image, 0, 0, ctx.canvas.width, ctx.canvas.height);
 				sceneryInstances.forEach(function(value, key, map) {
 					for (var i = 0; i < value.length; ++i) {
-						value[i].sprite.draw(ctx, value[i].x, key);
+						for (var j = 0; j < value[i].sprite.length; ++j) {
+							value[i].sprite[j].draw(ctx, value[i].x, key);
+						}
 				}});
+
+				// this.sceneryInstances.get(xy.y).push({
+				// 	id: sceneryJson[i].id,
+				// 	name: sceneryJson[i].name,
+				// 	x: xy.x, 
+				// 	tileId: sceneryJson[i].instances[j], 
+				// 	leftclickOption: sceneryJson[i].leftclickOption,
+				// 	sprite: [spriteFrames],
+				// 	type: "scenery"
+				// });
 
 				this.image = new Image();
 				this.image.src = ctx.canvas.toDataURL("image/png");// this is slow af, takes over a second

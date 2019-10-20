@@ -36,6 +36,20 @@
             
             this.attackStyles = {};
             this.attackStyle = 0;
+
+            // draw orders
+            // down: legs, body, head, offhand, onhand
+            // up: head, body, legs, onhand, offhand
+            // left/attack left: offhand, legs, body, head, onhand
+            // right/attack right: onhand, legs, body, head, offhand
+            // TODO: daggers should always be drawn on the top?
+            this.drawOrders = new Map();
+            this.drawOrders.set("down", ["LEGS","TORSO","HEAD","OFFHAND","ONHAND"]);
+            this.drawOrders.set("up", ["LEGS","TORSO", "HEAD","ONHAND","OFFHAND"]);
+            this.drawOrders.set("left", ["ONHAND","LEGS","TORSO","HEAD","OFFHAND"]);
+            this.drawOrders.set("attack_left", ["ONHAND","LEGS","TORSO","HEAD","OFFHAND"]);
+            this.drawOrders.set("right", ["OFFHAND","LEGS","TORSO","HEAD","ONHAND"]);
+            this.drawOrders.set("attack_right", ["OFFHAND","LEGS","TORSO","HEAD","ONHAND"]);
 		}
 		
 		Player.prototype.process = function(step, worldWidth, worldHeight){
@@ -209,18 +223,37 @@
         }
 
         Player.prototype.getCurrentSpriteFrames = function() {
-            let frames = [
-                this.getCurrentSpriteFrame("HEAD"),
-                this.getCurrentSpriteFrame("TORSO"),
-                this.getCurrentSpriteFrame("LEGS")
-            ];
+            let frames = [];
+            var self = this;
 
-            let otherFrames = ["ONHAND", "OFFHAND"];
-            for (let i = 0; i < otherFrames.length; ++i) {
-                if (this.spriteframes.has(otherFrames[i])) {
-                    frames.push(this.getCurrentSpriteFrame(otherFrames[i]));
-                }
-            }
+            let drawOrder = this.drawOrders.get(this.currentAnimation);
+
+            // // get base frames first
+            // drawOrder.filter(e => this.baseframes.has(e)).forEach(function(value, key, map) {
+            //     frames.push(self.getBaseSpriteFrame(value));
+            // });
+            
+            // overlay with equip frames
+            for (let i = 0; i < drawOrder.length; ++i) {
+                if (this.baseframes.has(drawOrder[i]))
+                    frames.push(this.getBaseSpriteFrame(drawOrder[i]));
+
+                if (this.spriteframes.has(drawOrder[i]))
+                    frames.push(this.getCurrentSpriteFrame(drawOrder[i]));
+            }            
+        
+            // let frames = [
+            //     this.getCurrentSpriteFrame("HEAD"),
+            //     this.getCurrentSpriteFrame("TORSO"),
+            //     this.getCurrentSpriteFrame("LEGS")
+            // ];
+
+            // let otherFrames = ["ONHAND", "OFFHAND"];
+            // for (let i = 0; i < otherFrames.length; ++i) {
+            //     if (this.spriteframes.has(otherFrames[i])) {
+            //         frames.push(this.getCurrentSpriteFrame(otherFrames[i]));
+            //     }
+            // }
 
             return frames;
         }

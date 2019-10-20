@@ -20,13 +20,18 @@
 				}
 				this.item.draw(context, this.rect.left + (this.rect.width/2), this.rect.top + (this.rect.height/2));
 
+				context.textAlign = "right";
+				context.font = "10pt Consolas";
+				let pos = this.rect.top + 5;
 				if (this.item.isStackable()) {
-					context.textAlign = "right";
 					context.textBaseline = "top";
-					context.font = "10pt Consolas";
 					context.fillStyle = this.count.includes("M") ? "#8f8" : "yellow";
-					context.fillText(this.count, this.rect.left + this.rect.width - 5, this.rect.top + 5);
+				} else if (this.item.isCharged()) {
+					context.textBaseline = "bottom";
+					context.fillStyle = "red";
+					pos = this.rect.bottom - 5;
 				}
+				context.fillText(this.count, this.rect.left + this.rect.width - 5, pos);
 			}
 		}
 	};

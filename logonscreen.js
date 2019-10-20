@@ -77,7 +77,7 @@
 	LogonScreen.prototype.onKeyDown = function(keyCode) {
 		switch (keyCode) {
 			case 32://space
-				Game.connectAndLogin("dmk", "Password12");
+				Game.connectAndLogin("god", "hi");
 				this.loading = true;
 				break;
 			case 13:// enter

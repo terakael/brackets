@@ -75,7 +75,8 @@
         context.save();
         context.setTransform(1, 0, 0, 1, 0, 0);
         let frameHeight = this.spriteframes[this.currentAnimation].getCurrentFrame().height;
-        this.drawHealthBar(context, (this.pos.x - xView + 2.5) * Game.scale, (this.pos.y - yView - frameHeight - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.get("maxHp"));
+        let scale = this.spriteframes[this.currentAnimation].scale.y;
+        this.drawHealthBar(context, (this.pos.x - xView + 2.5) * Game.scale, (this.pos.y - yView - (frameHeight * scale) - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.get("maxHp"));
 
         if (this.hitsplat) {
             context.fillStyle = this.hitsplat.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";

@@ -521,6 +521,19 @@ $(function () {
                         break;
                     }
 
+                    case "rock_respawn":
+                    case "rock_deplete": {
+                        let xy = tileIdToXY(obj.tileId);
+                        let sceneryInstances = room.sceneryInstances.get(xy.y);
+                        for (let i = 0; i < sceneryInstances.length; ++i) {
+                            if (sceneryInstances[i].tileId === obj.tileId) {
+                                sceneryInstances[i].sprite[0].nextFrame();
+                                break;
+                            }
+                        }
+                        break;
+                    }
+
                     case "trade":                    
                     case "value":
                     case "buy":
@@ -541,8 +554,8 @@ $(function () {
     Game.state = 'logonscreen';
     Game.scale = 1.5;
     Game.targetScale = 1.5;
-    Game.maxScale = 2;
-    Game.minScale = 1;
+    Game.maxScale = 3;
+    Game.minScale = 2;
     Game.sceneryMap = new Map();
     Game.npcMap = new Map();
     // game settings:	
@@ -572,19 +585,22 @@ $(function () {
                 // save the scenery object
 
                 // TODO return the raw spriteframe data directly
-                var spriteFrame = new Game.SpriteFrame({
-                    id: sceneryJson[i].id,
-                    sprite_map_id: sceneryJson[i].spriteMapId,
-                    x: sceneryJson[i].x,
-                    y: sceneryJson[i].y,
-                    w: sceneryJson[i].w,
-                    h: sceneryJson[i].h,
-                    margin: 0,
-                    frame_count: sceneryJson[i].framecount,
-                    animation_type_id: 1
-                });
+                // var spriteFrame = new Game.SpriteFrame({
+                //     id: sceneryJson[i].id,
+                //     sprite_map_id: sceneryJson[i].spriteMapId,
+                //     x: sceneryJson[i].x,
+                //     y: sceneryJson[i].y,
+                //     w: sceneryJson[i].w,
+                //     h: sceneryJson[i].h,
+                //     margin: 0,
+                //     frame_count: sceneryJson[i].framecount,
+                //     framerate: sceneryJson[i].framerate,
+                //     animation_type_id: 1,
+                //     anchorX: sceneryJson[i].anchorX,
+                //     anchorY: sceneryJson[i].anchorY
+                // });
 
-                spriteFrame.anchor = {x: sceneryJson[i].anchorX, y: sceneryJson[i].anchorY};
+                // spriteFrame.anchor = {x: sceneryJson[i].anchorX, y: sceneryJson[i].anchorY};
 
                 Game.sceneryMap.set(sceneryJson[i].id, {
                     id: sceneryJson[i].id,
@@ -605,7 +621,20 @@ $(function () {
                         x: xy.x, 
                         tileId: sceneryJson[i].instances[j], 
                         leftclickOption: sceneryJson[i].leftclickOption,
-                        sprite: [spriteFrame],
+                        sprite: [new Game.SpriteFrame({
+                            id: sceneryJson[i].id,
+                            sprite_map_id: sceneryJson[i].spriteMapId,
+                            x: sceneryJson[i].x,
+                            y: sceneryJson[i].y,
+                            w: sceneryJson[i].w,
+                            h: sceneryJson[i].h,
+                            margin: 0,
+                            frame_count: sceneryJson[i].framecount,
+                            framerate: sceneryJson[i].framerate,
+                            animation_type_id: 1,
+                            anchorX: sceneryJson[i].anchorX,
+                            anchorY: sceneryJson[i].anchorY
+                        })],
                         type: "scenery"
                     });
                 }
@@ -957,7 +986,7 @@ $(function () {
                             if (groundItem.clickBox.pointWithin(cursor.mousePos)) {
                                 Game.ContextMenu.push([
                                     { action: "take", objectName: groundItem.item.name, itemId: groundItem.item.id, tileId: groundItem.tileId },
-                                    { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, type: "item" }
+                                    { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, type: "item", source: "ground" }
                                 ]);
                             }
                         }
