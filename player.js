@@ -176,7 +176,7 @@
                 context.save()
                 context.setTransform(1, 0, 0, 1, 0, 0);
                 let healthBarOffset = this.inCombat ? (this.attackingFromRight ? 2.5 : -2.5) : 0;
-                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView + healthBarOffset) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.maxHp);
+                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView + healthBarOffset) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, this.stats.getCurrentHp(), this.maxHp);
                 if (this.chatMessage != "") {
                     context.font = "12pt Consolas";
                     context.textAlign = "center";
@@ -262,10 +262,11 @@
             return this.baseframes.get(part || "HEAD")[this.currentAnimation];
         }
         
-        Player.prototype.loadStats = function(obj) {
+        Player.prototype.loadStats = function(obj, boosts) {
             var stats = this.stats;
             Game.statMap.forEach(function(value, key, map) {
                 stats.setExp(value, obj[key]);
+                stats.setBoost(value, boosts[key]);
             });
         }
 

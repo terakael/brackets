@@ -11,7 +11,7 @@
         var initialBuffer = 30;
         var buffer = 15;
 
-        let buttonRows = Math.floor(this.uiButtons.length / 4) + 1;
+        let buttonRows = Math.ceil(this.uiButtons.length / 4);
         let x = this.rect.left;
         let h = initialBuffer + (buttonRows * buffer) + (buttonRows * this.uiButtons[0].rect.height);
         let y = (Game.worldCameraRect.height / 2) - (h / 2);

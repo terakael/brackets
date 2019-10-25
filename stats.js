@@ -15,6 +15,18 @@
             this.stats[i].lvl = this.exp2lvl(this.stats[i].exp);
         }
 
+        this.boosts = [
+            { name: "str", amount: 0 },
+            { name: "acc", amount: 0 },
+            { name: "def", amount: 0 },
+            { name: "agil", amount: 0 },
+            { name: "hp", amount: 0 },
+			{ name: "mage", amount: 0 },
+			{ name: "mine", amount: 0 },
+			{ name: "smith", amount: 0 },
+			{ name: "herb", amount: 0 },
+        ];
+
         this.bonuses = null;
         
         this.x = 10;
@@ -22,10 +34,23 @@
         this.healthBarTimer = 0;
     }
     Stats.prototype.exp2lvl = function(exp) {
-        return ~~Math.sqrt(exp);
+        let lvl = 99;
+        for (let [key, value] of Game.expMap) {
+            if (exp < value)
+                return key - 1;
+        }
+
+        return lvl;
     }
     Stats.prototype.lvl2exp = function(lvl) {
-        return lvl * lvl;
+        if (Game.expMap.has(lvl))
+            return Game.expMap.get(lvl);
+
+        if (lvl < 1)
+            return 1;
+
+        if (lvl > 99)
+            return 99;
     }
 	Stats.prototype.totalExp = function() {
 		var exp = 0;
@@ -75,11 +100,13 @@
             ctx.textAlign = "left";
             ctx.textBaseline = "middle";
             ctx.fillStyle = "red";
-            if (name === "hp") {
-                ctx.fillText("{1}/{2}".format(name, Game.currentPlayer.currentHp, this.stats[i].lvl, exp), this.x + xview + 20 + xOffset, this.y + yview + (this.y * ~~(i/3)));
-            } else {
-                ctx.fillText("{1}/{1}".format(name, this.stats[i].lvl, exp), this.x + xview + 20 + xOffset, this.y + yview + (this.y * ~~(i/3)));
-            }
+            ctx.fillText("{0}/{1}".format(this.stats[i].lvl + this.boosts[i].amount, this.stats[i].lvl), this.x + xview + 20 + xOffset, this.y + yview + (this.y * ~~(i/3)));
+
+            // if (name === "hp") {
+            //     ctx.fillText("{1}/{2}".format(name, Game.currentPlayer.currentHp, this.stats[i].lvl, exp), this.x + xview + 20 + xOffset, this.y + yview + (this.y * ~~(i/3)));
+            // } else {
+                
+            // }
         }
         
         
@@ -171,6 +198,13 @@
             }
         }
     }
+    Stats.prototype.setBoost = function(stat, boost) {
+        for (var i = 0; i < this.stats.length; ++i) {
+            if (this.boosts[i].name === stat) {
+                this.boosts[i].amount = boost;
+            }
+        }
+    }
     Stats.prototype.showHealthBar = function() {
         this.healthBarTimer = 5;
     }
@@ -180,6 +214,21 @@
                 return this.exp2lvl(this.stats[i].exp);
         }
         return 0;
+    }
+    Stats.prototype.setBoosts = function(boosts) {
+        for (let [key, value] of Game.statMap) {
+            this.setBoost(value, boosts[key]);
+        }
+    }
+    Stats.prototype.getBoostByStat = function(stat) {
+        for (var i = 0; i < this.boosts.length; ++i) {
+            if (this.boosts[i].name === stat)
+                return this.boosts[i].amount;
+        }
+        return 0;
+    }
+    Stats.prototype.getCurrentHp = function() {
+        return this.getLevelByStat("hp") + this.getBoostByStat("hp");
     }
     window.Game.Stats = Stats;
 }());

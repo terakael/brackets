@@ -15,7 +15,7 @@
 			context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 			if (this.item) {
 				if (this.equipped) {
-					context.fillStyle = "#800";
+					context.fillStyle = "rgba(250, 0, 0, 0.2)";
 					context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 				}
 				this.item.draw(context, this.rect.left + (this.rect.width/2), this.rect.top + (this.rect.height/2));
@@ -373,6 +373,8 @@
 				if (this.slotInUse != slot) {
 					let request = Game.ContextMenu.leftclickMenuOption;
 					request.slot = slot.id;
+					if (this.slotInUse != null)
+						request.srcSlot = this.slotInUse.id;
 					Game.ws.send(request);
 				}
 				this.slotInUse = null;

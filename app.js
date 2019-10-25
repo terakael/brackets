@@ -13,6 +13,11 @@ $(function () {
                 room.loadScenery(obj["scenery"]);
                 room.loadNpcs(obj.npcs);
                 Game.statMap = new Map(Object.entries(obj["statMap"]));
+
+                Game.expMap = new Map();
+                for (let [key, value] of Object.entries(obj["expMap"]).sort((a, b) => b < a)) {
+                    Game.expMap.set(Number(key), Number(value));
+                }
             }
         }
     });
@@ -93,7 +98,7 @@ $(function () {
                                 room.addPlayer(obj.players[i]);
                         }
                         
-                        room.player.loadStats(obj.stats);
+                        room.player.loadStats(obj.stats, obj.boosts);
                         room.player.updateInventory(obj.inventory);
                         room.player.setAnimations(obj.baseAnimations);
                         room.player.setEquipAnimations(obj.equipAnimations);
@@ -534,6 +539,15 @@ $(function () {
                         break;
                     }
 
+                    case "stat_boosts": {
+                        Game.currentPlayer.stats.setBoosts(obj.boosts);
+                        break;
+                    }
+
+                    // sometimes a response comes back just showing a message; don't do anything else in these cases
+                    // we need these here though in order to prevent the "invalid action" default message.
+                    case "use":
+                    case "smith":
                     case "trade":                    
                     case "value":
                     case "buy":
@@ -552,8 +566,8 @@ $(function () {
     Game.mousePos = { x: 0, y: 0 };
     Game.boundingRect = canvas.getBoundingClientRect();
     Game.state = 'logonscreen';
-    Game.scale = 1.5;
-    Game.targetScale = 1.5;
+    Game.scale = 2;
+    Game.targetScale = 2;
     Game.maxScale = 3;
     Game.minScale = 2;
     Game.sceneryMap = new Map();
@@ -1211,13 +1225,27 @@ $(function () {
     // I'll use setInterval instead of requestAnimationFrame for compatibility reason,
     // but it's easy to change that.
     var runningId = -1;
+    var start = Date.now();
+    var remainingInterval = INTERVAL;
     Game.play = function () {        
-        if (runningId === -1) {
-            runningId = setInterval(function () {
-                gameLoop();
-            }, INTERVAL);
-            console.log("play");
-        }
+        // if (runningId === -1) {
+        //     runningId = setInterval(function () {
+        //         gameLoop();
+        //     }, INTERVAL);
+        //     console.log("play");
+        // }
+
+        setTimeout(function() {
+        	// TODO game loop should return exec ms to subtract off INTERVAL
+        	gameLoop();
+
+        	var actual = Date.now() - start;
+	        // subtract any extra ms from the delay for the next cycle
+	        remainingInterval = INTERVAL - (actual - INTERVAL);
+	        start = Date.now();
+
+        	Game.play();
+        }, remainingInterval);
     };
     Game.getPlayer = function () {
         return room.player;
