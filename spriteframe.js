@@ -15,7 +15,9 @@
 
 		this.frames = [];
 		for (var i = 0; i < this.frameCount; ++i) {
-			this.frames.push(new Game.Rectangle(obj.x + (this.margin * i) + (obj.w * i), obj.y, obj.w, obj.h));
+			let rect = new Game.Rectangle((obj.x + (this.margin * i) + (obj.w * i)), obj.y, obj.w, obj.h);
+			this.frames.push(rect);
+			//console.log(`created frame with: ${rect.left}, ${rect.top}, ${rect.right}, ${rect.bottom}`);
 		}
 
 		this.currentFrame = 0;
@@ -30,10 +32,10 @@
 
 		if (spriteMap) {
 			ctx.drawImage(spriteMap, 
-						this.frames[this.currentFrame].left, 
-						this.frames[this.currentFrame].top, 
-						this.frames[this.currentFrame].width, 
-						this.frames[this.currentFrame].height, 
+						this.frames[this.currentFrame].left + 0.5, 
+						this.frames[this.currentFrame].top + 0.5, 
+						this.frames[this.currentFrame].width-1, 
+						this.frames[this.currentFrame].height-1, 
 						x-((this.frames[this.currentFrame].width * this.scale.x) * this.anchor.x), 
 						y-((this.frames[this.currentFrame].height * this.scale.y) * this.anchor.y), 
 						this.frames[this.currentFrame].width * this.scale.x, 

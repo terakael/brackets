@@ -1,23 +1,32 @@
 $(function () {
     // prepare our game canvas
-    var canvas = document.getElementById("game"), context = canvas.getContext("2d"), ip = "localhost", port = "45555", resourcePort = "45556";
+    var canvas = document.getElementById("game"), 
+    context = canvas.getContext("2d"), ip = "localhost", port = "45555", resourcePort = "45556";
+    
     Game.resourceWs = new Game.WebSocket("ws://{0}:{1}/ws/resources".format(ip, resourcePort), function (obj) {
         if (obj["success"] == 0) {
 
         } else {
             if (obj["action"] === "cached_resources") {
-                Game.SpriteManager.loadSpriteMaps(obj["spriteMaps"]);
-                Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
-                Game.SpriteManager.loadItems(obj["items"]);
-                Game.ContextMenu.loadContextOptions(obj["contextOptions"]);
-                room.loadScenery(obj["scenery"]);
-                room.loadNpcs(obj.npcs);
-                Game.statMap = new Map(Object.entries(obj["statMap"]));
+                Game.LogonScreen.loadingText = "loading resources...";
+                Game.LogonScreen.draw(context, canvas.width, canvas.height);
+                Game.SpriteManager.loadSpriteMaps(obj["spriteMaps"]).done(function() {
+                    Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
+                    Game.SpriteManager.loadItems(obj["items"]);
+                    Game.ContextMenu.loadContextOptions(obj["contextOptions"]);
+                    room.loadScenery(obj["scenery"]);
+                    room.loadGroundTextures(obj["groundTextures"]);
+                    room.loadNpcs(obj.npcs);
+                    room.loadMinimap(obj["minimap"]);
+                    Game.statMap = new Map(Object.entries(obj["statMap"]));
 
-                Game.expMap = new Map();
-                for (let [key, value] of Object.entries(obj["expMap"]).sort((a, b) => b < a)) {
-                    Game.expMap.set(Number(key), Number(value));
-                }
+                    Game.expMap = new Map();
+                    for (let [key, value] of Object.entries(obj["expMap"]).sort((a, b) => b < a)) {
+                        Game.expMap.set(Number(key), Number(value));
+                    }
+                    Game.LogonScreen.loading = false;
+                    Game.LogonScreen.loadingText = null;
+                });
             }
         }
     });
@@ -33,6 +42,9 @@ $(function () {
         console.log("loaded resources");
     };
     Game.connectAndLogin = function(username, password) {
+        Game.LogonScreen.loading = true;
+        Game.LogonScreen.loadingText = "logging in...";
+                    
         Game.ws = new Game.WebSocket("ws://{0}:{1}/ws/game".format(ip, port), Game.processResponse);
 
         Game.ws.ws.onopen = function() {
@@ -105,7 +117,7 @@ $(function () {
                         room.player.loadAttackStyles(obj.attackStyles);
                         room.player.setAttackStyle(obj.attackStyleId);
                         
-                        room.loadBackground(Game.SpriteManager.getSpriteMapByName("grass"));
+                        // room.loadBackground(Game.SpriteManager.getSpriteMapByName("grass"));
                         room.init();
 
                         Game.ChatBox.add("Welcome to the game, {0}.".format(room.player.name));
@@ -283,6 +295,31 @@ $(function () {
                         Game.ws.send({
                             action: "mine",
                             tileId: obj["tileId"]
+                        });
+                        break;
+                    }
+
+                    case "finish_smith": {
+                        Game.ws.send({
+                            action: "smith",
+                            itemId: obj.itemId
+                        });
+                        break;
+                    }
+
+                    case "finish_use": {
+                        // int src;
+                        // int dest;
+                        // String type;// what is the dest id's object type (scenery, item, player, npc)
+                        // int srcSlot;
+                        // int slot;
+
+                        // TODO
+                        Game.ws.send({
+                            action: "use",
+                            src: obj.src,
+                            dest: obj.dest,
+                            type: obj.type
                         });
                         break;
                     }
@@ -526,6 +563,8 @@ $(function () {
                         break;
                     }
 
+                    case "flower_respawn":
+                    case "flower_deplete":
                     case "rock_respawn":
                     case "rock_deplete": {
                         let xy = tileIdToXY(obj.tileId);
@@ -538,7 +577,7 @@ $(function () {
                         }
                         break;
                     }
-
+                    
                     case "stat_boosts": {
                         Game.currentPlayer.stats.setBoosts(obj.boosts);
                         break;
@@ -548,9 +587,12 @@ $(function () {
                     // we need these here though in order to prevent the "invalid action" default message.
                     case "use":
                     case "smith":
+                    case "start_smith":
+                    case "start_use":
                     case "trade":                    
                     case "value":
                     case "buy":
+                    case "pick":
                         break;
 
                     default: {
@@ -572,6 +614,8 @@ $(function () {
     Game.minScale = 2;
     Game.sceneryMap = new Map();
     Game.npcMap = new Map();
+    Game.drawBoundingBoxes = false;
+    Game.drawGroundTextureOutline = false;
     // game settings:	
     var FPS = 50, INTERVAL = 1000 / FPS, // milliseconds
     STEP = INTERVAL / 1000; // seconds
@@ -584,12 +628,17 @@ $(function () {
         otherPlayers: [],
         npcs: [],
         sceneryInstances: new Map(),
+        groundTextureInstances: new Map(),
+        groundTexturesMap: new Map(),
         drawableSceneryMap: new Map(),
         drawableNpcs: [],
         t: new Game.Transform(),
-        loadBackground: function(background) {
-            this.map.load(context, background);
-            Game.Minimap.bakeMinimap(this.map.image, this.sceneryInstances);
+        loadMinimap: function(minimapBase64) {
+            // this.map.load(context, background);
+            // Game.Minimap.bakeMinimap(this.map.image, this.sceneryInstances);
+            let image = new Image();
+            image.src = `data:image/png;base64,${minimapBase64}`;
+            image.onload = () => Game.Minimap.load(image);
         },
         init: function () {
             this.show = 1.0;
@@ -626,13 +675,15 @@ $(function () {
                 // save the instances to the multimap
                 for (var j = 0; j < sceneryJson[i].instances.length; ++j) {
                     var xy = tileIdToXY(sceneryJson[i].instances[j]);
-                    if (!this.sceneryInstances.has(xy.y))
-                        this.sceneryInstances.set(xy.y, []);
+                    let mapKey = xy.y + sceneryJson[i].h - (sceneryJson[i].anchorY * sceneryJson[i].h);
+                    if (!this.sceneryInstances.has(mapKey))
+                        this.sceneryInstances.set(mapKey, []);
 
-                    this.sceneryInstances.get(xy.y).push({
+                    this.sceneryInstances.get(mapKey).push({
                         id: sceneryJson[i].id,
                         name: sceneryJson[i].name,
                         x: xy.x, 
+                        y: xy.y,
                         tileId: sceneryJson[i].instances[j], 
                         leftclickOption: sceneryJson[i].leftclickOption,
                         sprite: [new Game.SpriteFrame({
@@ -650,6 +701,87 @@ $(function () {
                             anchorY: sceneryJson[i].anchorY
                         })],
                         type: "scenery"
+                    });
+                }
+            }
+        },
+        loadGroundTextures: function(groundTextures) {
+            let spriteMaps = new Map();
+            for (let i = 0; i < groundTextures.length; ++i) {
+                if (!spriteMaps.has(groundTextures[i].spriteMapId))
+                    spriteMaps.set(groundTextures[i].spriteMapId, Game.SpriteManager.getSpriteMapById(groundTextures[i].spriteMapId));
+            }
+
+            console.log("ground texture array:");
+            console.log(groundTextures);
+
+            let that = this;
+            spriteMaps.forEach(function(spriteMap, spriteMapId, map) {
+                let imgCanvas = document.createElement("canvas");
+                let imgCtx = imgCanvas.getContext("2d");
+                imgCanvas.width = spriteMap.width;
+                imgCanvas.height = spriteMap.height;
+                imgCtx.width = spriteMap.width;
+                imgCtx.height = spriteMap.height;
+                imgCtx.drawImage(spriteMap, 0, 0);
+
+                let subImgCanvas = document.createElement("canvas");
+                subImgCanvas.width = 32;
+                subImgCanvas.height = 32;
+                subImgCtx = subImgCanvas.getContext("2d");
+                subImgCtx.width = 32;
+                subImgCtx.height = 32;
+
+                let matchingGroundTextures = groundTextures.filter(e => e.spriteMapId == spriteMapId);
+                console.log(`found ${matchingGroundTextures.length} textures matching spriteMapId ${spriteMapId}: `);
+                console.log(matchingGroundTextures);
+                for (let i = 0; i < matchingGroundTextures.length; ++i) {
+                    let groundTexture = matchingGroundTextures[i];
+                    let imageData = imgCtx.getImageData(groundTexture.x, groundTexture.y, 32, 32);
+                    subImgCtx.putImageData(imageData, 0, 0);
+
+                    let subImg = new Image();
+                    subImg.onload = function() {
+                        let pat = context.createPattern(this, "repeat");
+                        that.groundTexturesMap.set(groundTexture.id, pat);
+                        console.log("loaded texture " + groundTexture.id);
+                    }
+                    subImg.src = subImgCanvas.toDataURL("image/png");
+                }
+            });
+            
+            for (let i = 0; i < groundTextures.length; ++i) {
+                for (let j = 0; j < groundTextures[i].instances.length; ++j) {
+                    var xy = tileIdToXY(groundTextures[i].instances[j]);
+
+                    // ground textures are always 0.5, 0.5 anchor and 32, 32, w/hs
+                    // and because they're drawn first, we don't need to worry about draw order.
+                    // we store the xy coordinates for culling purposes.
+                    if (!this.groundTextureInstances.has(xy.y))
+                        this.groundTextureInstances.set(xy.y, []);
+                    this.groundTextureInstances.get(xy.y).push({
+                        x: xy.x,
+                        y: xy.y,
+                        tileId: groundTextures[i].instances[j],
+                        sprite: [
+                            new Game.SpriteFrame({
+                                id: groundTextures[i].id,
+                                sprite_map_id: groundTextures[i].spriteMapId,
+                                x: groundTextures[i].x,
+                                y: groundTextures[i].y,
+                                w: 32,
+                                h: 32,
+                                margin: 0,
+
+                                // TODO in the future we could have animated ground textures e.g. water/lava
+                                frame_count: 1,
+                                framerate: 0,
+                                animation_type_id: 1,
+                                anchorX: 0.5,
+                                anchorY: 0.5
+                            })
+                        ],
+                        type: "groundTexture"
                     });
                 }
             }
@@ -696,7 +828,9 @@ $(function () {
 
             this.t.scale(Game.scale, Game.scale);
             ctx.setTransform.apply(ctx, this.t.m);
-            this.map.draw(ctx, xview, yview);
+            // this.map.draw(ctx, xview, yview);
+
+            this.drawGroundTextures(ctx, xview, yview);
 
             ctx.save();// make the items on the ground smaller than in the inventory
             ctx.scale(0.5, 0.5);
@@ -734,12 +868,15 @@ $(function () {
             var drawMap = new Map();
             
             // add the current player
-            if (!drawMap.has(this.player.y))
-                drawMap.set(this.player.y, []);
-            drawMap.get(this.player.y).push({
+            let playerSpriteFrame = this.player.getCurrentSpriteFrame();
+            let mapKey = this.player.y + (playerSpriteFrame.getCurrentFrame().height * playerSpriteFrame.scale.y) - ((playerSpriteFrame.anchor.y * playerSpriteFrame.getCurrentFrame().height) * playerSpriteFrame.scale.y);
+            if (!drawMap.has(mapKey))
+                drawMap.set(mapKey, []);
+            drawMap.get(mapKey).push({
                 id: this.player.id,
                 name: this.player.name,
                 x: this.player.x, 
+                y: this.player.y,
                 sprite: this.player.getCurrentSpriteFrames(),
                 type: "player",
                 leftclickOption: 0
@@ -747,13 +884,16 @@ $(function () {
 
             // add the other players
             for (var i in this.otherPlayers) {
-                if (!drawMap.has(this.otherPlayers[i].y))
-                    drawMap.set(this.otherPlayers[i].y, []);
+                let currentSpriteFrame = this.otherPlayers[i].getCurrentSpriteFrames()[0];
+                let mapKey = this.otherPlayers[i].y + (currentSpriteFrame.getCurrentFrame().height * currentSpriteFrame.scale.y) - ((currentSpriteFrame.anchor.y * currentSpriteFrame.getCurrentFrame().height) * currentSpriteFrame.scale.y);
+                if (!drawMap.has(mapKey))
+                    drawMap.set(mapKey, []);
 
-                drawMap.get(this.otherPlayers[i].y).push({
+                drawMap.get(mapKey).push({
                     id: this.otherPlayers[i].id,
                     name: this.otherPlayers[i].name,
                     x: this.otherPlayers[i].x, 
+                    y: this.otherPlayers[i].y,
                     sprite: this.otherPlayers[i].getCurrentSpriteFrames(),
                     type: "player",
                     leftclickOption: 0
@@ -763,13 +903,16 @@ $(function () {
             // add the NPCs
             this.compileDrawableNpcs(xview, yview);
             for (var i = 0; i < this.drawableNpcs.length; ++i) {
-                if (!drawMap.has(this.drawableNpcs[i].pos.y))
-                    drawMap.set(this.drawableNpcs[i].pos.y, []);
+                let currentSpriteFrame = this.drawableNpcs[i].getCurrentSpriteFrame();
+                let mapKey = this.drawableNpcs[i].pos.y + (currentSpriteFrame.getCurrentFrame().height * currentSpriteFrame.scale.y) - ((currentSpriteFrame.anchor.y * currentSpriteFrame.getCurrentFrame().height) * currentSpriteFrame.scale.y);
+                if (!drawMap.has(mapKey))
+                    drawMap.set(mapKey, []);
 
-                drawMap.get(this.drawableNpcs[i].pos.y).push({
+                drawMap.get(mapKey).push({
                     id: this.drawableNpcs[i].instanceId,
                     name: this.drawableNpcs[i].get("name"),
                     x: this.drawableNpcs[i].pos.x, 
+                    y: this.drawableNpcs[i].pos.y,
                     sprite: [this.drawableNpcs[i].getCurrentSpriteFrame()],
                     type: "npc",
                     leftclickOption: this.drawableNpcs[i].get("leftclickOption"),
@@ -788,19 +931,26 @@ $(function () {
             var orderedDrawMap = new Map([...drawMap.entries()].sort());// order by ypos
             orderedDrawMap.forEach(function(value, key, map) {
                 for (var i = 0; i < value.length; ++i) {
-                    for (var j = 0; j < value[i].sprite.length; ++j)
-                        value[i].sprite[j].draw(ctx, value[i].x - xview, key - yview);
                     var currentFrame = value[i].sprite[0].getCurrentFrame();
+
+                    for (var j = 0; j < value[i].sprite.length; ++j)
+                        value[i].sprite[j].draw(ctx, value[i].x - xview, value[i].y - yview);
 
                     if (Game.activeUiWindow == null) {
                         var rect = new Game.Rectangle(
-                            value[i].x - xview - (value[i].sprite[0].anchor.x * currentFrame.width), 
-                            key - yview - (value[i].sprite[0].anchor.y * currentFrame.height), 
-                            currentFrame.width, currentFrame.height);
+                            value[i].x - xview - ((currentFrame.width * value[i].sprite[0].scale.x) * value[i].sprite[0].anchor.x), 
+                            value[i].y - yview - ((currentFrame.height * value[i].sprite[0].scale.y) * value[i].sprite[0].anchor.y), 
+                            currentFrame.width * value[i].sprite[0].scale.x, currentFrame.height * value[i].sprite[0].scale.y);
 
                         // mouse position needs to account for scale because the whole context is currently scaled
                         if (rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
                             Game.worldCameraRect.pointWithin(Game.mousePos)) {
+                            
+                            if (Game.drawBoundingBoxes) {
+                                ctx.strokeStyle = "red";
+                                ctx.strokeRect(rect.left, rect.top, rect.width, rect.height);
+                            }
+
                             if (Game.currentPlayer.inventory.slotInUse) {
                                 Game.ContextMenu.setLeftclick(Game.mousePos, {
                                     id: Game.currentPlayer.id,
@@ -863,6 +1013,198 @@ $(function () {
             Game.Minimap.setOtherPlayers(this.otherPlayers);
             Game.Minimap.setGroundItems(this.groundItems);
             Game.Minimap.setNpcs(this.drawableNpcs);
+        },
+        drawGroundTextures: function(ctx, xview, yview) {
+            let drawBoundWidth = (camera.viewportRect.width * 1.1);
+            let drawBoundHeight = (camera.viewportRect.height * 1.1);
+
+            let minX = (xview + (camera.viewportRect.width * 0.5)) - (drawBoundWidth * 0.5); 
+            let minY = (yview + (camera.viewportRect.height) * 0.5) - (drawBoundHeight * 0.5);
+
+            // cull any textures outside the camera bounds
+            let filteredInstances = new Map();
+            this.groundTextureInstances.forEach(function(value, key, map) {
+                if (key > minY && key < minY + drawBoundHeight) {
+                    if (!filteredInstances.has(key))
+                        filteredInstances.set(key, []);
+                    let filteredByXPos = value.filter(obj => obj.x > minX && obj.x < minX + drawBoundWidth);
+                    filteredInstances.set(key, filteredInstances.get(key).concat(filteredByXPos));
+                }
+            });
+
+            let gridW = filteredInstances.values().next().value.length;
+            let gridH = filteredInstances.size;
+
+            let filteredList = [];
+            for (const [key, value] of [...filteredInstances.entries()].sort()) {
+                filteredList.push(...(value.sort((a, b) => a.x - b.x)));
+            }
+
+            // we can group identical tiles and draw them once as a group with a repeating texture
+            // e.g. 
+            // grass=0, dirt=1
+            /*
+              now: 100 draw calls
+              0000000000
+              0000000000
+              1111110000
+              0000010000
+              0000010000
+              0000010000
+              0000011100
+              0000000100
+              0011111100
+              0010000000
+            
+              optimized ('-'=unprocessed grass, "="=unprocessed dirt): 13 draw calls
+              0---------
+              ----------
+              1=====0---
+              0----1----
+              -----=----
+              -----=----
+              -----=1=0-
+              -----0-1--
+              0-1=====--
+              --10------
+
+              algorithm:
+              We know that we've got a grid of x*y, let's say 10*10, sorted by y, x
+              Starting from the top-left tile, we branch out once left, then once down.
+              We keep branching out alternating left and down, until we either hit a different
+                tile or we hit the last element in the row/column.
+              When we hit the first different tile/last element, we just continue down the other
+                direction until we hit the end of that one too.
+              The final result is the square of tiles that we will group into a single draw call.
+              All of the tiles in the draw call are marked as processed.
+              Now repeat over and over with the first "unprocessed" tile until there's no more tiles.
+
+            */
+
+            let newAlgorithm = true;
+            if (newAlgorithm) {
+
+
+                let data = filteredList.map(obj => ({...obj, processed: false}));
+                let out = new Map();
+
+                let counter = 0;
+                while (++counter < 2000) { 
+                    // run through the array until we find the first unprocessed element
+                    let firstEle = null;
+                    for (let i = 0; i < data.length; ++i) {
+                        if (data[i].processed === false) {
+                            firstEle = i;
+                            break;
+                        }
+                    }
+
+                    // if all the elements are processed then we're finished
+                    if (firstEle == null)
+                        break;
+
+                    // x/y position of the element as a 2d array
+                    let posX = firstEle % gridW;
+                    let posY = ~~(firstEle / gridW);
+
+                    let x, y, len;
+                    let type = data[firstEle].sprite[0].id;
+
+                    outer:
+                    for (y = posY; y < gridH; ++y) {
+                        for (x = posX; x < (len || gridW); ++x) {
+                            let testNode = data[x + (y * gridW)];
+                            if (!testNode || testNode.processed === true || testNode.sprite[0].id !== type) {
+                                if (y === posY) {
+                                    len = x;
+                                } else {
+                                    break outer;
+                                }
+                            }
+                        }
+
+                        if (!len)
+                            len = gridW;
+                    }
+                    x = len - 1;
+                    --y;
+
+                    // mark all the successful nodes  in the rect as processed
+                    for (let j = posY; j <= y; ++j) {
+                        for (let i = posX; i <= x; ++i) {
+                            data[i + (j * gridW)].processed = true;
+                        }
+                    }
+
+                    let w = x - posX + 1;
+                    let h = y - posY + 1;
+                    
+
+                    if (!out.has(type)) 
+                        out.set(type, []);
+                    out.get(type).push({
+                        x: data[firstEle].x - 16, 
+                        y: data[firstEle].y - 16, 
+                        w: w * 32, 
+                        h: h * 32, 
+                        type: type
+                    });
+                }
+
+                // take the ground texture with the most instances and draw it first as the entire background
+                let textureWithMostInstances = 0;
+                let mostInstances = 0;
+                for (const [key, value] of out) {
+                    mostInstances = Math.max(mostInstances, value.length);
+                    if (mostInstances === value.length)
+                        textureWithMostInstances = key;
+                }
+
+                if (textureWithMostInstances > 0) {
+                    ctx.fillStyle = this.groundTexturesMap.get(textureWithMostInstances);
+
+                    let offsetX = -xview % 32;
+                    let offsetY = -yview % 32;
+                    ctx.save();
+                    ctx.translate(offsetX, offsetY);
+
+                    ctx.fillRect(minX - xview - offsetX, minY - yview - offsetY, drawBoundWidth, drawBoundHeight);
+
+                    ctx.restore();
+                }
+
+                for (const [key, value] of out) {
+                    if (key === textureWithMostInstances)
+                        continue;
+
+                    ctx.fillStyle = this.groundTexturesMap.get(key);
+                    for (let i = 0; i < value.length; ++i) {
+                        let offsetX = -xview % 32;
+                        let offsetY = -yview % 32;
+                        ctx.save();
+                        ctx.translate(offsetX, offsetY);
+
+                        ctx.fillRect(value[i].x - xview - offsetX, value[i].y - yview - offsetY, value[i].w, value[i].h);
+
+                        if (Game.drawGroundTextureOutline) {
+                            ctx.strokeStyle = "white";
+                            ctx.strokeRect(value[i].x - xview - offsetX, value[i].y - yview - offsetY, value[i].w, value[i].h);
+                        }
+
+                        ctx.restore();
+                    }
+                }
+
+
+            } else {
+                for (let [key, value] of filteredInstances) {
+                    for (let i = 0; i < value.length; ++i) {
+                        for (let j = 0; j < value[i].sprite.length; ++j) {
+                            value[i].sprite[j].draw(ctx, value[i].x - xview, value[i].y - yview);
+                        }
+                    }
+                }
+            }
         },
         compileDrawableSceneryMap: function(xview, yview) {
             var drawBoundWidth = (camera.viewportRect.width * Game.maxScale);
@@ -1152,6 +1494,7 @@ $(function () {
     Game.Minimap.setRect(hudcamera.viewportRect.left + 10, hudcamera.viewportRect.top + 10, 230, 230);
     Game.currentMap = room.map;
     var cursor = new Game.Cursor((hudcamera.xView + hudcamera.wView) - 10, hudcamera.yView + 20);
+    Game.cursor = cursor;
     var grid = new Game.Grid();
     grid.createGridLines(camera.viewportRect.width, camera.viewportRect.height);
 
@@ -1186,6 +1529,7 @@ $(function () {
     // Game draw function
     var draw = function () {
         if (Game.state === 'game' || Game.state === 'uiwindow') {
+            
             // redraw all room objects
             context.fillStyle = "#000";
             context.fillRect(0, 0, camera.viewportRect.width * Game.scale, camera.viewportRect.height * Game.scale);
@@ -1211,7 +1555,6 @@ $(function () {
                 Game.activeUiWindow.draw(context);
             
             Game.ContextMenu.draw(context);
-
         }
         else if (Game.state === 'logonscreen') {
             Game.LogonScreen.draw(context, canvas.width, canvas.height);
@@ -1234,7 +1577,6 @@ $(function () {
         //     }, INTERVAL);
         //     console.log("play");
         // }
-
         setTimeout(function() {
         	// TODO game loop should return exec ms to subtract off INTERVAL
         	gameLoop();
@@ -1299,12 +1641,33 @@ window.addEventListener("keydown", function (e) {
                 break;
             case 13: //enter
                 if (Game.ChatBox.userMessage.length > 0) {
-                    console.log("sending message: ", Game.ChatBox.userMessage);
-                    Game.ws.send({
-                        action: "message",
-                        id: Game.getPlayer().id,
-                        message: Game.ChatBox.userMessage
-                    });
+                    // todo list of client-side debug commands
+                    switch (Game.ChatBox.userMessage) {
+                        case "::boundingBoxes":
+                            Game.drawBoundingBoxes = !Game.drawBoundingBoxes;
+                            break;
+
+                        case "::cursor": {
+                            Game.cursor.drawCursor = !Game.cursor.drawCursor;
+                            break;
+                        }
+
+                        case "::groundTextureOutline": {
+                            Game.drawGroundTextureOutline = !Game.drawGroundTextureOutline;
+                            break;
+                        }
+
+                        default: {
+                            console.log("sending message: ", Game.ChatBox.userMessage);
+                            Game.ws.send({
+                                action: "message",
+                                id: Game.getPlayer().id,
+                                message: Game.ChatBox.userMessage
+                            });
+                            break;
+                        }
+                    }
+                    
                     Game.ChatBox.userMessage = '';
                 }
                 break;

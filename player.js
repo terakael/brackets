@@ -54,40 +54,40 @@
 		
 		Player.prototype.process = function(step, worldWidth, worldHeight){
 			// parameter step is the time between frames ( in seconds )
-			var moving = false;
+            var moving = false;
             
-            var diffx = this.destPos.x - this.x;
-            var diffy = this.destPos.y - this.y;
-            
-            if (Math.abs(diffx) > 1 || Math.abs(diffy) > 1) {
-                var n = Math.getVectorNormal({x: diffx, y: diffy});
-                if (Math.abs(n.x * step * this.speed) > Math.abs(diffx) || Math.abs(diffx) > 64)
-                    this.x = this.destPos.x;
-                else
-                    this.x += n.x * step * this.speed;
-                
-                if (Math.abs(n.y * step * this.speed) > Math.abs(diffy) || Math.abs(diffy) > 64)
-                    this.y = this.destPos.y;
-                else
-                    this.y += n.y * step * this.speed;
+            if (!this.deathSequence) {
+                var diffx = this.destPos.x - this.x;
+                var diffy = this.destPos.y - this.y;
+                if (Math.abs(diffx) > 1 || Math.abs(diffy) > 1) {
+                    var n = Math.getVectorNormal({x: diffx, y: diffy});
+                    
+                    if (Math.abs(n.x * step * this.speed) > Math.abs(diffx) || Math.abs(diffx) > 64)
+                        this.x = this.destPos.x;
+                    else
+                        this.x += n.x * step * this.speed;
+                    
+                    if (Math.abs(n.y * step * this.speed) > Math.abs(diffy) || Math.abs(diffy) > 64)
+                        this.y = this.destPos.y;
+                    else
+                        this.y += n.y * step * this.speed;
 
-
-
-                var atan = Math.atan2(n.y, n.x);
-                var d = (atan > 0 ? atan : (2*Math.PI + atan)) * 360 / (2*Math.PI);
-                
-                if (!Game.isometric)
-                    d -= 45;// offset the angle slightly to adhere to non-isometric camera
-                if (d >= 0 && d < 90) {
-                    this.currentAnimation = "down";
-                } else if (d >= 90 && d < 180) {
-                    this.currentAnimation = "left";
-                } else if (d >= 180 && d < 270) {
-                    this.currentAnimation = "up";
-                } else {
-                    this.currentAnimation = "right";
+                    var atan = Math.atan2(n.y, n.x);
+                    var d = (atan > 0 ? atan : (2*Math.PI + atan)) * 360 / (2*Math.PI);
+                    
+                    if (!Game.isometric)
+                        d -= 45;// offset the angle slightly to adhere to non-isometric camera
+                    if (d >= 0 && d < 90) {
+                        this.currentAnimation = "down";
+                    } else if (d >= 90 && d < 180) {
+                        this.currentAnimation = "left";
+                    } else if (d >= 180 && d < 270) {
+                        this.currentAnimation = "up";
+                    } else {
+                        this.currentAnimation = "right";
+                    }
+                    moving = true;
                 }
-                moving = true;
             }
 
             if (this.inCombat && Math.abs(this.destPos.x - this.x) < 1 && Math.abs(this.destPos.y - this.y) < 1) {
@@ -224,15 +224,9 @@
 
         Player.prototype.getCurrentSpriteFrames = function() {
             let frames = [];
-            var self = this;
 
             let drawOrder = this.drawOrders.get(this.currentAnimation);
 
-            // // get base frames first
-            // drawOrder.filter(e => this.baseframes.has(e)).forEach(function(value, key, map) {
-            //     frames.push(self.getBaseSpriteFrame(value));
-            // });
-            
             // overlay with equip frames
             for (let i = 0; i < drawOrder.length; ++i) {
                 if (this.baseframes.has(drawOrder[i]))
@@ -241,19 +235,6 @@
                 if (this.spriteframes.has(drawOrder[i]))
                     frames.push(this.getCurrentSpriteFrame(drawOrder[i]));
             }            
-        
-            // let frames = [
-            //     this.getCurrentSpriteFrame("HEAD"),
-            //     this.getCurrentSpriteFrame("TORSO"),
-            //     this.getCurrentSpriteFrame("LEGS")
-            // ];
-
-            // let otherFrames = ["ONHAND", "OFFHAND"];
-            // for (let i = 0; i < otherFrames.length; ++i) {
-            //     if (this.spriteframes.has(otherFrames[i])) {
-            //         frames.push(this.getCurrentSpriteFrame(otherFrames[i]));
-            //     }
-            // }
 
             return frames;
         }
@@ -306,6 +287,7 @@
             this.currentHp = hp;
             this.maxHp = hp;
             this.stats.bonuses = null;
+            this.setEquipAnimations(null);
         }
 		
         Player.prototype.setDeathSequence = function() {

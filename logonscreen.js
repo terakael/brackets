@@ -1,7 +1,8 @@
 (function() {
     function LogonScreen() {
 		this.reset();
-    	this.bkg = null;
+		this.bkg = null;
+		this.loading = true;// on start it's loading, loading gets toggled off after the resources are loaded
 	}
 	
 	LogonScreen.prototype.reset = function() {
@@ -41,8 +42,8 @@
 		ctx.textAlign = "left";
 		ctx.fillStyle = "white";
 
-		var usernameField = "username: {0}{1}".format(this.username, this.logonState === 'username' ? '*' : '');
-		var passwordField = "password: {0}{1}".format("x".repeat(this.password.length), this.logonState === 'password' ? '*' : '');		
+		let usernameField = "username: {0}{1}".format(this.username, (this.logonState === 'username' && !this.loading) ? '*' : '');
+		let passwordField = "password: {0}{1}".format("x".repeat(this.password.length), (this.logonState === 'password' && !this.loading) ? '*' : '');		
 
 		ctx.fillText(usernameField, ~~(w/2)-140, ~~(h/2)-10);
 		ctx.fillText(passwordField, ~~(w/2)-140, ~~(h/2)+10);
@@ -50,7 +51,7 @@
 		if (this.loading) {
 			ctx.fillStyle = "white";
 			ctx.textAlign = 'center';
-			ctx.fillText("loading...", ~~(w/2), ~~(h/2) + 50);	
+			ctx.fillText(this.loadingText || "loading...", ~~(w/2), ~~(h/2) + 50);	
 		} else if (this.logonErrorTimer > 0) {
 			ctx.fillStyle = 'rgba(255, 0, 0, ' + this.logonErrorTimer + ")";
 			ctx.textAlign = 'center';
@@ -75,17 +76,18 @@
 	}
 
 	LogonScreen.prototype.onKeyDown = function(keyCode) {
+		if (this.loading)
+			return;
+
 		switch (keyCode) {
 			case 32://space
 				Game.connectAndLogin("god", "hi");
-				this.loading = true;
 				break;
 			case 13:// enter
 				if (this.logonState === 'username') {
 					this.logonState = 'password';
 				} else if (this.logonState === 'password') {
 					Game.connectAndLogin(this.username, this.password);
-					this.loading = true;
 				}
 				break;
 			case 8: // backspace

@@ -7,6 +7,7 @@
         this.cursorMaxLife = 1;
         this.cursorLife = 0;
         this.actionClick = false;
+        this.drawCursor = false;
     }
     Cursor.prototype.pos = function() {
         return this.mousePos;
@@ -16,16 +17,27 @@
         this.mousePos.y = pos.y;
     }
     Cursor.prototype.draw = function(context, xview, yview) {
-        // context.save();
-        // context.textAlign = "center";
-        // context.strokeStyle = "rgba(255, 255, 255, 0.2)";
-        // context.fillStyle = "rgba(255, 255, 255, 0.1)";
-        // context.lineWidth = 3;
-        // var realx = ~~(this.mousePos.x);
-        // var realy = ~~(this.mousePos.y);
-        // context.fillRect((~~(realx / this.size) * this.size) - xview, (~~(realy / this.size) * this.size) - yview, this.size, this.size);
-        // context.strokeRect((~~(realx / this.size) * this.size) - xview, (~~(realy / this.size) * this.size) - yview, this.size, this.size);
-        // context.restore();
+        if (this.drawCursor) {
+            context.save();
+            context.textAlign = "center";
+            context.strokeStyle = "rgba(255, 255, 255, 0.2)";
+            context.fillStyle = "rgba(255, 255, 255, 0.1)";
+            context.lineWidth = 3;
+            let realx = ~~(this.mousePos.x);
+            let realy = ~~(this.mousePos.y);
+            context.fillRect((~~(realx / this.size) * this.size) - xview, (~~(realy / this.size) * this.size) - yview, this.size, this.size);
+            context.strokeRect((~~(realx / this.size) * this.size) - xview, (~~(realy / this.size) * this.size) - yview, this.size, this.size);
+
+            let tileId = ~~(this.mousePos.x / this.size) + (~~(this.mousePos.y / this.size) * 250);
+            context.textAlign = "center";
+            context.textBaseline = "top";
+            context.font = "10px Consolas";
+            context.fillStyle = "white";
+            context.fillText(tileId, (~~(realx / this.size) * this.size + (this.size/2)) - xview, (~~(realy / this.size) * this.size) - yview - (this.size/2));
+            
+            context.restore();
+        }
+        
         if (this.cursorLife > 0) {
             context.save();
             context.textAlign = "center";

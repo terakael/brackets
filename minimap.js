@@ -11,14 +11,19 @@
 	Minimap.prototype = {
 		constructor: Minimap,
 		draw: function(context, xview, yview) {
-			// minimap background
-			context.drawImage(this.image, 
-								(Game.currentMap.image.width * ((Game.getPlayer().x - this.radius) / Game.currentMap.width)), 
-								(Game.currentMap.image.height * ((Game.getPlayer().y - this.radius) / Game.currentMap.height)), 
-								Game.currentMap.image.width * ((this.radius*2)/Game.currentMap.width), 
-								Game.currentMap.image.height * ((this.radius*2)/Game.currentMap.height), 
-								this.rect.left, this.rect.top, this.rect.width, this.rect.height);
-
+			if (this.image) {
+				let offW = this.image.width / 5;
+				let offH = this.image.height / 5;
+				context.drawImage(this.image, 
+					(Game.getPlayer().x / (250 * 32)) * this.image.width - (offW / 2), 
+					(Game.getPlayer().y / (250 * 32)) * this.image.height - (offH / 2), 
+					offW, 
+					offH, 
+					this.rect.left, 
+					this.rect.top, 
+					this.rect.width, 
+					this.rect.height);
+			}
 			context.fillStyle = "#050";
 			context.strokeStyle = "#666";
 			context.lineWidth = 3;
@@ -46,13 +51,15 @@
 				this.drawOnMap(context, this.groundItems[i].pos.x, this.groundItems[i].pos.y, 15);
 			}
 		},
-		drawOnMap: function(context, x, y, size) {
+		drawOnMap: function(context, x, y, size, icon) {
 			var diffx = x - Game.getPlayer().x;
 			var diffy = y - Game.getPlayer().y;
 			context.font = "bold {0}px Consolas".format(size || 12);
 			context.textAlign = "center";
 			if (Math.abs(diffx) < this.radius && Math.abs(diffy) < this.radius) {
-				context.fillText("x", ((this.rect.left + (this.width/2)) + (diffx/this.radius*(this.width/2))), ((this.rect.top + (this.height/2)) + (diffy/this.radius*(this.width/2))) + 2.5);
+				context.fillText(icon || ".", 
+					((this.rect.left + (this.width/2)) + (diffx/this.radius*(this.width/2))), 
+					((this.rect.top + (this.height/2)) + (diffy/this.radius*(this.width/2))) + 2.5);
 			}
 		},
 		process: function(dt) {
@@ -103,6 +110,10 @@
 			} else {
 				this.image = new Image();
 			}
+		},
+		load: function(image) {
+			console.log("loaded minimap");
+			this.image = image;
 		}
 	};
 	

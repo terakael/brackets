@@ -9,8 +9,29 @@
 		spriteFrames: [],
 		items: [],
 		loadSpriteMaps: function(spriteMaps) {
-			for (var i in spriteMaps) {
-				this.setSpriteMap(spriteMaps[i].id, spriteMaps[i].name, spriteMaps[i].dataBase64);
+			let that = this;
+			let postaction = function(){};
+			for (let i in spriteMaps) {
+				let map = new Image();
+				map.src = "data:image/png;base64,{0}".format(spriteMaps[i].dataBase64);
+				map.onload = function() {
+					console.log("loaded " + spriteMaps[i].name);
+					that.spriteMaps.push({
+						id: spriteMaps[i].id,
+						name: spriteMaps[i].name,
+						map: map
+					});
+
+					if (that.spriteMaps.length === spriteMaps.length) {
+						postaction();
+					}
+				}
+			}
+
+			return {
+				done: function(f) {
+					postaction = f || postaction;
+				}
 			}
 		},
 		loadSpriteFrames: function(frames) {
@@ -40,16 +61,19 @@
 			}
 			return null;
 		},
-		setSpriteMap: function(id, name, data) {
-			var map = new Image();
-			map.src = "data:image/png;base64,{0}".format(data);
-
-			this.spriteMaps.push({
-				id: id,
-				name: name,
-				map: map
-			});
-		},
+		// setSpriteMap: function(id, name, data) {
+		// 	let that = this;
+		// 	let map = new Image();
+		// 	map.src = "data:image/png;base64,{0}".format(data);
+		// 	map.onload = function() {
+		// 		console.log("loaded " + name);
+		// 		that.spriteMaps.push({
+		// 			id: id,
+		// 			name: name,
+		// 			map: map
+		// 		});
+		// 	}
+		// },
 		getSpriteMapById: function(id) {
 			for (var i in this.spriteMaps) {
 				if (this.spriteMaps[i].id === id) {

@@ -40,8 +40,14 @@
             //                   0, 
             //                   this.swidth, 
             //                   this.sheight);
+            
+            
+            
 
-             context.drawImage(this.image, xView, yView, this.swidth, this.sheight, 0, 0, this.swidth, this.sheight);
+            //  context.drawImage(this.image, xView, yView, this.swidth, this.sheight, 0, 0, this.swidth, this.sheight);
+            
+            
+            
             //context.drawImage(this.image, 0, 0, this.image.width, this.image.height, 0, 0, this.image.width, this.image.height);
         //}
 
