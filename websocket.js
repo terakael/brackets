@@ -7,7 +7,7 @@
         
         this.ws.onmessage = function(evt) {
             var json = JSON.parse(evt.data);
-            console.log("onmessage: " + JSON.stringify(json));
+            //console.log("onmessage: " + JSON.stringify(json));
             callback(JSON.parse(evt.data));
         };
         

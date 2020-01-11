@@ -90,7 +90,7 @@
 
 			this.originalPos = Game.mousePos;
 				
-            if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
+            if (Game.worldCameraRect.pointWithin(Game.mousePos) && !Game.activeUiWindow) {
     	       this.menuOptions.push({label: "walk here", id: Game.getPlayer().id, action: "move", x: x, y: y, priority: 2});
 			}
 

@@ -14,7 +14,8 @@
         this.inCombat = false;
         this.chatMessage = "";
         this.chatMessageTimer = 0;
-        
+        this.deathTimer = 0;
+
         this.spriteframes = [];
         this.spriteframes["up"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.upId).frameData);
         this.spriteframes["up"].setScale({x: npc.scaleX, y: npc.scaleY});
@@ -31,7 +32,7 @@
         this.spriteframes["attack"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.attackId).frameData);
         this.spriteframes["attack"].setScale({x: npc.scaleX, y: npc.scaleY});
 
-        this.combatOffset = (this.spriteframes["attack"].getCurrentFrame().width * npc.scaleX) / 2;
+        this.combatOffset = (this.spriteframes["attack"].getCurrentFrame().width * npc.scaleX) / 4;
 
         this.currentAnimation = "down";
     }
@@ -43,7 +44,14 @@
     }
     
     NPC.prototype.process = function(step){
-        this.processMovement(step);
+        if (this.currentHp == 0) {
+            this.deathTimer += step;
+        } else {
+            this.deathTimer = 0;
+        }
+
+        if (this.deathTimer === 0)
+            this.processMovement(step);
 
         if (this.inCombat && Math.abs((this.dest.x + this.combatOffset) - this.pos.x) < 1 && Math.abs(this.dest.y - this.pos.y) < 1)
             this.currentAnimation = "attack";
@@ -76,7 +84,12 @@
         context.setTransform(1, 0, 0, 1, 0, 0);
         let frameHeight = this.spriteframes[this.currentAnimation].getCurrentFrame().height;
         let scale = this.spriteframes[this.currentAnimation].scale.y;
-        this.drawHealthBar(context, (this.pos.x - xView + 2.5) * Game.scale, (this.pos.y - yView - (frameHeight * scale) - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.get("maxHp"));
+        if (this.deathTimer === 0)
+            this.drawHealthBar(context, (this.pos.x - xView + 2.5) * Game.scale, (this.pos.y - yView - (frameHeight * scale) - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.get("maxHp"));
+
+        // context.fillStyle = "red";
+        // context.textAlign = "center";
+        // context.fillText(this.tileId, (this.pos.x - xView - 8) * Game.scale, (this.pos.y - yView - 8) * Game.scale);
 
         if (this.hitsplat) {
             context.fillStyle = this.hitsplat.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";
@@ -99,6 +112,11 @@
     }
 
     NPC.prototype.processMovement = function(step) {
+        // if (this.inCombat) {
+        //     this.pos.x = this.dest.x + (this.inCombat ? this.combatOffset : 0);
+        //     this.pos.y = this.dest.y - this.pos.y;
+        // }
+        
         var diffx = (this.dest.x + (this.inCombat ? this.combatOffset : 0)) - this.pos.x;
         var diffy = this.dest.y - this.pos.y;
         
@@ -143,6 +161,7 @@
     }
 
     NPC.prototype.setDestPosAndSpeedByTileId = function(tileId) {
+        this.tileId = tileId;
         var xy = tileIdToXY(tileId);
 
         this.dest.x = xy.x;
@@ -160,6 +179,10 @@
             this.currentHp = obj.hp;
         }
 
+        if (obj.hasOwnProperty("tileId")) {
+            this.setDestPosAndSpeedByTileId(obj.tileId);
+        }
+        
         if (obj.hasOwnProperty("damage")) {
             // damage hitsplat on top of the npc, set health bar timer
             this.hitsplat = {

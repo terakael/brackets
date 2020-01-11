@@ -32,6 +32,9 @@
         this.x = 10;
         this.y = 20;
         this.healthBarTimer = 0;
+        this.hoverStatId = null;
+
+        this.rect = new Game.Rectangle(Game.hudCameraRect.left, 480, Game.hudCameraRect.width, 130);
     }
     Stats.prototype.exp2lvl = function(exp) {
         let lvl = 99;
@@ -79,9 +82,11 @@
         ctx.fillStyle = "red";
         ctx.fillText("cmb: " + Game.currentPlayer.combatLevel, ~~(this.x + xview + statBoxWidth - 10) + 0.5, ~~(yview - 5) + 0.5);
 
+        // ctx.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
+        
         var spritemap = Game.SpriteManager.getSpriteMapById(10);
         
-        var hoverStatId = null;
+        let hoveringOverAStat = false;
         ctx.lineWidth = 1;
         for (var i = 0; i < this.stats.length; ++i) {
             var xOffset = (i % 3) * 80; 
@@ -92,7 +97,8 @@
             if (clickbox.pointWithin(Game.mousePos)) {
                 ctx.fillStyle = "rgba(100, 100, 100, 0.6)";
                 ctx.fillRect(clickbox.left, clickbox.top, clickbox.width, clickbox.height);
-                hoverStatId = i;
+                this.hoverStatId = i;
+                hoveringOverAStat = true;
             }
 
             ctx.drawImage(spritemap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 16, 16);
@@ -101,20 +107,17 @@
             ctx.textBaseline = "middle";
             ctx.fillStyle = "red";
             ctx.fillText("{0}/{1}".format(this.stats[i].lvl + this.boosts[i].amount, this.stats[i].lvl), this.x + xview + 20 + xOffset, this.y + yview + (this.y * ~~(i/3)));
-
-            // if (name === "hp") {
-            //     ctx.fillText("{1}/{2}".format(name, Game.currentPlayer.currentHp, this.stats[i].lvl, exp), this.x + xview + 20 + xOffset, this.y + yview + (this.y * ~~(i/3)));
-            // } else {
-                
-            // }
         }
+
+        if (!hoveringOverAStat)
+            this.hoverStatId = null;
         
         
         var yOffset = this.y + yview + ~~(this.stats.length / 3) * 16 + 5;
         ctx.strokeRect(~~(this.x + xview) + 0.5, ~~yOffset + 0.5, statBoxWidth, 16);
-        if (hoverStatId !== null) {
-            var expSinceLvl = this.stats[hoverStatId].exp - this.lvl2exp(this.stats[hoverStatId].lvl);
-            var expDiff = this.lvl2exp(this.stats[hoverStatId].lvl + 1) - this.lvl2exp(this.stats[hoverStatId].lvl);
+        if (this.hoverStatId !== null) {
+            var expSinceLvl = this.stats[this.hoverStatId].exp - this.lvl2exp(this.stats[this.hoverStatId].lvl);
+            var expDiff = this.lvl2exp(this.stats[this.hoverStatId].lvl + 1) - this.lvl2exp(this.stats[this.hoverStatId].lvl);
             var remaining = (expSinceLvl / expDiff);
             ctx.fillStyle = "rgba(0, 100, 0, 0.6)";
             ctx.fillRect(this.x + xview, yOffset, remaining * statBoxWidth, 16);
@@ -122,7 +125,7 @@
             ctx.textAlign = "center";
             ctx.fillStyle = "red";
             ctx.textBaseline = "middle";
-            ctx.fillText("{0}: {1}xp ({2}%)".format(this.stats[hoverStatId].name, this.stats[hoverStatId].exp, ~~(remaining * 100)), this.x + xview + (statBoxWidth / 2), yOffset + 8);
+            ctx.fillText("{0}: {1}xp ({2}%)".format(this.stats[this.hoverStatId].name, this.stats[this.hoverStatId].exp, ~~(remaining * 100)), this.x + xview + (statBoxWidth / 2), yOffset + 8);
         } else {
             ctx.textAlign = "center";
             ctx.fillStyle = "red";
@@ -229,6 +232,18 @@
     }
     Stats.prototype.getCurrentHp = function() {
         return this.getLevelByStat("hp") + this.getBoostByStat("hp");
+    }
+    Stats.prototype.onMouseDown = function() {
+        if (this.hoverStatId == null)
+            return;
+
+        if (this.stats[this.hoverStatId].name === "herb") {
+            Game.ws.send({
+                action: "show_stat_window",
+                id: Game.getPlayer().id,
+                statId: this.hoverStatId
+            });
+        }
     }
     window.Game.Stats = Stats;
 }());

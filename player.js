@@ -29,6 +29,8 @@
             this.respawnPos = {x: 0, y: 0};
             this.deathsCurtain = 1;
             this.deathSequence = false;
+            this.stateSprite = null;
+            this.stateTimer = 0;
 
             this.spriteframes = new Map();// things that aren't base character parts (weapons/armour etc)
             this.baseframes = new Map();// base character parts; shows if you're not equipping anything
@@ -53,10 +55,22 @@
 		}
 		
 		Player.prototype.process = function(step, worldWidth, worldHeight){
+            if (this.stateTimer > 0) {
+                this.stateTimer -= step;
+                if (this.stateTimer <= 0) {
+                    this.stateSprite = null;
+                    this.stateTimer = 0;
+                }
+            }
+            
 			// parameter step is the time between frames ( in seconds )
             var moving = false;
             
             if (!this.deathSequence) {
+                // if (this.inCombat) {
+                //     this.x = this.destPos.x;
+                //     this.y = this.destPos.y;
+                // }
                 var diffx = this.destPos.x - this.x;
                 var diffy = this.destPos.y - this.y;
                 if (Math.abs(diffx) > 1 || Math.abs(diffy) > 1) {
@@ -193,6 +207,23 @@
                     context.textBaseline = "middle";
                     context.font = "bold 20pt Consolas";
                     context.fillText(this.hitsplat.damage, (this.x - xView) * Game.scale, (this.y - yView) * Game.scale);
+                }
+
+                if (this.stateTimer > 0) {
+                    if (this.stateSprite != null) {
+                        
+                        context.save();
+                        context.globalAlpha = 0.7;
+                        Game.SpriteManager.getSpriteFrameById(555).draw(context, (this.x - xView) * Game.scale, (this.y - yView - 32 - 8) * Game.scale);
+                        context.restore();
+
+                        context.save();
+                        context.scale(0.5, 0.5);
+
+                        // 555 is the skill bubble sprite frame
+                        this.stateSprite.draw(context, (this.x - xView) * (Game.scale*2), (this.y - yView - 32 - 8) * (Game.scale*2));
+                        context.restore();
+                    }
                 }
 
                 context.restore();
@@ -384,6 +415,11 @@
 
         Player.prototype.getCurrentAttackStyle = function() {
             return this.attackStyles[this.attackStyle];
+        }
+
+        Player.prototype.setState = function(state) {
+            this.stateSprite = Game.SpriteManager.getSpriteFrameById(state);
+            this.stateTimer = 3;
         }
 
 		// add "class" Player to our Game object

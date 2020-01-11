@@ -61,19 +61,6 @@
 			}
 			return null;
 		},
-		// setSpriteMap: function(id, name, data) {
-		// 	let that = this;
-		// 	let map = new Image();
-		// 	map.src = "data:image/png;base64,{0}".format(data);
-		// 	map.onload = function() {
-		// 		console.log("loaded " + name);
-		// 		that.spriteMaps.push({
-		// 			id: id,
-		// 			name: name,
-		// 			map: map
-		// 		});
-		// 	}
-		// },
 		getSpriteMapById: function(id) {
 			for (var i in this.spriteMaps) {
 				if (this.spriteMaps[i].id === id) {

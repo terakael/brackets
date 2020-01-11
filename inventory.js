@@ -7,6 +7,7 @@
 		this.id = id;
 		this.equipped = false;
 		this.count = 1;
+		this.charges = 0;
 	};
 	InventorySlot.prototype = {
 		constructor: InventorySlot,
@@ -22,16 +23,15 @@
 
 				context.textAlign = "right";
 				context.font = "10pt Consolas";
-				let pos = this.rect.top + 5;
 				if (this.item.isStackable()) {
 					context.textBaseline = "top";
 					context.fillStyle = this.count.includes("M") ? "#8f8" : "yellow";
+					context.fillText(this.count, this.rect.left + this.rect.width - 5, this.rect.top + 5);
 				} else if (this.item.isCharged()) {
 					context.textBaseline = "bottom";
 					context.fillStyle = "red";
-					pos = this.rect.bottom - 5;
-				}
-				context.fillText(this.count, this.rect.left + this.rect.width - 5, pos);
+					context.fillText(this.charges, this.rect.left + this.rect.width - 5, this.rect.bottom - 5);
+				}				
 			}
 		}
 	};
@@ -158,6 +158,17 @@
 						priority: 10
 					}
 
+				case "bank":
+					return {
+						action: "deposit",
+						objectId: slot.item.id,
+						objectName: slot.item.name,
+						amount: 1,
+						label: `deposit 1 ${slot.item.name}`,
+						slot: slot.id,
+						priority: 10
+					}
+
 				default:
 					break;
 			}
@@ -167,7 +178,7 @@
 			options.push(this.getLeftclickOption(slot, state));
 
 			switch (state) {
-				case "shop":
+				case "shop": {
 					let sellAmounts = [1, 5, 10];
 					for (let i = 0; i < sellAmounts.length; ++i) {
 						options.push({
@@ -180,7 +191,8 @@
 						});
 					}
 					break;
-				case "trade":
+				}
+				case "trade": {
 					let offerAmounts = [5, 10, -1];
 					for (let i = 0; i < offerAmounts.length; ++i) {
 						options.push({
@@ -194,6 +206,22 @@
 						});
 					}
 					break;
+				}
+				case "bank": {
+					let offerAmounts = [5, 10, -1];
+					for (let i = 0; i < offerAmounts.length; ++i) {
+						options.push({
+							action: "deposit",
+							objectId: slot.item.id,
+							objectName: slot.item.name,
+							amount: offerAmounts[i],
+							label: `deposit ${offerAmounts[i] == -1 ? "all" : offerAmounts[i]} ${slot.item.name}`,
+							slot: slot.id,
+							priority: 10
+						});
+					}
+					break;
+				}
 				default:
 					break;
 			}
@@ -270,7 +298,7 @@
 					this.mousePosOnClick = Game.mousePos;
 					let slot = this.getMouseOverSlot(Game.mousePos);
 					if (slot.item.id != 0) {
-						this.selectedSlot = {id: slot.id, item: slot.item, equipped: slot.equipped, count: slot.count};
+						this.selectedSlot = {id: slot.id, item: slot.item, equipped: slot.equipped, count: slot.count, charges: slot.charges};
 					}
 
 					break;
@@ -290,7 +318,6 @@
 				this.selectedMenuItem = false;
 				return;
 			}
-				
 
 			switch (button) {
 				case 0:// left
@@ -326,14 +353,17 @@
 					this.slots[this.selectedSlot.id].item = slot.item;
 					this.slots[this.selectedSlot.id].equipped = slot.equipped;
 					this.slots[this.selectedSlot.id].count = slot.count;
+					this.slots[this.selectedSlot.id].charges = slot.charges;
 				}
 				slot.item = this.selectedSlot.item;
 				slot.equipped = this.selectedSlot.equipped;
 				slot.count = this.selectedSlot.count;
+				slot.charges = this.selectedSlot.charges;
 			} else {
 				this.slots[this.selectedSlot.id].item = this.selectedSlot.item;
 				this.slots[this.selectedSlot.id].equipped = this.selectedSlot.equipped;
 				this.slots[this.selectedSlot.id].count = this.selectedSlot.count;
+				this.slots[this.selectedSlot.id].charges = this.selectedSlot.charges;
 			}
 
 			if (slot) {// if the mouse isnt' over a slot then the item won't move, so don't send a move request.
@@ -356,6 +386,7 @@
 				let invItem = inv[i];
 				this.slots[i].item = Game.SpriteManager.getItemById(invItem.itemId);
 				this.slots[i].count = invItem.friendlyCount;
+				this.slots[i].charges = invItem.charges;
 			}
 		},
 		setEquippedSlots: function(equippedArray) {

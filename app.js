@@ -286,6 +286,7 @@ $(function () {
                     }
 
                     case "start_mining": {
+                        room.player.setState(434);// pickaxe icon
                         Game.ChatBox.add("you start mining the rock...");
                         break;
                     }
@@ -299,11 +300,22 @@ $(function () {
                         break;
                     }
 
+                    case "start_smith": {
+                        room.player.setState(obj.iconId);
+                        break;
+                    }
+
                     case "finish_smith": {
                         Game.ws.send({
                             action: "smith",
                             itemId: obj.itemId
                         });
+                        break;
+                    }
+
+                    case "start_use": {
+                        if (obj.iconId)
+                            room.player.setState(obj.iconId);
                         break;
                     }
 
@@ -340,6 +352,13 @@ $(function () {
                     }
 
                     case "npc_update": {
+                        console.log(obj);
+                        // instanceId: 32356
+                        // damage: 22
+                        // hp: 0
+                        // success: 1
+                        // responseText: ""
+                        // action: "npc_update"
                         for (var i = 0; i < room.npcs.length; ++i) {
                             if (room.npcs[i].instanceId === obj["instanceId"]) {
                                 room.npcs[i].handleNpcUpdate(obj)
@@ -371,11 +390,11 @@ $(function () {
 
                         if (player !== null && monster !== null) {
                             // handle fight
-                            player.setDestPosAndSpeedByTileId(obj.tileId, -1);
                             player.inCombat = true;
+                            player.setDestPosAndSpeedByTileId(obj.tileId, -8);
                             
-                            monster.setDestPosAndSpeedByTileId(obj.tileId, 1);
                             monster.inCombat = true;
+                            monster.setDestPosAndSpeedByTileId(obj.tileId);
                         }
                         break;
                     }
@@ -434,11 +453,11 @@ $(function () {
 
                         if (player1 !== null && player2 !== null) {
                             // handle fight
-                            player1.setDestPosAndSpeedByTileId(obj.tileId, -1);
                             player1.inCombat = true;
+                            player1.setDestPosAndSpeedByTileId(obj.tileId, -1);
                             
-                            player2.setDestPosAndSpeedByTileId(obj.tileId, 1);
                             player2.inCombat = true;
+                            player2.setDestPosAndSpeedByTileId(obj.tileId, 1);
                         }
 
                         break;
@@ -496,6 +515,7 @@ $(function () {
                     }
 
                     case "npc_location_refresh": {
+                        // console.log(obj);
                         let newNpcs = [];
                         for (let i = 0; i < obj.npcs.length; ++i) {
                             let refreshNpc = obj.npcs[i];
@@ -506,7 +526,6 @@ $(function () {
                                     if (room.npcs[j].tileId !== refreshNpc.tileId)
                                         room.npcs[j].setDestPosAndSpeedByTileId(refreshNpc.tileId);
 
-                                    newNpcs.push(room.npcs[j]);
                                     found = true;
                                     break;
                                 }
@@ -517,7 +536,17 @@ $(function () {
                             }
                         }
 
-                        room.npcs = newNpcs;
+                        room.npcs = room.npcs.concat(newNpcs);
+                        break;
+                    }
+
+                    case "npc_out_of_range": {
+                        // console.log(obj);
+                        // instances: [38602]
+                        // success: 1
+                        // responseText: ""
+                        // action: "npc_out_of_range"
+                        room.npcs = room.npcs.filter(e => !obj.instances.includes(e.instanceId));
                         break;
                     }
 
@@ -549,8 +578,6 @@ $(function () {
                     }
 
                     case "shop": {
-                        console.log(obj);
-
                         let gameWindowWidth = canvas.width - 250;
                         let uiWidth = gameWindowWidth / 2;
                         let uiHeight = canvas.height / 2;
@@ -560,6 +587,40 @@ $(function () {
                         let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
 
                         Game.activeUiWindow = new Game.ShopWindow(rect, obj.shopStock, obj.shopName);
+                        break;
+                    }
+
+                    case "show_stat_window": {
+                        let gameWindowWidth = canvas.width - 250;
+                        let uiWidth = gameWindowWidth / 3;
+                        let uiHeight = canvas.height / 2;
+
+                        let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
+                        let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
+                        let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+
+                        if (obj.statId === 8) {// potions
+                            Game.activeUiWindow = new Game.PotionWindow(rect, obj.rows, "potions");
+                        }
+                        break;
+                    }
+
+                    case "bank": {
+                        let gameWindowWidth = canvas.width - 250;
+                        let uiWidth = gameWindowWidth / 2;
+                        let uiHeight = canvas.height / 2;
+
+                        let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
+                        let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
+                        let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+
+                        Game.activeUiWindow = new Game.BankWindow(rect, obj.items, "the bank");
+                        break;
+                    }
+
+                    case "withdraw":
+                    case "deposit": {
+                        Game.activeUiWindow.updateStock(obj.items);
                         break;
                     }
 
@@ -583,12 +644,31 @@ $(function () {
                         break;
                     }
 
+                    case "start_cooking": {
+                        room.player.setState(obj.iconId);
+                        break;
+                    }
+
+                    case "finish_cooking": {
+                        // lets cook again
+                        Game.ws.send({
+                            action: "use",
+                            src: obj.itemId,
+                            dest: obj.tileId,
+                            type: obj.type
+                        });
+                        break;
+                    }
+
+                    case "catch": {
+                        room.npcs = room.npcs.filter(e => e.instanceId !== obj.instanceId);
+                        break;
+                    }
+
                     // sometimes a response comes back just showing a message; don't do anything else in these cases
                     // we need these here though in order to prevent the "invalid action" default message.
                     case "use":
                     case "smith":
-                    case "start_smith":
-                    case "start_use":
                     case "trade":                    
                     case "value":
                     case "buy":
@@ -912,11 +992,12 @@ $(function () {
                     id: this.drawableNpcs[i].instanceId,
                     name: this.drawableNpcs[i].get("name"),
                     x: this.drawableNpcs[i].pos.x, 
-                    y: this.drawableNpcs[i].pos.y,
+                    y: this.drawableNpcs[i].pos.y - (this.drawableNpcs[i].deathTimer * 32),
                     sprite: [this.drawableNpcs[i].getCurrentSpriteFrame()],
                     type: "npc",
                     leftclickOption: this.drawableNpcs[i].get("leftclickOption"),
-                    label: this.drawableNpcs[i].getLeftclickLabel()
+                    label: this.drawableNpcs[i].getLeftclickLabel(),
+                    transparency: 1 - this.drawableNpcs[i].deathTimer
                 });
             }
 
@@ -933,6 +1014,7 @@ $(function () {
                 for (var i = 0; i < value.length; ++i) {
                     var currentFrame = value[i].sprite[0].getCurrentFrame();
 
+                    ctx.globalAlpha = value[i].transparency || 1;
                     for (var j = 0; j < value[i].sprite.length; ++j)
                         value[i].sprite[j].draw(ctx, value[i].x - xview, value[i].y - yview);
 
@@ -1003,6 +1085,7 @@ $(function () {
             for (var i in this.otherPlayers) {
                 this.otherPlayers[i].process(dt, this.width, this.height);
             }
+            this.npcs = this.npcs.filter(npc => npc.deathTimer < 1);
             for (var i in this.drawableNpcs) {
                 this.drawableNpcs[i].process(dt);
             }
@@ -1279,6 +1362,9 @@ $(function () {
             else if (Game.Minimap.rect.pointWithin(Game.mousePos)) {
                 Game.Minimap.onMouseDown(e.button);
             } 
+            else if (room.player.stats.rect.pointWithin(Game.mousePos)) {
+                room.player.stats.onMouseDown(e.button);
+            }
             else if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
                 switch (e.button) {
                     case 0: // left
@@ -1654,6 +1740,14 @@ window.addEventListener("keydown", function (e) {
 
                         case "::groundTextureOutline": {
                             Game.drawGroundTextureOutline = !Game.drawGroundTextureOutline;
+                            break;
+                        }
+
+                        case "::bank": {
+                            Game.ws.send({
+                                action: "bank",
+                                id: Game.getPlayer().id
+                            });
                             break;
                         }
 
