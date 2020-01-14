@@ -286,7 +286,6 @@ $(function () {
                     }
 
                     case "start_mining": {
-                        room.player.setState(434);// pickaxe icon
                         Game.ChatBox.add("you start mining the rock...");
                         break;
                     }
@@ -301,7 +300,6 @@ $(function () {
                     }
 
                     case "start_smith": {
-                        room.player.setState(obj.iconId);
                         break;
                     }
 
@@ -314,8 +312,6 @@ $(function () {
                     }
 
                     case "start_use": {
-                        if (obj.iconId)
-                            room.player.setState(obj.iconId);
                         break;
                     }
 
@@ -515,7 +511,6 @@ $(function () {
                     }
 
                     case "npc_location_refresh": {
-                        // console.log(obj);
                         let newNpcs = [];
                         for (let i = 0; i < obj.npcs.length; ++i) {
                             let refreshNpc = obj.npcs[i];
@@ -645,7 +640,6 @@ $(function () {
                     }
 
                     case "start_cooking": {
-                        room.player.setState(obj.iconId);
                         break;
                     }
 
@@ -662,6 +656,56 @@ $(function () {
 
                     case "catch": {
                         room.npcs = room.npcs.filter(e => e.instanceId !== obj.instanceId);
+                        break;
+                    }
+
+                    case "action_bubble": {
+                        let player = null;
+                        if (obj.playerId == Game.currentPlayer.id) {
+                            player = Game.currentPlayer;
+                        } else {
+                            for (var i in room.otherPlayers) {
+                                if (room.otherPlayers[i].id == obj.playerId) {
+                                    player = room.otherPlayers[i];
+                                    break;
+                                }
+                            }
+                        }
+                        if (player != null) {
+                            player.setState(obj.iconId);
+                        }
+
+                        break;
+                    }
+
+                    case "cast_spell": {
+                        let target = null;
+                        if (obj.targetType === "npc") {
+                            for (let i = 0; i < room.drawableNpcs.length; ++i) {
+                                if (room.drawableNpcs[i].instanceId === obj.targetId) {
+                                    target = room.drawableNpcs[i];
+                                    break;
+                                }
+                            }
+                        }
+
+                        let player = null;
+                        if (obj.playerId == Game.currentPlayer.id) {
+                            player = Game.currentPlayer;
+                        } else {
+                            for (var i in room.otherPlayers) {
+                                if (room.otherPlayers[i].id == obj.playerId) {
+                                    player = room.otherPlayers[i];
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (target && player) {
+                            let spell = new Game.Spell(player, target, obj.spriteFrameId);
+                            room.spells.push(spell);
+                        }
+                        
                         break;
                     }
 
@@ -712,6 +756,7 @@ $(function () {
         groundTexturesMap: new Map(),
         drawableSceneryMap: new Map(),
         drawableNpcs: [],
+        spells: [],
         t: new Game.Transform(),
         loadMinimap: function(minimapBase64) {
             // this.map.load(context, background);
@@ -780,7 +825,8 @@ $(function () {
                             anchorX: sceneryJson[i].anchorX,
                             anchorY: sceneryJson[i].anchorY
                         })],
-                        type: "scenery"
+                        type: "scenery",
+                        attributes: sceneryJson[i].attributes
                     });
                 }
             }
@@ -1009,6 +1055,17 @@ $(function () {
                 drawMap.set(key, drawMap.get(key).concat(value));
             });
 
+            // active spells
+            for (let i = 0; i < this.spells.length; ++i) {
+                if (!drawMap.has(this.spells[i].pos.y))
+                    drawMap.set(this.spells[i].pos.y, []);
+                drawMap.get(this.spells[i].pos.y).push({
+                    x: this.spells[i].pos.x,
+                    y: this.spells[i].pos.y,
+                    sprite: [this.spells[i].spriteFrame]
+                });
+            }
+
             var orderedDrawMap = new Map([...drawMap.entries()].sort());// order by ypos
             orderedDrawMap.forEach(function(value, key, map) {
                 for (var i = 0; i < value.length; ++i) {
@@ -1033,7 +1090,8 @@ $(function () {
                                 ctx.strokeRect(rect.left, rect.top, rect.width, rect.height);
                             }
 
-                            if (Game.currentPlayer.inventory.slotInUse) {
+                            let unusable = ((value[i].attributes || 0) & 1) == 1 && value[i].type === "scenery";
+                            if (Game.currentPlayer.inventory.slotInUse && value[i].name && !unusable) {
                                 Game.ContextMenu.setLeftclick(Game.mousePos, {
                                     id: Game.currentPlayer.id,
                                     action: "use",
@@ -1043,7 +1101,7 @@ $(function () {
                                     label: "use {0} -> {1}".format(Game.currentPlayer.inventory.slotInUse.item.name, value[i].name)
                                 });
                             } else {
-                                if (value[i].leftclickOption != 0) {
+                                if (value[i].leftclickOption) {
                                     var label = value[i].label || "";
                                     var contextOpt = Game.ContextMenu.getContextOptionById(value[i].leftclickOption);
                                     Game.ContextMenu.setLeftclick(Game.mousePos, {
@@ -1082,24 +1140,28 @@ $(function () {
         process: function (dt) {
             this.currentShow += (this.show - this.currentShow) * dt;
             this.player.process(dt, this.width, this.height);
-            for (var i in this.otherPlayers) {
+            for (let i in this.otherPlayers) {
                 this.otherPlayers[i].process(dt, this.width, this.height);
             }
             this.npcs = this.npcs.filter(npc => npc.deathTimer < 1);
-            for (var i in this.drawableNpcs) {
+            for (let i in this.drawableNpcs) {
                 this.drawableNpcs[i].process(dt);
             }
             this.drawableSceneryMap.forEach(function(value, key, map) {
-                for (var i in value)
+                for (let i in value)
                     value[i].sprite[0].process(dt);
             });
+            for (let i = 0; i < this.spells.length; ++i)
+                this.spells[i].process(dt);
+            this.spells = this.spells.filter(spell => spell.lifetime > 0);
+
             Game.Minimap.setOtherPlayers(this.otherPlayers);
             Game.Minimap.setGroundItems(this.groundItems);
             Game.Minimap.setNpcs(this.drawableNpcs);
         },
         drawGroundTextures: function(ctx, xview, yview) {
-            let drawBoundWidth = (camera.viewportRect.width * 1.1);
-            let drawBoundHeight = (camera.viewportRect.height * 1.1);
+            let drawBoundWidth = (camera.viewportRect.width * 1.15);
+            let drawBoundHeight = (camera.viewportRect.height * 1.15);
 
             let minX = (xview + (camera.viewportRect.width * 0.5)) - (drawBoundWidth * 0.5); 
             let minY = (yview + (camera.viewportRect.height) * 0.5) - (drawBoundHeight * 0.5);
@@ -1290,8 +1352,9 @@ $(function () {
             }
         },
         compileDrawableSceneryMap: function(xview, yview) {
-            var drawBoundWidth = (camera.viewportRect.width * Game.maxScale);
-            var drawBoundHeight = (camera.viewportRect.height * Game.maxScale);
+            let scale = 1.5;//Game.maxScale;
+            var drawBoundWidth = (camera.viewportRect.width * scale);
+            var drawBoundHeight = (camera.viewportRect.height * scale);
 
             var minX = (xview + (camera.viewportRect.width * 0.5)) - (drawBoundWidth * 0.5); 
             var minY = (yview + (camera.viewportRect.height) * 0.5) - (drawBoundHeight * 0.5);
@@ -1310,8 +1373,9 @@ $(function () {
             this.drawableSceneryMap = drawableSceneryMap;
         },
         compileDrawableNpcs: function(xview, yview) {
-            var drawBoundWidth = (camera.viewportRect.width * Game.maxScale);
-            var drawBoundHeight = (camera.viewportRect.height * Game.maxScale);
+            let scale = 1.5;//Game.maxScale;
+            var drawBoundWidth = (camera.viewportRect.width * scale);
+            var drawBoundHeight = (camera.viewportRect.height * scale);
 
             var minX = (xview + (camera.viewportRect.width * 0.5)) - (drawBoundWidth * 0.5); 
             var minY = (yview + (camera.viewportRect.height * 0.5)) - (drawBoundHeight * 0.5);
@@ -1358,6 +1422,7 @@ $(function () {
             else if (Game.ContextMenu.active && e.button == 0) {// left
                 // selecting a context option within the game world
                 Game.ContextMenu.handleMenuSelect();
+                room.player.inventory.slotInUse = null;
             }
             else if (Game.Minimap.rect.pointWithin(Game.mousePos)) {
                 Game.Minimap.onMouseDown(e.button);
@@ -1380,6 +1445,7 @@ $(function () {
                             }
                         } else if (room.player.inventory.slotInUse != null) {
                             // are we hovering over a player/scenery/npc?
+                            let handled = false;
                             room.drawableSceneryMap.forEach(function(value, key, map) {
                                 for (var i in value) {
                                     var sprite = value[i].sprite[0];
@@ -1390,7 +1456,8 @@ $(function () {
                                         spriteFrame.width, 
                                         spriteFrame.height);
     
-                                    if (rect.pointWithin(cursor.mousePos)) {
+                                    let unusable = (value[i].attributes & 1) == 1;
+                                    if (rect.pointWithin(cursor.mousePos) && !unusable) {// don't use with walls, fences etc
                                         cursor.handleClick(true);
                                         var tileId = value[i].tileId;
                                         Game.ws.send({
@@ -1402,12 +1469,41 @@ $(function () {
                                             slot: room.player.inventory.slotInUse.id
                                         });
                                         room.player.inventory.slotInUse = null;
+                                        handled = true;
                                         return;
                                     }
                                 }
                             });
 
-                            // TODO player/npc
+                            // npc
+                            if (!handled) {
+                                for (let i = 0; i < room.drawableNpcs.length; ++i) {
+                                    var sprite = room.drawableNpcs[i].getCurrentSpriteFrame();
+                                    var spriteFrame = sprite.getCurrentFrame();
+                                    let rect = new Game.Rectangle(
+                                        room.drawableNpcs[i].pos.x - (spriteFrame.width * sprite.anchor.x), 
+                                        room.drawableNpcs[i].pos.y - (spriteFrame.height * sprite.anchor.y), 
+                                        spriteFrame.width, 
+                                        spriteFrame.height);
+
+                                    if (rect.pointWithin(cursor.mousePos)) {
+                                        cursor.handleClick(true);
+                                        Game.ws.send({
+                                            action: "use",
+                                            type: "npc",
+                                            id: room.player.id,
+                                            src: room.player.inventory.slotInUse.item.id,
+                                            slot: room.player.inventory.slotInUse.id,
+                                            dest: room.drawableNpcs[i].instanceId
+                                        });
+                                        room.player.inventory.slotInUse = null;
+                                        handled = true;
+                                        return;
+                                    }
+                                }
+                            }
+
+                            // TODO player
                             room.player.inventory.slotInUse = null;
                         }
 
@@ -1446,7 +1542,8 @@ $(function () {
                                     var tileId = value[i].tileId;
                                     var scenery = Game.sceneryMap.get(sprite.id);
                                     
-                                    if (room.player.inventory.slotInUse) {
+                                    let unusable = ((value[i].attributes || 0) & 1) == 1;
+                                    if (room.player.inventory.slotInUse && scenery.name && !unusable) {
                                         Game.ContextMenu.push([{
                                             id: room.player.id,
                                             action: "use",
@@ -1492,7 +1589,17 @@ $(function () {
                                     spriteFrame.getCurrentFrame().width, 
                                     spriteFrame.getCurrentFrame().height);
 
-                                if (rect.pointWithin(cursor.mousePos)) {
+                            if (rect.pointWithin(cursor.mousePos)) {
+                                if (room.player.inventory.slotInUse) {
+                                    Game.ContextMenu.push([{
+                                        id: room.player.id,
+                                        action: "use",
+                                        src: room.player.inventory.slotInUse.item.id,
+                                        dest: npc.instanceId,
+                                        type: "npc",
+                                        label: "use {0} -> {1}".format(room.player.inventory.slotInUse.item.name, npc.get("name"))
+                                    }]);
+                                } else {
                                     if (npc.get("leftclickOption") != 0) {
                                         Game.ContextMenu.push([{
                                             action: Game.ContextMenu.getContextOptionById(npc.get("leftclickOption")).name,
@@ -1515,6 +1622,7 @@ $(function () {
                                         }
                                     }
                                 }
+                            }
                         }
                         break;
                 }

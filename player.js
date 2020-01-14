@@ -140,6 +140,7 @@
                     this.y = this.respawnPos.y;
                     this.destPos.x = this.respawnPos.x;
                     this.destPos.y = this.respawnPos.y;
+                    this.stats.setBoost("hp", 0);// on death it's -maxHp; 0 means full hp
                 }
             } else {
                 if (this.deathsCurtainMaxTimer > 0) {

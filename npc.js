@@ -2,6 +2,7 @@
     function NPC(obj){
         let npc = Game.npcMap.get(obj.npcId);
 
+        this.tileId = obj.tileId;
         var xy = tileIdToXY(obj.tileId);
         this.id = npc.id,
         this.instanceId = obj.instanceId;// npc instance id is the spawn tile
@@ -34,7 +35,8 @@
 
         this.combatOffset = (this.spriteframes["attack"].getCurrentFrame().width * npc.scaleX) / 4;
 
-        this.currentAnimation = "down";
+        let potentialStartAnimations = ["up", "down", "left", "right"];
+        this.currentAnimation = potentialStartAnimations[Math.floor(Math.random() * potentialStartAnimations.length)];
     }
 
     NPC.prototype.getLeftclickLabel = function() {
@@ -92,7 +94,7 @@
         // context.fillText(this.tileId, (this.pos.x - xView - 8) * Game.scale, (this.pos.y - yView - 8) * Game.scale);
 
         if (this.hitsplat) {
-            context.fillStyle = this.hitsplat.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";
+            context.fillStyle = this.hitsplat.color;
             context.fillRect((this.pos.x - xView - 8) * Game.scale, (this.pos.y - yView - 8) * Game.scale, 16 * Game.scale, 16 * Game.scale);
             
             context.fillStyle = "white";
@@ -184,10 +186,27 @@
         }
         
         if (obj.hasOwnProperty("damage")) {
+            let color = "red";
+            if (obj.hasOwnProperty("damageType")) {
+                switch (obj.damageType) {
+                    case 0: // standard
+                        color = obj.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";
+                        break;
+                    case 1: // poison
+                        color = "green";
+                        break;
+                    case 2:// magic
+                        color = "magenta";
+                        break;
+                    default:
+                        break;
+                }
+            }
             // damage hitsplat on top of the npc, set health bar timer
             this.hitsplat = {
                 damage: obj.damage,
-                lifetime: 1
+                lifetime: 1,
+                color: color
             };
             this.healthBarTimer = 5;
         }

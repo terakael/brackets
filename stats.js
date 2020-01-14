@@ -90,8 +90,6 @@
         ctx.lineWidth = 1;
         for (var i = 0; i < this.stats.length; ++i) {
             var xOffset = (i % 3) * 80; 
-            var name = this.stats[i].name;
-            var exp = this.stats[i].exp;
 
             var clickbox = new Game.Rectangle(this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 80, 16);
             if (clickbox.pointWithin(Game.mousePos)) {
@@ -204,6 +202,7 @@
     Stats.prototype.setBoost = function(stat, boost) {
         for (var i = 0; i < this.stats.length; ++i) {
             if (this.boosts[i].name === stat) {
+                console.log(`setting ${stat} boost to ${boost}.`);
                 this.boosts[i].amount = boost;
             }
         }
