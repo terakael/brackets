@@ -46,9 +46,24 @@
 					ctx.strokeStyle = "red";
 					ctx.strokeRect(rect.left + 0.5, rect.top + 0.5, rect.width, rect.height);
 
+					// if the label includes the combat level of the opponent, we want to colour it according to the level difference
+					let levelPart = "";
+					if (label.includes("(lvl ")) {
+						let idx = label.indexOf("(lvl ");
+						levelPart = label.substring(idx);
+						label = label.substring(0, idx);
+					}
+
 					ctx.fillStyle = "white";
 					ctx.fillText(label, rect.left + 10, rect.top + (rect.height/2));
-					
+
+					if (levelPart) {
+						let matches = levelPart.match(/\(lvl (\d+)\)/);
+						ctx.font = "bold 10pt Consolas";
+						ctx.fillStyle = this.getFillStyleFromCombatLevelDifference(Game.currentPlayer.combatLevel, matches[1]);
+						ctx.fillText(levelPart, rect.left + 10 + (~~ctx.measureText(label).width + 0.5), rect.top + (rect.height / 2));
+					}
+
 					ctx.restore();
 				}
 				return;
@@ -67,8 +82,27 @@
 	    	ctx.strokeRect(this.rect.left + 0.5, this.rect.top + 0.5, this.rect.width, this.rect.height);
 
 	    	for (var i = 0; i < this.menuOptions.length; ++i) {
-	    		ctx.fillStyle = this.menuOptions[i].fillStyle || (i === selectedOption ? "yellow" : "white");
-	    		ctx.fillText(this.menuOptions[i].label, this.rect.left + 10, this.rect.top + ((this.menuOptionHeight * i) + (this.menuOptionHeight / 2)));
+				ctx.fillStyle = this.menuOptions[i].fillStyle || (i === selectedOption ? "yellow" : "white");
+
+				// if the label includes the combat level of the opponent, we want to colour it according to the level difference
+				let label = this.menuOptions[i].label;
+				let levelPart = "";
+				if (label.includes("(lvl ")) {
+					let idx = label.indexOf("(lvl ");
+					levelPart = label.substring(idx);
+					label = label.substring(0, idx);
+				}
+				
+				ctx.fillText(label, this.rect.left + 10, this.rect.top + ((this.menuOptionHeight * i) + (this.menuOptionHeight / 2)));
+				
+				if (levelPart) {
+					ctx.save();
+					let matches = levelPart.match(/\(lvl (\d+)\)/);
+					ctx.font = "bold 10pt Consolas";
+					ctx.fillStyle = this.getFillStyleFromCombatLevelDifference(Game.currentPlayer.combatLevel, matches[1]);	
+					ctx.fillText(levelPart, this.rect.left + 10 + (~~ctx.measureText(label).width + 0.5), this.rect.top + ((this.menuOptionHeight * i) + (this.menuOptionHeight / 2)));
+					ctx.restore();
+				}
 	    	}
 
 	    	ctx.restore();
@@ -103,8 +137,8 @@
 	    	for (var i in this.menuOptions) {
 	    		if (this.menuOptions[i].label.length > longestOption)
 	    			longestOption = this.menuOptions[i].label.length;
-	    	}
-
+			}
+			
 	    	this.rect.width = longestOption * this.characterWidth + 10;
 	    	this.rect.height = this.menuOptions.length * this.menuOptionHeight;
 
@@ -187,6 +221,47 @@
 		setLeftclick: function(currentMousePos, obj) {
 			this.leftclickPos = currentMousePos;
 			this.leftclickMenuOption = obj;
+		},
+		getFillStyleFromCombatLevelDifference: function(playerCmb, enemyCmb) {
+			let difference = playerCmb - enemyCmb;
+			if (Math.abs(difference) < 10) {
+				if (difference > 0) {
+					return `rgb(${255 - (difference * 15)}, 255, 0)`
+				} else if (difference < 0) {
+					return `rgb(255, ${255 + (difference * 15)}, 0)`;
+				} else {
+					return "rgb(255, 255, 0)";
+				}
+			} else if (playerCmb > enemyCmb) {
+				return "#0f0";
+			} else {
+				return "#f22";
+			}
+			
+			// enemy is same combat
+			if (enemyCmb == playerCmb) {
+				return "yellow";
+			}
+
+			// enemy is a little bit higher
+			else if (enemyCmb > playerCmb && enemyCmb <= playerCmb + 8) {
+				return "#fc0";
+			}
+
+			// enemy is a little bit lower
+			else if (enemyCmb < playerCmb && enemyCmb >= playerCmb - 8) {
+				return "#cf0";
+			}
+
+			// enemy is lots higher
+			else if (enemyCmb > playerCmb + 8) {
+				return "#f55";
+			} 
+
+			// enemy is lots lower
+			else if (enemyCmb < playerCmb - 8) {
+				return "#0f0";
+			}
 		}
     };
     

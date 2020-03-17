@@ -14,10 +14,7 @@ $(function () {
                     Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
                     Game.SpriteManager.loadItems(obj["items"]);
                     Game.ContextMenu.loadContextOptions(obj["contextOptions"]);
-                    room.loadScenery(obj["scenery"]);
-                    room.loadGroundTextures(obj["groundTextures"]);
                     room.loadNpcs(obj.npcs);
-                    room.loadMinimap(obj["minimap"]);
                     Game.statMap = new Map(Object.entries(obj["statMap"]));
 
                     Game.expMap = new Map();
@@ -95,7 +92,7 @@ $(function () {
                             if (obj.players[i].id === obj.id) {
                                 document.title = obj.players[i].name;
 
-                                room.player = new Game.Player(obj.tileId);
+                                room.player = new Game.Player(obj.roomId, obj.tileId);
                                 room.player.id = obj.id;
                                 room.player.name = obj.players[i].name;
                                 room.player.currentHp = obj.players[i].currentHp;
@@ -156,11 +153,11 @@ $(function () {
                         break;
                     }
 
-                    case "playerEnter": {
-                        room.addPlayer(obj);
-                        Game.ChatBox.add(obj.name + " has logged in.", "#0ff");
-                        break;
-                    }
+                    // case "playerEnter": {
+                    //     room.addPlayer(obj);
+                    //     Game.ChatBox.add(obj.name + " has logged in.", "#0ff");
+                    //     break;
+                    // }
 
                     case "playerLeave": {
                         room.removePlayer(obj["id"]); // TODO should be session id; this is dangerous
@@ -276,12 +273,38 @@ $(function () {
                         if (obj["id"] == room.player.id) {
                             room.player.handlePlayerUpdate(obj);
                         } else {
+                            let playerFound = false;
                             for (var i in room.otherPlayers) {
                                 if (obj["id"] == room.otherPlayers[i].id) {
-                                    room.otherPlayers[i].handlePlayerUpdate(obj);
+                                    playerFound = true;
+                                    if (obj.hasOwnProperty("roomId")) {
+                                        if (obj.roomId !== room.player.roomId) { // player has left the current room; remove them from the player list
+                                            room.otherPlayers.splice(i, 1);
+                                        }
+                                    } else {
+                                        room.otherPlayers[i].handlePlayerUpdate(obj);
+                                    }
+                                }
+                            }
+
+                            if (!playerFound && obj.hasOwnProperty("roomId") && obj.roomId === room.player.roomId) {
+                                // player has joined the current room, add them
+                                // don't add a new player if he doesn't have any animations
+                                // we should only add a new player if all the relevant fields are in the message
+                                if (obj.hasOwnProperty("baseAnimations")) { 
+                                    room.addPlayer(obj);
+                                    if (obj.hasOwnProperty("loggedIn") && obj.loggedIn === true)
+                                        Game.ChatBox.add(obj.name + " has logged in.", "#0ff");
                                 }
                             }
                         }
+                        break;
+                    }
+
+                    case "refresh_players": {
+                        room.otherPlayers = [];
+                        for (let i = 0; i < obj.players.length; ++i)
+                            room.addPlayer(obj.players[i]);
                         break;
                     }
 
@@ -294,6 +317,20 @@ $(function () {
                         // keep mining automatically
                         Game.ws.send({
                             action: "mine",
+                            tileId: obj["tileId"]
+                        });
+                        break;
+                    }
+
+                    case "start_fishing": {
+                        Game.ChatBox.add("you start fishing...");
+                        break;
+                    }
+
+                    case "finish_fishing": {
+                        // keep mining automatically
+                        Game.ws.send({
+                            action: "fish",
                             tileId: obj["tileId"]
                         });
                         break;
@@ -395,6 +432,42 @@ $(function () {
                         break;
                     }
 
+                    case "pvp_start": {
+                        let player1 = null, player2 = null;
+                        if (obj.player1Id == Game.currentPlayer.id) {
+                            player1 = Game.currentPlayer;
+                        } else {
+                            for (var i in room.otherPlayers) {
+                                if (room.otherPlayers[i].id == obj.player1Id) {
+                                    player1 = room.otherPlayers[i];
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (obj.player2Id == Game.currentPlayer.id) {
+                            player2 = Game.currentPlayer;
+                        } else {
+                            for (var i in room.otherPlayers) {
+                                if (room.otherPlayers[i].id == obj.player2Id) {
+                                    player2 = room.otherPlayers[i];
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (player1 !== null && player2 !== null) {
+                            // handle fight
+                            player1.inCombat = true;
+                            player1.setDestPosAndSpeedByTileId(obj.tileId, -8);
+                            
+                            player2.inCombat = true;
+                            player2.setDestPosAndSpeedByTileId(obj.tileId, 8);
+                        }
+
+                        break;
+                    }
+
                     case "pvm_end": {
                         let player = null;
                         if (obj.playerId == Game.currentPlayer.id) {
@@ -423,42 +496,6 @@ $(function () {
                         break;
                     }
 
-                    case "pvp_start": {
-                        let player1 = null, player2 = null;
-                        if (obj.player1Id == Game.currentPlayer.id) {
-                            player1 = Game.currentPlayer;
-                        } else {
-                            for (var i in room.otherPlayers) {
-                                if (room.otherPlayers[i].id == obj.player1Id) {
-                                    player1 = room.otherPlayers[i];
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (obj.player2Id == Game.currentPlayer.id) {
-                            player2 = Game.currentPlayer;
-                        } else {
-                            for (var i in room.otherPlayers) {
-                                if (room.otherPlayers[i].id == obj.player2Id) {
-                                    player2 = room.otherPlayers[i];
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (player1 !== null && player2 !== null) {
-                            // handle fight
-                            player1.inCombat = true;
-                            player1.setDestPosAndSpeedByTileId(obj.tileId, -1);
-                            
-                            player2.inCombat = true;
-                            player2.setDestPosAndSpeedByTileId(obj.tileId, 1);
-                        }
-
-                        break;
-                    }
-
                     case "pvp_end": {
                         let player1 = null;
                         if (obj.player1Id == Game.currentPlayer.id) {
@@ -473,6 +510,7 @@ $(function () {
                         }
                         if (player1 != null) {
                             player1.inCombat = false;
+                            player1.currentAnimation = player1.attackingFromRight ? "left" : "right";
                             player1.setDestPosAndSpeedByTileId(obj.playerTileId);
                         }
 
@@ -489,6 +527,7 @@ $(function () {
                         }
                         if (player2 != null) {
                             player2.inCombat = false;
+                            player2.currentAnimation = player2.attackingFromRight ? "left" : "right";
                             player2.setDestPosAndSpeedByTileId(obj.player2TileId);
                         }
 
@@ -709,6 +748,13 @@ $(function () {
                         break;
                     }
 
+                    case "load_room": {
+                        room.loadScenery(obj["scenery"]);
+                        room.loadGroundTextures(obj["groundTextures"]);
+                        room.loadMinimap(obj["minimap"]);
+                        break;
+                    }
+
                     // sometimes a response comes back just showing a message; don't do anything else in these cases
                     // we need these here though in order to prevent the "invalid action" default message.
                     case "use":
@@ -732,8 +778,8 @@ $(function () {
     Game.mousePos = { x: 0, y: 0 };
     Game.boundingRect = canvas.getBoundingClientRect();
     Game.state = 'logonscreen';
-    Game.scale = 2;
-    Game.targetScale = 2;
+    Game.scale = 3;
+    Game.targetScale = 3;
     Game.maxScale = 3;
     Game.minScale = 2;
     Game.sceneryMap = new Map();
@@ -769,6 +815,8 @@ $(function () {
             this.show = 1.0;
         },
         loadScenery: function(sceneryJson) {
+            this.sceneryInstances = new Map(); // clear out anything that already exists (i.e. when we load a new room)
+
             for (var i = 0; i < sceneryJson.length; ++i) {
                 // save the scenery object
 
@@ -832,14 +880,14 @@ $(function () {
             }
         },
         loadGroundTextures: function(groundTextures) {
+            this.groundTexturesMap = new Map();
+            this.groundTextureInstances = new Map();
+
             let spriteMaps = new Map();
             for (let i = 0; i < groundTextures.length; ++i) {
                 if (!spriteMaps.has(groundTextures[i].spriteMapId))
                     spriteMaps.set(groundTextures[i].spriteMapId, Game.SpriteManager.getSpriteMapById(groundTextures[i].spriteMapId));
             }
-
-            console.log("ground texture array:");
-            console.log(groundTextures);
 
             let that = this;
             spriteMaps.forEach(function(spriteMap, spriteMapId, map) {
@@ -859,8 +907,6 @@ $(function () {
                 subImgCtx.height = 32;
 
                 let matchingGroundTextures = groundTextures.filter(e => e.spriteMapId == spriteMapId);
-                console.log(`found ${matchingGroundTextures.length} textures matching spriteMapId ${spriteMapId}: `);
-                console.log(matchingGroundTextures);
                 for (let i = 0; i < matchingGroundTextures.length; ++i) {
                     let groundTexture = matchingGroundTextures[i];
                     let imageData = imgCtx.getImageData(groundTexture.x, groundTexture.y, 32, 32);
@@ -870,7 +916,6 @@ $(function () {
                     subImg.onload = function() {
                         let pat = context.createPattern(this, "repeat");
                         that.groundTexturesMap.set(groundTexture.id, pat);
-                        console.log("loaded texture " + groundTexture.id);
                     }
                     subImg.src = subImgCanvas.toDataURL("image/png");
                 }
@@ -932,13 +977,16 @@ $(function () {
             }
         },
         addPlayer: function (obj) {
-            var player = new Game.Player(obj.tileId);
+            var player = new Game.Player(obj.roomId, obj.tileId);
             player.id = obj.id;
             player.name = obj.name;
 
             player.currentHp = obj.currentHp;
             player.maxHp = obj.maxHp;
             player.combatLevel = obj.combatLevel;
+
+            console.log("adding player:");
+            console.log(obj);
             
             player.setAnimations(obj.baseAnimations);
             player.setEquipAnimations(obj.equipAnimations);
@@ -1733,7 +1781,8 @@ $(function () {
             context.fillRect(hudcamera.xView, hudcamera.yView, hudcamera.viewportRect.width, hudcamera.viewportRect.height);
             Game.Minimap.draw(context, camera.xView, camera.yView);
             room.player.inventory.draw(context, hudcamera.xView, hudcamera.yView + Game.Minimap.height + 20);
-            room.player.stats.draw(context, hudcamera.xView, hudcamera.viewportRect.height - ((room.player.stats.stats.length + 2) * room.player.stats.y));
+            room.player.stats.draw(context, hudcamera.xView, room.player.stats.rect.top);
+            // room.player.stats.draw(context, hudcamera.xView, hudcamera.viewportRect.height - ((room.player.stats.stats.length + 2) * room.player.stats.y));
             Game.HUD.draw(context);
             
             if (room.currentShow <= 0.98) {

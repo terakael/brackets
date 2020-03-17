@@ -1,9 +1,10 @@
 (function(){
-		function Player(tileId){
+		function Player(roomId, tileId){
 			// (x, y) = center of object
 			// ATTENTION:
             // it represents the player position on the world(room), not the canvas position
             var posXY = tileIdToXY(tileId);
+            this.roomId = roomId;
 			this.x = posXY.x;
 			this.y = posXY.y;				
             this.destPos = posXY;
@@ -46,12 +47,12 @@
             // right/attack right: onhand, legs, body, head, offhand
             // TODO: daggers should always be drawn on the top?
             this.drawOrders = new Map();
-            this.drawOrders.set("down", ["LEGS","TORSO","HEAD","OFFHAND","ONHAND"]);
-            this.drawOrders.set("up", ["LEGS","TORSO", "HEAD","ONHAND","OFFHAND"]);
-            this.drawOrders.set("left", ["ONHAND","LEGS","TORSO","HEAD","OFFHAND"]);
-            this.drawOrders.set("attack_left", ["ONHAND","LEGS","TORSO","HEAD","OFFHAND"]);
-            this.drawOrders.set("right", ["OFFHAND","LEGS","TORSO","HEAD","ONHAND"]);
-            this.drawOrders.set("attack_right", ["OFFHAND","LEGS","TORSO","HEAD","ONHAND"]);
+            this.drawOrders.set("down", ["CAPE", "LEGS","TORSO","NECKLACE","HEAD","OFFHAND","ONHAND"]);
+            this.drawOrders.set("up", ["LEGS","TORSO", "CAPE", "NECKLACE", "HEAD","ONHAND","OFFHAND"]);
+            this.drawOrders.set("left", ["ONHAND","LEGS","TORSO","HEAD", "NECKLACE","OFFHAND", "CAPE"]);
+            this.drawOrders.set("attack_left", ["ONHAND","LEGS","TORSO","HEAD", "NECKLACE","OFFHAND", "CAPE"]);
+            this.drawOrders.set("right", ["OFFHAND","LEGS","TORSO","HEAD", "NECKLACE","ONHAND", "CAPE"]);
+            this.drawOrders.set("attack_right", ["OFFHAND","LEGS","TORSO","HEAD", "NECKLACE","ONHAND", "CAPE"]);
 		}
 		
 		Player.prototype.process = function(step, worldWidth, worldHeight){
@@ -71,6 +72,9 @@
                 //     this.x = this.destPos.x;
                 //     this.y = this.destPos.y;
                 // }
+
+                // TODO try this out using the spell movement mechanics
+                
                 var diffx = this.destPos.x - this.x;
                 var diffy = this.destPos.y - this.y;
                 if (Math.abs(diffx) > 1 || Math.abs(diffy) > 1) {
@@ -191,7 +195,7 @@
                 context.save()
                 context.setTransform(1, 0, 0, 1, 0, 0);
                 let healthBarOffset = this.inCombat ? (this.attackingFromRight ? 2.5 : -2.5) : 0;
-                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView + healthBarOffset) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, this.stats.getCurrentHp(), this.maxHp);
+                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView + healthBarOffset) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, Math.min(this.currentHp, this.maxHp), this.maxHp);
                 if (this.chatMessage != "") {
                     context.font = "12pt Consolas";
                     context.textAlign = "center";
@@ -380,16 +384,21 @@
         }
 
         Player.prototype.handlePlayerUpdate = function(obj) {
-            if (obj.hasOwnProperty("tile") && !this.inCombat)
-                this.setDestPosAndSpeedByTileId(obj.tile);
+            if (obj.hasOwnProperty("tileId") && !this.inCombat)
+                this.setDestPosAndSpeedByTileId(obj.tileId);
             
-            if (obj.hasOwnProperty("hp")) {
+            if (obj.hasOwnProperty("currentHp")) {
                 // set current hp
-                this.currentHp = obj.hp;
+                this.currentHp = obj.currentHp;
             }
 
-            if (obj.hasOwnProperty("cmb")) {
-                this.combatLevel = obj.cmb;
+            if (obj.hasOwnProperty("maxHp")) {
+                // set current hp
+                this.maxHp = obj.maxHp;
+            }
+
+            if (obj.hasOwnProperty("combatLevel")) {
+                this.combatLevel = obj.combatLevel;
             }
 
             if (obj.hasOwnProperty("damage")) {
@@ -403,6 +412,10 @@
 
             if (obj.hasOwnProperty("equipAnimations")) {
                 this.setEquipAnimations(obj.equipAnimations);
+            }
+
+            if (obj.hasOwnProperty("roomId")) {
+                this.roomId = obj.roomId;
             }
         }
 

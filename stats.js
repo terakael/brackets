@@ -9,7 +9,9 @@
 			{ name: "mage", exp: 0 },
 			{ name: "mine", exp: 0 },
 			{ name: "smith", exp: 0 },
-			{ name: "herb", exp: 0 },
+            { name: "herb", exp: 0 },
+            { name: "fish", exp: 0 },
+            { name: "cook", exp: 0 },
         ];
         for (var i = 0; i < this.stats.length; ++i) {
             this.stats[i].lvl = this.exp2lvl(this.stats[i].exp);
@@ -24,7 +26,9 @@
 			{ name: "mage", amount: 0 },
 			{ name: "mine", amount: 0 },
 			{ name: "smith", amount: 0 },
-			{ name: "herb", amount: 0 },
+            { name: "herb", amount: 0 },
+            { name: "fish", amount: 0 },
+            { name: "cook", amount: 0 },
         ];
 
         this.bonuses = null;
@@ -34,7 +38,7 @@
         this.healthBarTimer = 0;
         this.hoverStatId = null;
 
-        this.rect = new Game.Rectangle(Game.hudCameraRect.left, 480, Game.hudCameraRect.width, 130);
+        this.rect = new Game.Rectangle(Game.hudCameraRect.left, 480, Game.hudCameraRect.width, 150);
     }
     Stats.prototype.exp2lvl = function(exp) {
         let lvl = 99;
@@ -111,7 +115,7 @@
             this.hoverStatId = null;
         
         
-        var yOffset = this.y + yview + ~~(this.stats.length / 3) * 16 + 5;
+        var yOffset = this.y + yview + ~~(this.stats.length / 3) * (16 + 5) + 10;
         ctx.strokeRect(~~(this.x + xview) + 0.5, ~~yOffset + 0.5, statBoxWidth, 16);
         if (this.hoverStatId !== null) {
             var expSinceLvl = this.stats[this.hoverStatId].exp - this.lvl2exp(this.stats[this.hoverStatId].lvl);
@@ -138,12 +142,12 @@
         ctx.fillText("Bonuses", ~~(this.x + xview) + 0.5, ~~yOffset + 0.5);
         yOffset += 15;
 
-        var bonusStats = ["acc", "str", "def", "agil", "hp"];
+        var bonusStats = ["acc", "str", "def", "agil", "mage", "hp"];
         for (var i = 0; i < this.stats.length; ++i) {
             if (!bonusStats.includes(this.stats[i].name))
                 continue;
 
-            var xOffset = (i % 5) * 45; 
+            var xOffset = (i % 6) * 38; 
 
             ctx.drawImage(spritemap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, yOffset - 8, 16, 16);
 
