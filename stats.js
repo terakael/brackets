@@ -206,7 +206,6 @@
     Stats.prototype.setBoost = function(stat, boost) {
         for (var i = 0; i < this.stats.length; ++i) {
             if (this.boosts[i].name === stat) {
-                console.log(`setting ${stat} boost to ${boost}.`);
                 this.boosts[i].amount = boost;
             }
         }

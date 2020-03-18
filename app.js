@@ -17,6 +17,9 @@ $(function () {
                     room.loadNpcs(obj.npcs);
                     Game.statMap = new Map(Object.entries(obj["statMap"]));
 
+                    for (let i = 0; i < obj.scenery.length; ++i)
+                        Game.sceneryMap.set(obj.scenery[i].id, obj.scenery[i]);
+
                     Game.expMap = new Map();
                     for (let [key, value] of Object.entries(obj["expMap"]).sort((a, b) => b < a)) {
                         Game.expMap.set(Number(key), Number(value));
@@ -87,34 +90,29 @@ $(function () {
 
                 switch (obj.action) {
                     case "logon": {
+                        document.title = obj.playerDto.name;
+                        room.player = new Game.Player(obj.playerDto.roomId, obj.playerDto.tileId);
+                        room.player.id = obj.playerDto.id;
+                        room.player.name = obj.playerDto.name;
+                        room.player.currentHp = obj.playerDto.currentHp;
+                        room.player.maxHp = obj.playerDto.maxHp;
+                        room.player.combatLevel = obj.playerDto.combatLevel;
 
-                        for (var i in obj.players) {
-                            if (obj.players[i].id === obj.id) {
-                                document.title = obj.players[i].name;
+                        camera.follow(room.player, (canvas.width - 250 - (room.player.width / 2)) / 2, (canvas.height) / 2);
 
-                                room.player = new Game.Player(obj.roomId, obj.tileId);
-                                room.player.id = obj.id;
-                                room.player.name = obj.players[i].name;
-                                room.player.currentHp = obj.players[i].currentHp;
-                                room.player.maxHp = obj.players[i].maxHp;
-
-                                camera.follow(room.player, (canvas.width - 250 - (room.player.width / 2)) / 2, (canvas.height) / 2);
-
-                                var playerXY = tileIdToXY(obj.tileId);
-                                camera.xView = playerXY.x - (camera.xDeadZone * (1 / Game.scale));
-                                camera.yView = playerXY.y - (camera.yDeadZone * (1 / Game.scale));
-                            } else 
-                                room.addPlayer(obj.players[i]);
-                        }
+                        var playerXY = tileIdToXY(obj.playerDto.tileId);
+                        camera.xView = playerXY.x - (camera.xDeadZone * (1 / Game.scale));
+                        camera.yView = playerXY.y - (camera.yDeadZone * (1 / Game.scale));
                         
                         room.player.loadStats(obj.stats, obj.boosts);
+                        room.player.setBonuses(obj.bonuses);
                         room.player.updateInventory(obj.inventory);
-                        room.player.setAnimations(obj.baseAnimations);
-                        room.player.setEquipAnimations(obj.equipAnimations);
+                        room.player.setAnimations(obj.playerDto.baseAnimations);
+                        room.player.setEquipAnimations(obj.playerDto.equipAnimations);
+                        room.player.setEquippedSlots(obj.equippedSlots);
                         room.player.loadAttackStyles(obj.attackStyles);
-                        room.player.setAttackStyle(obj.attackStyleId);
+                        room.player.setAttackStyle(obj.playerDto.attackStyleId);
                         
-                        // room.loadBackground(Game.SpriteManager.getSpriteMapByName("grass"));
                         room.init();
 
                         Game.ChatBox.add("Welcome to the game, {0}.".format(room.player.name));
@@ -153,14 +151,13 @@ $(function () {
                         break;
                     }
 
-                    // case "playerEnter": {
-                    //     room.addPlayer(obj);
-                    //     Game.ChatBox.add(obj.name + " has logged in.", "#0ff");
-                    //     break;
-                    // }
+                    case "playerEnter": {
+                        Game.ChatBox.add(obj.name + " has logged in.", "#0ff");
+                        break;
+                    }
 
                     case "playerLeave": {
-                        room.removePlayer(obj["id"]); // TODO should be session id; this is dangerous
+                        // room.removePlayer(obj["id"]); // TODO should be session id; this is dangerous
                         Game.ChatBox.add(obj["name"] + " has logged out.", "#0ff");
                         break;
                     }
@@ -301,13 +298,6 @@ $(function () {
                         break;
                     }
 
-                    case "refresh_players": {
-                        room.otherPlayers = [];
-                        for (let i = 0; i < obj.players.length; ++i)
-                            room.addPlayer(obj.players[i]);
-                        break;
-                    }
-
                     case "start_mining": {
                         Game.ChatBox.add("you start mining the rock...");
                         break;
@@ -337,6 +327,7 @@ $(function () {
                     }
 
                     case "start_smith": {
+                        Game.ChatBox.add("you put the ore in the furnace...");
                         break;
                     }
 
@@ -385,7 +376,6 @@ $(function () {
                     }
 
                     case "npc_update": {
-                        console.log(obj);
                         // instanceId: 32356
                         // damage: 22
                         // hp: 0
@@ -549,31 +539,6 @@ $(function () {
                         break;
                     }
 
-                    case "npc_location_refresh": {
-                        let newNpcs = [];
-                        for (let i = 0; i < obj.npcs.length; ++i) {
-                            let refreshNpc = obj.npcs[i];
-                            let found = false;
-                            for (let j = 0; j < room.npcs.length; ++j) {
-                                if (room.npcs[j].instanceId === refreshNpc.instanceId) {
-
-                                    if (room.npcs[j].tileId !== refreshNpc.tileId)
-                                        room.npcs[j].setDestPosAndSpeedByTileId(refreshNpc.tileId);
-
-                                    found = true;
-                                    break;
-                                }
-                            }
-
-                            if (!found) {
-                                newNpcs.push(new Game.NPC(obj.npcs[i]));
-                            }
-                        }
-
-                        room.npcs = room.npcs.concat(newNpcs);
-                        break;
-                    }
-
                     case "npc_out_of_range": {
                         // console.log(obj);
                         // instances: [38602]
@@ -581,6 +546,31 @@ $(function () {
                         // responseText: ""
                         // action: "npc_out_of_range"
                         room.npcs = room.npcs.filter(e => !obj.instances.includes(e.instanceId));
+                        break;
+                    }
+
+                    case "npc_in_range": {
+                        // npcs: [{npcId, instanceId, tileId, currentHp}, {...}]
+                        for (let i = 0; i < obj.npcs.length; ++i) {
+                            room.npcs.push(new Game.NPC(obj.npcs[i]));
+                        }
+                        
+                        break;
+                    }
+
+                    case "player_out_of_range": {
+                        // playerIds: [3, 2]
+                        room.otherPlayers = room.otherPlayers.filter(e => !obj.playerIds.includes(e.id));
+                        break;
+                    }
+
+                    case "player_in_range": {
+                        // players: [{<player_update data>}, {...}]
+                        for (let i = 0; i < obj.players.length; ++i) {
+                            // remove it if it's already in the list for some reason
+                            room.otherPlayers = room.otherPlayers.filter(e => e.id == obj.players[i].id);
+                            room.addPlayer(obj.players[i]);
+                        }
                         break;
                     }
 
@@ -726,6 +716,17 @@ $(function () {
                                     break;
                                 }
                             }
+                        } else if (obj.targetType === "player") {
+                            if (obj.targetId === room.player.id) {
+                                target = Game.currentPlayer;
+                            } else {
+                                for (let i = 0; i < room.otherPlayers.length; ++i) {
+                                    if (obj.targetId === room.otherPlayers[i].id) {
+                                        target = room.otherPlayers[i];
+                                        break;
+                                    }
+                                }
+                            }
                         }
 
                         let player = null;
@@ -743,13 +744,17 @@ $(function () {
                         if (target && player) {
                             let spell = new Game.Spell(player, target, obj.spriteFrameId);
                             room.spells.push(spell);
+
+                            if (target === Game.currentPlayer)
+                                Game.ChatBox.add(player.name + " is casting magic on you!", "#fff");
                         }
                         
                         break;
                     }
 
                     case "load_room": {
-                        room.loadScenery(obj["scenery"]);
+                        // TODO draw the loading screen first
+                        room.loadSceneryInstances(obj["sceneryInstances"]);
                         room.loadGroundTextures(obj["groundTextures"]);
                         room.loadMinimap(obj["minimap"]);
                         break;
@@ -805,8 +810,6 @@ $(function () {
         spells: [],
         t: new Game.Transform(),
         loadMinimap: function(minimapBase64) {
-            // this.map.load(context, background);
-            // Game.Minimap.bakeMinimap(this.map.image, this.sceneryInstances);
             let image = new Image();
             image.src = `data:image/png;base64,${minimapBase64}`;
             image.onload = () => Game.Minimap.load(image);
@@ -814,67 +817,47 @@ $(function () {
         init: function () {
             this.show = 1.0;
         },
-        loadScenery: function(sceneryJson) {
+        loadSceneryInstances: function(sceneryJson) {
             this.sceneryInstances = new Map(); // clear out anything that already exists (i.e. when we load a new room)
 
-            for (var i = 0; i < sceneryJson.length; ++i) {
-                // save the scenery object
+            for (let [key, instances] of Object.entries(sceneryJson)) {
+                // "sceneryInstances": {
+                //     "60": [
+                //       40394
+                //     ]
+                //   },
+                let scenery = Game.sceneryMap.get(Number(key));// because we're iterating an object, key becomes a string.
+                if (!scenery) continue;  // definitely should exist so this shouldn't happen
 
-                // TODO return the raw spriteframe data directly
-                // var spriteFrame = new Game.SpriteFrame({
-                //     id: sceneryJson[i].id,
-                //     sprite_map_id: sceneryJson[i].spriteMapId,
-                //     x: sceneryJson[i].x,
-                //     y: sceneryJson[i].y,
-                //     w: sceneryJson[i].w,
-                //     h: sceneryJson[i].h,
-                //     margin: 0,
-                //     frame_count: sceneryJson[i].framecount,
-                //     framerate: sceneryJson[i].framerate,
-                //     animation_type_id: 1,
-                //     anchorX: sceneryJson[i].anchorX,
-                //     anchorY: sceneryJson[i].anchorY
-                // });
-
-                // spriteFrame.anchor = {x: sceneryJson[i].anchorX, y: sceneryJson[i].anchorY};
-
-                Game.sceneryMap.set(sceneryJson[i].id, {
-                    id: sceneryJson[i].id,
-                    name: sceneryJson[i].name,
-                    leftclickOption: sceneryJson[i].leftclickOption,
-                    otherOptions: sceneryJson[i].otherOptions
-                });
-
-                // save the instances to the multimap
-                for (var j = 0; j < sceneryJson[i].instances.length; ++j) {
-                    var xy = tileIdToXY(sceneryJson[i].instances[j]);
-                    let mapKey = xy.y + sceneryJson[i].h - (sceneryJson[i].anchorY * sceneryJson[i].h);
+                for (let i = 0; i < instances.length; ++i) {
+                    let xy = tileIdToXY(instances[i]);
+                    let mapKey = xy.y + scenery.h - (scenery.anchorY * scenery.h);
                     if (!this.sceneryInstances.has(mapKey))
                         this.sceneryInstances.set(mapKey, []);
 
                     this.sceneryInstances.get(mapKey).push({
-                        id: sceneryJson[i].id,
-                        name: sceneryJson[i].name,
+                        id: scenery.id,
+                        name: scenery.name,
                         x: xy.x, 
                         y: xy.y,
-                        tileId: sceneryJson[i].instances[j], 
-                        leftclickOption: sceneryJson[i].leftclickOption,
+                        tileId: instances[i], 
+                        leftclickOption: scenery.leftclickOption,
                         sprite: [new Game.SpriteFrame({
-                            id: sceneryJson[i].id,
-                            sprite_map_id: sceneryJson[i].spriteMapId,
-                            x: sceneryJson[i].x,
-                            y: sceneryJson[i].y,
-                            w: sceneryJson[i].w,
-                            h: sceneryJson[i].h,
+                            id: scenery.id,
+                            sprite_map_id: scenery.spriteMapId,
+                            x: scenery.x,
+                            y: scenery.y,
+                            w: scenery.w,
+                            h: scenery.h,
                             margin: 0,
-                            frame_count: sceneryJson[i].framecount,
-                            framerate: sceneryJson[i].framerate,
+                            frame_count: scenery.framecount,
+                            framerate: scenery.framerate,
                             animation_type_id: 1,
-                            anchorX: sceneryJson[i].anchorX,
-                            anchorY: sceneryJson[i].anchorY
+                            anchorX: scenery.anchorX,
+                            anchorY: scenery.anchorY
                         })],
                         type: "scenery",
-                        attributes: sceneryJson[i].attributes
+                        attributes: scenery.attributes
                     });
                 }
             }
@@ -984,9 +967,6 @@ $(function () {
             player.currentHp = obj.currentHp;
             player.maxHp = obj.maxHp;
             player.combatLevel = obj.combatLevel;
-
-            console.log("adding player:");
-            console.log(obj);
             
             player.setAnimations(obj.baseAnimations);
             player.setEquipAnimations(obj.equipAnimations);
@@ -1065,7 +1045,7 @@ $(function () {
 
                 drawMap.get(mapKey).push({
                     id: this.otherPlayers[i].id,
-                    name: this.otherPlayers[i].name,
+                    name: this.otherPlayers[i].name + ` (lvl ${this.otherPlayers[i].combatLevel})`,
                     x: this.otherPlayers[i].x, 
                     y: this.otherPlayers[i].y,
                     sprite: this.otherPlayers[i].getCurrentSpriteFrames(),
@@ -1084,14 +1064,14 @@ $(function () {
 
                 drawMap.get(mapKey).push({
                     id: this.drawableNpcs[i].instanceId,
-                    name: this.drawableNpcs[i].get("name"),
+                    name: this.drawableNpcs[i].get("name") + (this.drawableNpcs[i].get("leftclickOption") == 4096 ? ` (lvl ${this.drawableNpcs[i].get("cmb")})` : ""),
                     x: this.drawableNpcs[i].pos.x, 
                     y: this.drawableNpcs[i].pos.y - (this.drawableNpcs[i].deathTimer * 32),
                     sprite: [this.drawableNpcs[i].getCurrentSpriteFrame()],
                     type: "npc",
                     leftclickOption: this.drawableNpcs[i].get("leftclickOption"),
                     label: this.drawableNpcs[i].getLeftclickLabel(),
-                    transparency: 1 - this.drawableNpcs[i].deathTimer
+                    transparency: Math.max(1 - this.drawableNpcs[i].deathTimer, 0.01)
                 });
             }
 
@@ -1274,7 +1254,7 @@ $(function () {
 
             */
 
-            let newAlgorithm = true;
+            let newAlgorithm = false;
             if (newAlgorithm) {
 
 
@@ -1551,7 +1531,57 @@ $(function () {
                                 }
                             }
 
-                            // TODO player
+                            if (!handled) {
+                                for (let i = 0; i < room.otherPlayers.length; ++i) {
+                                    let player = room.otherPlayers[i];
+                                    var spriteFrame = player.getCurrentSpriteFrame();
+                                        var rect = new Game.Rectangle(
+                                            player.x - (spriteFrame.getCurrentFrame().width * spriteFrame.anchor.x), 
+                                            player.y - (spriteFrame.getCurrentFrame().height * spriteFrame.anchor.y), 
+                                            spriteFrame.getCurrentFrame().width, 
+                                            spriteFrame.getCurrentFrame().height);
+        
+                                    if (rect.pointWithin(cursor.mousePos)) {
+                                        cursor.handleClick(true);
+                                        Game.ws.send({
+                                            action: "use",
+                                            type: "player",
+                                            id: room.player.id,
+                                            src: room.player.inventory.slotInUse.item.id,
+                                            slot: room.player.inventory.slotInUse.id,
+                                            dest: player.id
+                                        });
+                                        room.player.inventory.slotInUse = null;
+                                        handled = true;
+                                        return;
+                                    }
+                                }
+                            }
+
+                            if (!handled) {
+                                var spriteFrame = room.player.getCurrentSpriteFrame();
+                                    var rect = new Game.Rectangle(
+                                        room.player.x - (spriteFrame.getCurrentFrame().width * spriteFrame.anchor.x), 
+                                        room.player.y - (spriteFrame.getCurrentFrame().height * spriteFrame.anchor.y), 
+                                        spriteFrame.getCurrentFrame().width, 
+                                        spriteFrame.getCurrentFrame().height);
+
+                                if (rect.pointWithin(cursor.mousePos)) {
+                                    cursor.handleClick(true);
+                                    Game.ws.send({
+                                        action: "use",
+                                        type: "player",
+                                        id: room.player.id,
+                                        src: room.player.inventory.slotInUse.item.id,
+                                        slot: room.player.inventory.slotInUse.id,
+                                        dest: room.player.id
+                                    });
+                                    room.player.inventory.slotInUse = null;
+                                    handled = true;
+                                    return;
+                                }
+                            }
+                            
                             room.player.inventory.slotInUse = null;
                         }
 
@@ -1562,9 +1592,20 @@ $(function () {
                             break;
                         // only check for the other players and ground items if the click was within the world rect
                         for (var i in room.otherPlayers) {
-                            var p = room.otherPlayers[i];
+                            let p = room.otherPlayers[i];
                             if (p.clickBox.pointWithin(cursor.mousePos)) {
-                                Game.ContextMenu.push(room.otherPlayers[i].contextMenuOptions());
+                                if (room.player.inventory.slotInUse) {
+                                    Game.ContextMenu.push([{
+                                        id: room.player.id,
+                                        action: "use",
+                                        src: room.player.inventory.slotInUse.item.id,
+                                        dest: p.id,
+                                        type: "player",
+                                        label: "use {0} -> {1} (lvl {2})".format(room.player.inventory.slotInUse.item.name, p.name, p.combatLevel)
+                                    }]);
+                                } else {
+                                    Game.ContextMenu.push(p.contextMenuOptions());
+                                }
                             }
                         }
                         for (var i in room.groundItems) {
@@ -1646,6 +1687,7 @@ $(function () {
                                         dest: npc.instanceId,
                                         type: "npc",
                                         label: "use {0} -> {1}".format(room.player.inventory.slotInUse.item.name, npc.get("name"))
+                                                    + (npc.get("leftclickOption") === 4096 ? ` (lvl ${npc.get("cmb")})` : "")
                                     }]);
                                 } else {
                                     if (npc.get("leftclickOption") != 0) {
@@ -1670,6 +1712,26 @@ $(function () {
                                         }
                                     }
                                 }
+                            }
+                        }
+
+                        var spriteFrame = room.player.getCurrentSpriteFrame();
+                            var rect = new Game.Rectangle(
+                                room.player.x - (spriteFrame.getCurrentFrame().width * spriteFrame.anchor.x), 
+                                room.player.y - (spriteFrame.getCurrentFrame().height * spriteFrame.anchor.y), 
+                                spriteFrame.getCurrentFrame().width, 
+                                spriteFrame.getCurrentFrame().height);
+
+                        if (rect.pointWithin(cursor.mousePos)) {
+                            if (room.player.inventory.slotInUse) {
+                                Game.ContextMenu.push([{
+                                    id: room.player.id,
+                                    action: "use",
+                                    src: room.player.inventory.slotInUse.item.id,
+                                    dest: room.player.id,
+                                    type: "player",
+                                    label: "use {0} -> {1} (lvl {2})".format(room.player.inventory.slotInUse.item.name, room.player.name, room.player.combatLevel)
+                                }]);
                             }
                         }
                         break;
@@ -1814,12 +1876,6 @@ $(function () {
     var start = Date.now();
     var remainingInterval = INTERVAL;
     Game.play = function () {        
-        // if (runningId === -1) {
-        //     runningId = setInterval(function () {
-        //         gameLoop();
-        //     }, INTERVAL);
-        //     console.log("play");
-        // }
         setTimeout(function() {
         	// TODO game loop should return exec ms to subtract off INTERVAL
         	gameLoop();

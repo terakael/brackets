@@ -89,10 +89,6 @@
         if (this.deathTimer === 0)
             this.drawHealthBar(context, (this.pos.x - xView + 2.5) * Game.scale, (this.pos.y - yView - (frameHeight * scale) - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.get("maxHp"));
 
-        // context.fillStyle = "red";
-        // context.textAlign = "center";
-        // context.fillText(this.tileId, (this.pos.x - xView - 8) * Game.scale, (this.pos.y - yView - 8) * Game.scale);
-
         if (this.hitsplat) {
             context.fillStyle = this.hitsplat.color;
             context.fillRect((this.pos.x - xView - 8) * Game.scale, (this.pos.y - yView - 8) * Game.scale, 16 * Game.scale, 16 * Game.scale);
@@ -114,11 +110,6 @@
     }
 
     NPC.prototype.processMovement = function(step) {
-        // if (this.inCombat) {
-        //     this.pos.x = this.dest.x + (this.inCombat ? this.combatOffset : 0);
-        //     this.pos.y = this.dest.y - this.pos.y;
-        // }
-        
         var diffx = (this.dest.x + (this.inCombat ? this.combatOffset : 0)) - this.pos.x;
         var diffy = this.dest.y - this.pos.y;
         
@@ -182,7 +173,16 @@
         }
 
         if (obj.hasOwnProperty("tileId")) {
-            this.setDestPosAndSpeedByTileId(obj.tileId);
+            if (obj.hasOwnProperty("snapToTile")) {
+                // sometimes we don't want the player to walk to the tile (e.g. when we climb a ladder we always want to end up south of it immediately)
+                let xy = tileIdToXY(obj.tileId);
+                this.dest.x = xy.x;
+                this.dest.y = xy.y;
+                this.pos.x = xy.x;
+                this.pos.y = xy.y;
+            } else {
+                this.setDestPosAndSpeedByTileId(obj.tileId);
+            }
         }
         
         if (obj.hasOwnProperty("damage")) {

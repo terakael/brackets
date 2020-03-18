@@ -384,8 +384,18 @@
         }
 
         Player.prototype.handlePlayerUpdate = function(obj) {
-            if (obj.hasOwnProperty("tileId") && !this.inCombat)
-                this.setDestPosAndSpeedByTileId(obj.tileId);
+            if (obj.hasOwnProperty("tileId") && !this.inCombat) {
+                if (obj.hasOwnProperty("snapToTile")) {
+                    // sometimes we don't want the player to walk to the tile (e.g. when we climb a ladder we always want to end up south of it immediately)
+                    let xy = tileIdToXY(obj.tileId);
+                    this.destPos.x = xy.x;
+                    this.destPos.y = xy.y;
+                    this.x = xy.x;
+                    this.y = xy.y;
+                } else {
+                    this.setDestPosAndSpeedByTileId(obj.tileId);
+                }
+            }
             
             if (obj.hasOwnProperty("currentHp")) {
                 // set current hp
