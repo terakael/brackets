@@ -68,11 +68,6 @@
             var moving = false;
             
             if (!this.deathSequence) {
-                // if (this.inCombat) {
-                //     this.x = this.destPos.x;
-                //     this.y = this.destPos.y;
-                // }
-
                 // TODO try this out using the spell movement mechanics
                 
                 var diffx = this.destPos.x - this.x;
@@ -139,19 +134,16 @@
                 this.deathsCurtain -= step;
                 if (this.deathsCurtain < 0) {
                     this.deathsCurtain = 0;
-                    this.deathSequence = false;
-                    this.x = this.respawnPos.x;
-                    this.y = this.respawnPos.y;
-                    this.destPos.x = this.respawnPos.x;
-                    this.destPos.y = this.respawnPos.y;
-                    this.stats.setBoost("hp", 0);// on death it's -maxHp; 0 means full hp
                 }
             } else {
                 if (this.deathsCurtainMaxTimer > 0) {
                     this.deathsCurtainMaxTimer -= step;
                     if (this.deathsCurtainMaxTimer < 0) {
                         this.deathsCurtainMaxTimer = 0;
-                        Game.ChatBox.add("You've been granted another life; use it wisely.", "white");
+                        // TODO move the client-player-only code elsewhere
+                        if (this.id === Game.currentPlayer.id) {
+                            Game.ChatBox.add("You've been granted another life; use it wisely.", "white");
+                        }
                     }
                 } else {
                     if (this.deathsCurtain < 1) {
@@ -238,7 +230,7 @@
         }
 
         Player.prototype.drawDeathSequence = function(context, xView, yView) {
-            if (!this.deathSequence)
+            if (!this.deathSequence || this.id != Game.currentPlayer.id)
                 return;
             
             context.save();
@@ -315,18 +307,9 @@
 
             return options;
         }
-
-        Player.prototype.respawn = function(tileId, hp) {
-            var xy = tileIdToXY(tileId);
-            this.respawnPos.x = xy.x;
-            this.respawnPos.y = xy.y;
-            this.currentHp = hp;
-            this.maxHp = hp;
-            this.stats.bonuses = null;
-            this.setEquipAnimations(null);
-        }
 		
         Player.prototype.setDeathSequence = function() {
+            this.inCombat = false;
             this.deathSequence = true;
             this.deathsCurtainMaxTimer = 1;
             this.deathsCurtain = 1;
@@ -392,6 +375,8 @@
                     this.destPos.y = xy.y;
                     this.x = xy.x;
                     this.y = xy.y;
+
+                    this.currentAnimation = "down";// on death, after respawn, animation isn't being reset
                 } else {
                     this.setDestPosAndSpeedByTileId(obj.tileId);
                 }
@@ -400,11 +385,14 @@
             if (obj.hasOwnProperty("currentHp")) {
                 // set current hp
                 this.currentHp = obj.currentHp;
+
+                this.stats.setBoost("hp", -this.maxHp + this.currentHp);
             }
 
             if (obj.hasOwnProperty("maxHp")) {
                 // set current hp
                 this.maxHp = obj.maxHp;
+                this.stats.setBoost("hp", -this.maxHp + this.currentHp);
             }
 
             if (obj.hasOwnProperty("combatLevel")) {
@@ -426,6 +414,10 @@
 
             if (obj.hasOwnProperty("roomId")) {
                 this.roomId = obj.roomId;
+            }
+
+            if (obj.hasOwnProperty("respawn")) {
+                this.deathSequence = false;
             }
         }
 

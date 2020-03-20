@@ -14,6 +14,14 @@
 		draw: function(context, xview, yview) {
 			context.fillStyle = this.selected ? this.selectedColor : this.fillColor;
 			context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
+			// first three slots are protected on death, so they get a special outline
+			if (this.id < 3) {
+				context.save();
+				context.fillStyle = "rgba(150, 150, 0, 0.2)";
+				context.fillRect(~~this.rect.left + 0.5, ~~this.rect.top + 0.5, this.rect.width, this.rect.height);
+				context.restore();
+			}
+			
 			if (this.item) {
 				if (this.equipped) {
 					context.fillStyle = "rgba(250, 0, 0, 0.2)";

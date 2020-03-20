@@ -8,6 +8,7 @@
 		spriteMaps: [],
 		spriteFrames: [],
 		items: [],
+		groundTextures: [],
 		loadSpriteMaps: function(spriteMaps) {
 			let that = this;
 			let postaction = function(){};
@@ -53,6 +54,26 @@
 				}));
 			}
 		},
+		loadGroundTextures: function(groundTextures) {
+			for (let i = 0; i < groundTextures.length; ++i) {
+				this.groundTextures.push(new Game.SpriteFrame({
+					id: groundTextures[i].id,
+					sprite_map_id: groundTextures[i].spriteMapId,
+					x: groundTextures[i].x,
+					y: groundTextures[i].y,
+					w: 32,
+					h: 32,
+					margin: 0,
+
+					// TODO in the future we could have animated ground textures e.g. water/lava
+					frame_count: 1,
+					framerate: 0,
+					animation_type_id: 1,
+					anchorX: 0.5,
+					anchorY: 0.5
+				}));
+			}
+		},
 		getItemById: function(id) {
 			for (var i in this.items) {
 				if (this.items[i].id === id) {
@@ -81,6 +102,13 @@
 				if (this.spriteFrames[i].id === id) {
 					return this.spriteFrames[i];
 				}
+			}
+			return null;
+		},
+		getGroundTextureById: function(id) {
+			for (let i in this.groundTextures) {
+				if (this.groundTextures[i].id === id)
+					return this.groundTextures[i];
 			}
 			return null;
 		}
