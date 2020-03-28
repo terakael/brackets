@@ -93,7 +93,7 @@ $(function () {
                 switch (obj.action) {
                     case "logon": {
                         document.title = obj.playerDto.name;
-                        room.player = new Game.Player(obj.playerDto.roomId, obj.playerDto.tileId);
+                        room.player = new Game.Player(obj.playerDto.tileId);
                         room.player.id = obj.playerDto.id;
                         room.player.name = obj.playerDto.name;
                         room.player.currentHp = obj.playerDto.currentHp;
@@ -159,7 +159,6 @@ $(function () {
                     }
 
                     case "playerLeave": {
-                        // room.removePlayer(obj["id"]); // TODO should be session id; this is dangerous
                         Game.ChatBox.add(obj["name"] + " has logged out.", "#0ff");
                         break;
                     }
@@ -263,25 +262,9 @@ $(function () {
                         if (obj.id === room.player.id) {
                             room.player.handlePlayerUpdate(obj);
                         } else {
-                            let playerFound = false;
                             for (var i in room.otherPlayers) {
                                 if (obj.id === room.otherPlayers[i].id) {
-                                    playerFound = true;
-                                    if (obj.hasOwnProperty("roomId") && obj.roomId !== room.player.roomId) {
-                                        // player has left the current room; remove them from the player list
-                                        room.otherPlayers.splice(i, 1);
-                                    } else {
-                                        room.otherPlayers[i].handlePlayerUpdate(obj);
-                                    }
-                                }
-                            }
-
-                            if (!playerFound && obj.hasOwnProperty("roomId") && obj.roomId === room.player.roomId) {
-                                // player has joined the current room, add them
-                                // don't add a new player if he doesn't have any animations
-                                // we should only add a new player if all the relevant fields are in the message
-                                if (obj.hasOwnProperty("baseAnimations")) { 
-                                    room.addPlayer(obj);
+                                    room.otherPlayers[i].handlePlayerUpdate(obj);
                                 }
                             }
                         }
@@ -544,7 +527,6 @@ $(function () {
                         for (let i = 0; i < obj.npcs.length; ++i) {
                             room.npcs.push(new Game.NPC(obj.npcs[i]));
                         }
-                        
                         break;
                     }
 
@@ -557,7 +539,6 @@ $(function () {
                     case "player_in_range": {
                         // players: [{<player_update data>}, {...}]
                         for (let i = 0; i < obj.players.length; ++i) {
-                            // remove it if it's already in the list for some reason
                             room.addPlayer(obj.players[i]);
                         }
                         break;
@@ -572,16 +553,7 @@ $(function () {
                     }
 
                     case "ground_item_out_of_range": {
-                        // let groundItems = [];
-                        // for (let tileId in obj) {
-                        //     for (let i = 0; i < obj[tileId].length; ++i) {
-                        //         groundItems.push(new Game.GroundItem(tileId, obj[tileId][i]));
-                        //     }
-                        // }
-                        // this.groundItems = groundItems;
-
                         // [{"33333": [<itemId>, <itemId>, ...]}, {...}]
-
                         for (let tileId in obj.groundItems) {
                             for (let j = 0; j < obj.groundItems[tileId].length; ++j) {   
                                 for (let i = 0; i < room.groundItems.length; ++i) {
@@ -723,7 +695,7 @@ $(function () {
                             }
                         }
                         if (player != null) {
-                            player.setState(obj.iconId);
+                            player.setActionBubble(obj.iconId);
                         }
 
                         break;
@@ -776,72 +748,66 @@ $(function () {
 
                     case "load_room": {
                         // TODO draw the loading screen first
-                        room.loadSceneryInstances(obj["sceneryInstances"]);
+                        // room.loadSceneryInstances(obj["sceneryInstances"]);
                         // room.loadGroundTextures(obj["groundTextures"]);
                         room.loadMinimap(obj["minimap"]);
-
-                        for (let i = 0; i < obj.depletedScenery.length; ++i) {
-                            let xy = tileIdToXY(obj.depletedScenery[i]);
-                            let sceneryInstances = room.sceneryInstances.get(xy.y);
-                            for (let j = 0; j < sceneryInstances.length; ++j) {
-                                if (sceneryInstances[j].tileId === obj.depletedScenery[i]) {
-                                    sceneryInstances[j].sprite[0].nextFrame();
-                                    break;
-                                }
-                            }
-                        }
-
                         break;
                     }
 
-                    case "add_ground_texture_segments": {
-                        for (let roomId in obj.segments) {
-                            if (!room.groundTextureInstancesBySegment.has(roomId))
-                                room.groundTextureInstancesBySegment.set(roomId, new Map());
-                            
-                            for (let segmentId in obj.segments[roomId]) {
-                                if (!room.groundTextureInstancesBySegment.get(roomId).has(segmentId))
-                                    room.groundTextureInstancesBySegment.get(roomId).set(segmentId, []);
-                                
-                                for (let i = 0; i < obj.segments[roomId][segmentId].length; ++i) {
-                                    room.groundTextureInstancesBySegment.get(roomId).get(segmentId).push(obj.segments[roomId][segmentId][i]);
-                                }
-                            }
-
-                            room.drawableTextureInstances = [];
-
-                            // we know right now the grid is 3x3 made up of 5x5 subgrids
-                            // so we have 9 arrays of 25 that need to be built into an 9*25 element array
-                            let segments = room.groundTextureInstancesBySegment.get(roomId);
-                            let segmentId = 0; // 9 segments; ranked 0-9
-                            let orderedSegments = new Map([...segments.entries()].sort());
-                            for (const [key, value] of orderedSegments.entries()) {
-                                for (let j = 0; j < value.length; ++j) {
-                                    // 25 elements, j is 0-24
-                                    let eleX = (j%5) + ((segmentId%5)*5);
-                                    let eleY = ~~(j/5) + (~~(segmentId/5) * 5);
-                                    room.drawableTextureInstances[(eleY * 25) + eleX] = value[j];
-                                }
-
-                                ++segmentId;
+                    case "add_ground_texture_instances": {
+                        for (const [key, value] of Object.entries(obj.instances)) {
+                            for (let i = 0; i < value.length; ++i) {
+                                room.groundTextureInstances.set(value[i], key);
                             }
                         }
-                        
+
+                        room.drawableTextureInstances = [];
+
+                        let ordered = new Map([...room.groundTextureInstances.entries()].sort());
+                        for (const [key, value] of ordered.entries()) {
+                            room.drawableTextureInstances.push(Number(value));
+                        }
+
                         room.updateGroundTextures();
+                        
+                        // this is here because it won't get called if there's no scenery
+                        // and on the case of room wrap we need to re-call it to update scenery positions to wrap them too
+                        // room.loadSceneryInstances();
                         break;
                     }
 
-                    case "remove_ground_texture_segments": {
-                        for (let roomId in obj.segments) {
-                            if (!room.groundTextureInstancesBySegment.has(roomId))
-                                continue;
-                            
-                            for (let segmentId in obj.segments[roomId]) {
-                                room.groundTextureInstancesBySegment.get(roomId).delete(String(obj.segments[roomId][segmentId]));
-                            }
+                    case "add_scenery_instances": {
+                        for (const [sceneryId, tileIds] of Object.entries(obj.instances)) {
+                            room.sceneryInstancesBySegment.set(sceneryId, tileIds.concat(room.sceneryInstancesBySegment.get(sceneryId) || []));
+                        }
+                        room.loadSceneryInstances();
 
-                            if (!room.groundTextureInstancesBySegment.get(roomId).size)
-                                room.groundTextureInstancesBySegment.delete(roomId);
+                        // once the scenery has reloaded, all the depleted scenery is back in its primary state.
+                        // we need to go through each of the depleted scenery and toggle the depleted ones into their off state
+                        if (obj.depletedScenery) {
+                            for (let i = 0; i < obj.depletedScenery.length; ++i) {
+                                let xy = tileIdToXY(obj.depletedScenery[i]);
+                                let sceneryInstances = room.sceneryInstances.get(xy.y);
+                                for (let j = 0; j < sceneryInstances.length; ++j) {
+                                    if (sceneryInstances[j].tileId === obj.depletedScenery[i]) {
+                                        sceneryInstances[j].sprite[0].nextFrame();
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    
+                    case "remove_ground_texture_instances": {
+                        for (let i = 0; i < obj.tileIds.length; ++i) {
+                            room.groundTextureInstances.delete(obj.tileIds[i]);
+
+                            for (let [sceneryId, tileIdList] of room.sceneryInstancesBySegment) {
+                                let index = tileIdList.indexOf(obj.tileIds[i]);
+                                if (index != -1)
+                                    tileIdList.splice(index, 1);
+                            }
                         }
                         break;
                     }
@@ -882,17 +848,17 @@ $(function () {
     STEP = INTERVAL / 1000; // seconds
     // setup an object that represents the room
     var room = {
-        map: new Game.Map(8000, 8000, canvas.width - 250, canvas.height),
+        map: new Game.Map(800000, 800000, canvas.width - 250, canvas.height),
         player: {},
         show: 0,
         currentShow: 0,
         otherPlayers: [],
         npcs: [],
         sceneryInstances: new Map(),
-        groundTextureInstancesBySegment: new Map(),
+        sceneryInstancesBySegment: new Map(),
+        groundTextureInstances: new Map(),
         drawableTextureInstances: [],
         optimizedDrawableTextureInstance: new Map(),
-        // groundTextureInstances: new Map(),
         groundTexturesMap: new Map(),
         drawableSceneryMap: new Map(),
         drawableNpcs: [],
@@ -907,20 +873,14 @@ $(function () {
         init: function () {
             this.show = 1.0;
         },
-        loadSceneryInstances: function(sceneryJson) {
-            this.sceneryInstances = new Map(); // clear out anything that already exists (i.e. when we load a new room)
+        loadSceneryInstances: function() {
+            this.sceneryInstances = new Map();
+            // let orderedSegments = new Map([...this.sceneryInstancesBySegment.entries()].sort());
+            for (const [sceneryId, tileIdList] of this.sceneryInstancesBySegment.entries()) {
+                let scenery = Game.sceneryMap.get(Number(sceneryId));
+                for (let i = 0; i < tileIdList.length; ++i) {
+                    let xy = tileIdToXY(tileIdList[i]);
 
-            for (let [key, instances] of Object.entries(sceneryJson)) {
-                // "sceneryInstances": {
-                //     "60": [
-                //       40394
-                //     ]
-                //   },
-                let scenery = Game.sceneryMap.get(Number(key));// because we're iterating an object, key becomes a string.
-                if (!scenery) continue;  // definitely should exist so this shouldn't happen
-
-                for (let i = 0; i < instances.length; ++i) {
-                    let xy = tileIdToXY(instances[i]);
                     let mapKey = xy.y + scenery.h - (scenery.anchorY * scenery.h);
                     if (!this.sceneryInstances.has(mapKey))
                         this.sceneryInstances.set(mapKey, []);
@@ -930,7 +890,7 @@ $(function () {
                         name: scenery.name,
                         x: xy.x, 
                         y: xy.y,
-                        tileId: instances[i], 
+                        tileId: tileIdList[i], 
                         leftclickOption: scenery.leftclickOption,
                         sprite: [new Game.SpriteFrame({
                             id: scenery.id,
@@ -1017,7 +977,7 @@ $(function () {
             }
         },
         addPlayer: function (obj) {
-            var player = new Game.Player(obj.roomId, obj.tileId);
+            var player = new Game.Player(obj.tileId);
             player.id = obj.id;
             player.name = obj.name;
 
@@ -1225,9 +1185,9 @@ $(function () {
         },
         process: function (dt) {
             this.currentShow += (this.show - this.currentShow) * dt;
-            this.player.process(dt, this.width, this.height);
+            this.player.process(dt);
             for (let i in this.otherPlayers) {
-                this.otherPlayers[i].process(dt, this.width, this.height);
+                this.otherPlayers[i].process(dt);
             }
             this.npcs = this.npcs.filter(npc => npc.deathTimer < 1);
             for (let i in this.drawableNpcs) {
@@ -1246,8 +1206,8 @@ $(function () {
             Game.Minimap.setNpcs(this.drawableNpcs);
         },
         updateGroundTextures: function() {
-            let gridW = 25;
-            let gridH = 25;
+            let gridW = 24;
+            let gridH = 24;
 
             let data = this.drawableTextureInstances.map(texId => ({id: texId, processed: false}));
             this.optimizedDrawableTextureInstance = new Map();
@@ -1257,6 +1217,12 @@ $(function () {
                 // run through the array until we find the first unprocessed element
                 let firstEle = null;
                 for (let i = 0; i < data.length; ++i) {
+                    if (!data[i]) {
+                        // console.log(`data null for element ${i}, full data:`);
+                        // console.log(data);
+                        continue;
+                    }
+
                     if (!data[i].processed) {
                         firstEle = i;
                         break;
@@ -1304,7 +1270,7 @@ $(function () {
                 let h = y - posY + 1;
 
                 if (!this.optimizedDrawableTextureInstance.has(textureId)) 
-                this.optimizedDrawableTextureInstance.set(textureId, []);
+                    this.optimizedDrawableTextureInstance.set(textureId, []);
 
                 this.optimizedDrawableTextureInstance.get(textureId).push({
                     x: (~~(firstEle%gridW) * 32) - 16, 
@@ -1316,31 +1282,6 @@ $(function () {
             }
         },
         drawGroundTextures: function(ctx, xview, yview) {
-            // let drawBoundWidth = (camera.viewportRect.width * 1.15);
-            // let drawBoundHeight = (camera.viewportRect.height * 1.15);
-
-            // let minX = (xview + (camera.viewportRect.width * 0.5)) - (drawBoundWidth * 0.5); 
-            // let minY = (yview + (camera.viewportRect.height) * 0.5) - (drawBoundHeight * 0.5);
-
-            // // cull any textures outside the camera bounds
-            // let filteredInstances = new Map();
-            // this.groundTextureInstances.forEach(function(value, key, map) {
-            //     if (key > minY && key < minY + drawBoundHeight) {
-            //         if (!filteredInstances.has(key))
-            //             filteredInstances.set(key, []);
-            //         let filteredByXPos = value.filter(obj => obj.x > minX && obj.x < minX + drawBoundWidth);
-            //         filteredInstances.set(key, filteredInstances.get(key).concat(filteredByXPos));
-            //     }
-            // });
-
-            // let gridW = filteredInstances.values().next().value.length;
-            // let gridH = filteredInstances.size;
-
-            // let filteredList = [];
-            // for (const [key, value] of [...filteredInstances.entries()].sort()) {
-            //     filteredList.push(...(value.sort((a, b) => a.x - b.x)));
-            // }
-
             // we can group identical tiles and draw them once as a group with a repeating texture
             // e.g. 
             // grass=0, dirt=1
@@ -1415,8 +1356,8 @@ $(function () {
                         ctx.save();
                         ctx.translate(offsetX, offsetY);
 
-                        let minx = this.player.destPos.x - xview - (((this.player.destPos.x/32) % 5) * 32) - (10*32) + 16;
-                        let miny = this.player.destPos.y - yview - (((this.player.destPos.y/32) % 5) * 32) - (10*32) + 16;
+                        let minx = this.player.destPos.x - xview - (12*32);
+                        let miny = this.player.destPos.y - yview - (12*32);
 
                         ctx.fillRect(value[i].x + minx - offsetX, value[i].y + miny - offsetY, value[i].w, value[i].h);
 
@@ -1431,47 +1372,21 @@ $(function () {
 
 
             } else {
-                let offsetX = this.player.destPos.x - xview - (((this.player.destPos.x/32) % 5) * 32) - (10*32) + 16;
-                let offsetY = this.player.destPos.y - yview - (((this.player.destPos.y/32) % 5) * 32) - (10*32) + 16;
+                let offsetX = this.player.destPos.x - xview - (12*32);
+                let offsetY = this.player.destPos.y - yview - (12*32);
                 for (let i = 0; i < this.drawableTextureInstances.length; ++i) {
-                    let x = (i%25) * 32;
-                    let y = ~~(i/25) * 32;
+                    let x = (i%24) * 32;
+                    let y = ~~(i/24) * 32;
                     let spriteFrame = Game.SpriteManager.getGroundTextureById(this.drawableTextureInstances[i]);
                     spriteFrame.draw(ctx, x + offsetX, y + offsetY);
                 }
             }
         },
         compileDrawableSceneryMap: function(xview, yview) {
-            let scale = 1.5;//Game.maxScale;
-            var drawBoundWidth = (camera.viewportRect.width * scale);
-            var drawBoundHeight = (camera.viewportRect.height * scale);
-
-            var minX = (xview + (camera.viewportRect.width * 0.5)) - (drawBoundWidth * 0.5); 
-            var minY = (yview + (camera.viewportRect.height) * 0.5) - (drawBoundHeight * 0.5);
-            
-            // add the scenery
-            var drawableSceneryMap = new Map();
-            this.sceneryInstances.forEach(function(value, key, map) {
-                if (key > minY && key < minY + drawBoundHeight) {
-                    if (!drawableSceneryMap.has(key)) 
-                        drawableSceneryMap.set(key, []);
-
-                    var filteredByXPos = value.filter(obj => obj.x > minX && obj.x < minX + drawBoundWidth);
-                    drawableSceneryMap.set(key, drawableSceneryMap.get(key).concat(filteredByXPos));
-                }
-            });
-            this.drawableSceneryMap = drawableSceneryMap;
+            this.drawableSceneryMap = this.sceneryInstances;
         },
         compileDrawableNpcs: function(xview, yview) {
             this.drawableNpcs = this.npcs;
-        },
-        removePlayer: function (id) {
-            for (var i in this.otherPlayers) {
-                if (this.otherPlayers[i].id == id) {
-                    this.otherPlayers.splice(i, 1);
-                    return;
-                }
-            }
         },
         refreshGroundItems: function(obj) {
             // {tileId: [itemId, itemId, itemId, ...]}
@@ -1853,6 +1768,7 @@ $(function () {
     };
     // setup the magic camera !!!
     var camera = new Game.Camera(room.player.x, room.player.y, canvas.width - 250, canvas.height, room.map.width, room.map.height);
+    Game.cam = camera;
     Game.worldCameraRect = new Game.Rectangle(0, 0, canvas.width - 250, canvas.height);
     var hudcamera = new Game.Camera(camera.viewportRect.width, 0, canvas.width - camera.viewportRect.width, canvas.height);
     Game.hudCameraRect = new Game.Rectangle(camera.viewportRect.width, 0, canvas.width - camera.viewportRect.width, canvas.height);
@@ -1862,8 +1778,6 @@ $(function () {
     Game.currentMap = room.map;
     var cursor = new Game.Cursor((hudcamera.xView + hudcamera.wView) - 10, hudcamera.yView + 20);
     Game.cursor = cursor;
-    var grid = new Game.Grid();
-    grid.createGridLines(camera.viewportRect.width, camera.viewportRect.height);
 
     var uiWidth = (canvas.width - 250) / 2;
     var uiHeight = canvas.height / 2;
@@ -1895,6 +1809,10 @@ $(function () {
 
     // Game draw function
     var draw = function () {
+        context.canvas.width = context.canvas.width;
+        context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+        context.beginPath();
+
         if (Game.state === 'game' || Game.state === 'uiwindow') {
             
             // redraw all room objects

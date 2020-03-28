@@ -1,10 +1,9 @@
 (function(){
-		function Player(roomId, tileId){
+		function Player(tileId){
 			// (x, y) = center of object
 			// ATTENTION:
             // it represents the player position on the world(room), not the canvas position
             var posXY = tileIdToXY(tileId);
-            this.roomId = roomId;
 			this.x = posXY.x;
 			this.y = posXY.y;				
             this.destPos = posXY;
@@ -30,8 +29,8 @@
             this.respawnPos = {x: 0, y: 0};
             this.deathsCurtain = 1;
             this.deathSequence = false;
-            this.stateSprite = null;
-            this.stateTimer = 0;
+            this.actionBubbleSprite = null;
+            this.actionBubbleTimer = 0;
 
             this.spriteframes = new Map();// things that aren't base character parts (weapons/armour etc)
             this.baseframes = new Map();// base character parts; shows if you're not equipping anything
@@ -55,12 +54,12 @@
             this.drawOrders.set("attack_right", ["OFFHAND","LEGS","TORSO","HEAD", "NECKLACE","ONHAND", "CAPE"]);
 		}
 		
-		Player.prototype.process = function(step, worldWidth, worldHeight){
-            if (this.stateTimer > 0) {
-                this.stateTimer -= step;
-                if (this.stateTimer <= 0) {
-                    this.stateSprite = null;
-                    this.stateTimer = 0;
+		Player.prototype.process = function(step) {
+            if (this.actionBubbleTimer > 0) {
+                this.actionBubbleTimer -= step;
+                if (this.actionBubbleTimer <= 0) {
+                    this.actionBubbleSprite = null;
+                    this.actionBubbleTimer = 0;
                 }
             }
             
@@ -108,20 +107,6 @@
                 this.currentAnimation = this.attackingFromRight ? "attack_left" : "attack_right";
             }
 			
-			// don't let player leaves the world's boundary
-			if(this.x - this.width/2 < 0){
-				this.x = this.width/2;
-			}
-			if(this.y - this.height/2 < 0){
-				this.y = this.height/2;
-			}
-			if(this.x + this.width/2 > worldWidth){
-				this.x = worldWidth - this.width/2;
-			}
-			if(this.y > worldHeight){
-				this.y = worldHeight;
-			}
-
             if (this.chatMessageTimer > 0) {
                 this.chatMessageTimer -= step;
                 if (this.chatMessageTimer < 0) {
@@ -206,8 +191,8 @@
                     context.fillText(this.hitsplat.damage, (this.x - xView) * Game.scale, (this.y - yView) * Game.scale);
                 }
 
-                if (this.stateTimer > 0) {
-                    if (this.stateSprite != null) {
+                if (this.actionBubbleTimer > 0) {
+                    if (this.actionBubbleSprite != null) {
                         
                         context.save();
                         context.globalAlpha = 0.7;
@@ -218,7 +203,7 @@
                         context.scale(0.5, 0.5);
 
                         // 555 is the skill bubble sprite frame
-                        this.stateSprite.draw(context, (this.x - xView) * (Game.scale*2), (this.y - yView - 32 - 8) * (Game.scale*2));
+                        this.actionBubbleSprite.draw(context, (this.x - xView) * (Game.scale*2), (this.y - yView - 32 - 8) * (Game.scale*2));
                         context.restore();
                     }
                 }
@@ -360,8 +345,8 @@
             this.destPos.x = xy.x;
             this.destPos.y = xy.y;
 
-            var diffx = xy.x - this.x;
-            var diffy = xy.y - this.y;
+            var diffx = this.destPos.x - this.x;
+            var diffy = this.destPos.y - this.y;
             var mag = Math.getVectorMagnitude({x: diffx, y: diffy});
             this.speed = mag / 0.6;
         }
@@ -412,10 +397,6 @@
                 this.setEquipAnimations(obj.equipAnimations);
             }
 
-            if (obj.hasOwnProperty("roomId")) {
-                this.roomId = obj.roomId;
-            }
-
             if (obj.hasOwnProperty("respawn")) {
                 this.deathSequence = false;
             }
@@ -433,9 +414,9 @@
             return this.attackStyles[this.attackStyle];
         }
 
-        Player.prototype.setState = function(state) {
-            this.stateSprite = Game.SpriteManager.getSpriteFrameById(state);
-            this.stateTimer = 3;
+        Player.prototype.setActionBubble = function(sprite) {
+            this.actionBubbleSprite = Game.SpriteManager.getSpriteFrameById(sprite);
+            this.actionBubbleTimer = 3;
         }
 
 		// add "class" Player to our Game object

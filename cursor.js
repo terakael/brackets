@@ -25,16 +25,25 @@
             context.lineWidth = 3;
             let realx = ~~(this.mousePos.x);
             let realy = ~~(this.mousePos.y);
-            context.fillRect((~~(realx / this.size) * this.size) - xview, (~~(realy / this.size) * this.size) - yview, this.size, this.size);
-            context.strokeRect((~~(realx / this.size) * this.size) - xview, (~~(realy / this.size) * this.size) - yview, this.size, this.size);
+            let tilex = ~~(realx / this.size);
+            if (realx < 0)
+                tilex -= 1;
+            let tiley = ~~(realy / this.size);
+            if (realy < 0)
+                tiley -= 1;
+            context.fillRect((tilex * this.size) - xview, (tiley * this.size) - yview, this.size, this.size);
+            context.strokeRect((tilex * this.size) - xview, (tiley * this.size) - yview, this.size, this.size);
 
-            let tileId = ~~(this.mousePos.x / this.size) + (~~(this.mousePos.y / this.size) * 250);
+            let tileId = tilex + (tiley * 25000);
             context.textAlign = "center";
             context.textBaseline = "top";
             context.font = "10px Consolas";
             context.fillStyle = "white";
-            context.fillText(tileId, (~~(realx / this.size) * this.size + (this.size/2)) - xview, (~~(realy / this.size) * this.size) - yview - (this.size/2));
-            
+            context.fillText(tileId, (tilex * this.size + (this.size/2)) - xview, (tiley * this.size) - yview - (this.size/2));
+
+            context.textBaseline = "bottom";
+            context.font = "7px Consolas";
+            context.fillText(`{${realx},${realy}}`, (tilex * this.size + (this.size/2)) - xview, (tiley * this.size) - yview + (this.size * 1.5))
             context.restore();
         }
         
