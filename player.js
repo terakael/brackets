@@ -31,6 +31,7 @@
             this.deathSequence = false;
             this.actionBubbleSprite = null;
             this.actionBubbleTimer = 0;
+            this.combatOffsetX = 0;
 
             this.spriteframes = new Map();// things that aren't base character parts (weapons/armour etc)
             this.baseframes = new Map();// base character parts; shows if you're not equipping anything
@@ -339,6 +340,8 @@
         Player.prototype.setDestPosAndSpeedByTileId = function(tileId, xOffset) {
             var xy = tileIdToXY(tileId);
             xy.x += xOffset || 0;
+
+            this.combatOffsetX = xOffset || 0;
 
             this.attackingFromRight = xOffset > 0;
             

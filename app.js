@@ -745,15 +745,7 @@ $(function () {
                         
                         break;
                     }
-
-                    case "load_room": {
-                        // TODO draw the loading screen first
-                        // room.loadSceneryInstances(obj["sceneryInstances"]);
-                        // room.loadGroundTextures(obj["groundTextures"]);
-                        room.loadMinimap(obj["minimap"]);
-                        break;
-                    }
-
+                    
                     case "add_ground_texture_instances": {
                         for (const [key, value] of Object.entries(obj.instances)) {
                             for (let i = 0; i < value.length; ++i) {
@@ -778,7 +770,7 @@ $(function () {
 
                     case "add_scenery_instances": {
                         for (const [sceneryId, tileIds] of Object.entries(obj.instances)) {
-                            room.sceneryInstancesBySegment.set(sceneryId, tileIds.concat(room.sceneryInstancesBySegment.get(sceneryId) || []));
+                            room.sceneryInstancesBySceneryId.set(sceneryId, tileIds.concat(room.sceneryInstancesBySceneryId.get(sceneryId) || []));
                         }
                         room.loadSceneryInstances();
 
@@ -803,12 +795,26 @@ $(function () {
                         for (let i = 0; i < obj.tileIds.length; ++i) {
                             room.groundTextureInstances.delete(obj.tileIds[i]);
 
-                            for (let [sceneryId, tileIdList] of room.sceneryInstancesBySegment) {
+                            for (let [sceneryId, tileIdList] of room.sceneryInstancesBySceneryId) {
                                 let index = tileIdList.indexOf(obj.tileIds[i]);
                                 if (index != -1)
                                     tileIdList.splice(index, 1);
                             }
                         }
+                        break;
+                    }
+
+                    case "add_minimap_segments": {
+                        for (const [segmentId, data] of Object.entries(obj.segments)) {
+                            room.loadMinimap(data, Number(segmentId));
+                        }
+                        Game.Minimap.addMinimapIconLocations(obj.minimapIconLocations);
+                        break;
+                    }
+
+                    case "remove_minimap_segments": {
+                        for (let i = 0; i < obj.segments.length; ++i)
+                            Game.Minimap.removeMinimapsBySegmentId(obj.segments[i]);
                         break;
                     }
 
@@ -855,7 +861,7 @@ $(function () {
         otherPlayers: [],
         npcs: [],
         sceneryInstances: new Map(),
-        sceneryInstancesBySegment: new Map(),
+        sceneryInstancesBySceneryId: new Map(),
         groundTextureInstances: new Map(),
         drawableTextureInstances: [],
         optimizedDrawableTextureInstance: new Map(),
@@ -865,23 +871,23 @@ $(function () {
         spells: [],
         groundItems: [],
         t: new Game.Transform(),
-        loadMinimap: function(minimapBase64) {
+        loadMinimap: function(minimapBase64, segmentId) {
             let image = new Image();
             image.src = `data:image/png;base64,${minimapBase64}`;
-            image.onload = () => Game.Minimap.load(image);
+            image.onload = () => Game.Minimap.load(image, segmentId);
         },
         init: function () {
             this.show = 1.0;
         },
-        loadSceneryInstances: function() {
+        loadSceneryInstances: function() {   
             this.sceneryInstances = new Map();
-            // let orderedSegments = new Map([...this.sceneryInstancesBySegment.entries()].sort());
-            for (const [sceneryId, tileIdList] of this.sceneryInstancesBySegment.entries()) {
+            for (const [sceneryId, tileIdList] of this.sceneryInstancesBySceneryId.entries()) {
                 let scenery = Game.sceneryMap.get(Number(sceneryId));
                 for (let i = 0; i < tileIdList.length; ++i) {
                     let xy = tileIdToXY(tileIdList[i]);
 
-                    let mapKey = xy.y + scenery.h - (scenery.anchorY * scenery.h);
+                    let spriteFrame = Game.SpriteManager.getSpriteFrameById(scenery.spriteFrameId);
+                    let mapKey = xy.y + spriteFrame.frames[0].height - (spriteFrame.anchor.y * spriteFrame.frames[0].height);
                     if (!this.sceneryInstances.has(mapKey))
                         this.sceneryInstances.set(mapKey, []);
 
@@ -892,20 +898,21 @@ $(function () {
                         y: xy.y,
                         tileId: tileIdList[i], 
                         leftclickOption: scenery.leftclickOption,
-                        sprite: [new Game.SpriteFrame({
-                            id: scenery.id,
-                            sprite_map_id: scenery.spriteMapId,
-                            x: scenery.x,
-                            y: scenery.y,
-                            w: scenery.w,
-                            h: scenery.h,
-                            margin: 0,
-                            frame_count: scenery.framecount,
-                            framerate: scenery.framerate,
-                            animation_type_id: 1,
-                            anchorX: scenery.anchorX,
-                            anchorY: scenery.anchorY
-                        })],
+                        sprite: [new Game.SpriteFrame(spriteFrame.frameData)],
+                        // sprite: [new Game.SpriteFrame({
+                        //     id: scenery.id,
+                        //     sprite_map_id: scenery.spriteMapId,
+                        //     x: scenery.x,
+                        //     y: scenery.y,
+                        //     w: scenery.w,
+                        //     h: scenery.h,
+                        //     margin: 0,
+                        //     frame_count: scenery.framecount,
+                        //     framerate: scenery.framerate,
+                        //     animation_type_id: 1,
+                        //     anchorX: scenery.anchorX,
+                        //     anchorY: scenery.anchorY
+                        // })],
                         type: "scenery",
                         attributes: scenery.attributes
                     });
@@ -1175,7 +1182,7 @@ $(function () {
             for (var i in this.drawableNpcs) {
                 this.drawableNpcs[i].draw(ctx, xview, yview);
             }
-
+            
             var mp = Game.mousePos || { x: 0, y: 0 };
             var transformed = this.t.transformPoint(mp.x, mp.y);
             cursor.setPos({ x: transformed.x + xview, y: transformed.y + yview });
@@ -1356,7 +1363,7 @@ $(function () {
                         ctx.save();
                         ctx.translate(offsetX, offsetY);
 
-                        let minx = this.player.destPos.x - xview - (12*32);
+                        let minx = this.player.destPos.x - this.player.combatOffsetX - xview - (12*32);
                         let miny = this.player.destPos.y - yview - (12*32);
 
                         ctx.fillRect(value[i].x + minx - offsetX, value[i].y + miny - offsetY, value[i].w, value[i].h);
@@ -1443,6 +1450,7 @@ $(function () {
                                     });
                                 } else {
                                     Game.ws.send({ action: "move", id: room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y });
+                                    Game.Minimap.setPlayerDestXY(~~cursor.mousePos.x, ~~cursor.mousePos.y);
                                 }
                             } else {
                                 // there's a stored leftclick option so perform the leftclick option
@@ -1607,7 +1615,7 @@ $(function () {
 
                                 if (rect.pointWithin(cursor.mousePos)) {
                                     var tileId = value[i].tileId;
-                                    var scenery = Game.sceneryMap.get(sprite.id);
+                                    var scenery = Game.sceneryMap.get(value[i].id);
                                     
                                     let unusable = ((value[i].attributes || 0) & 1) == 1;
                                     if (room.player.inventory.slotInUse && scenery.name && !unusable) {

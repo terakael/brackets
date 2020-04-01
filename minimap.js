@@ -1,37 +1,75 @@
 (function() {
 	function Minimap() {
-		this.width = 230;
-		this.height = 230;
 		this.otherPlayers = null;
 		this.groundItems = null;
 		this.npcs = null;
-		this.radius = 1000;// its a square but basically from the player in the middle to the edge of the square
+
+		// its a square but basically from the player in the middle to the edge of the square
+		// the client sends us npcs/players within a 15 square radius, i.e. 480 pixels, so 500 away being the edge is a nice round number
+		this.radius = 500;
 		this.rect = new Game.Rectangle(0, 0, 0, 0);
+		this.playerDestTile = 0;
+		this.images = new Map(); // tileId, minimapSegmentImage
+		this.minimapIcons = new Map();
 	};
 	Minimap.prototype = {
 		constructor: Minimap,
 		draw: function(context, xview, yview) {
-			if (this.image) {
-				let offW = this.image.width / 5;
-				let offH = this.image.height / 5;
-				context.drawImage(this.image, 
-					(Game.getPlayer().x / (250 * 32)) * this.image.width - (offW / 2), 
-					(Game.getPlayer().y / (250 * 32)) * this.image.height - (offH / 2), 
-					offW, 
-					offH, 
-					this.rect.left, 
-					this.rect.top, 
-					this.rect.width, 
-					this.rect.height);
+			for (const [tileId, image] of this.images) {
+				let xy = tileIdToXY(tileId);
+				let diffx = xy.x - Game.getPlayer().x;
+				let diffy = xy.y - Game.getPlayer().y;
+
+				let dx = ((this.rect.left + (this.rect.width/2)) + (diffx/this.radius*(this.rect.width/2))) - 2.5;
+				let sx = 0;
+				if (dx < this.rect.left) {
+					sx = (this.rect.left - dx) / (185/50);
+				}
+				let dy = ((this.rect.top + (this.rect.height/2)) + (diffy/this.radius*(this.rect.width/2))) - 2.5;
+				let sy = 0;
+				if (dy < this.rect.top) {
+					sy = (this.rect.top - dy) / (185/50);
+				}
+
+				let sw = 50;
+				if (dx + 185 > this.rect.right)
+					sw = (this.rect.right - dx) / (185/50);
+
+				let sh = 50;
+				if (dy + 185 > this.rect.bottom) {
+					sh = (this.rect.bottom - dy) / (185/50);
+				}
+
+				context.drawImage(image, sx, sy, sw, sh, dx + (sx * (185/50)), dy + (sy * (185/50)), sw * (185/50), sh * (185/50));
 			}
+
+			for (const [spriteFrameId, tileIds] of this.minimapIcons) {
+				let spriteFrame = Game.SpriteManager.getSpriteFrameById(spriteFrameId);
+				if (!spriteFrame)
+					continue;
+
+				for (let i = 0; i < tileIds.length; ++i) {
+					let xy = tileIdToXY(tileIds[i]);
+					let diffx = xy.x - Game.getPlayer().x;
+					let diffy = xy.y - Game.getPlayer().y;
+
+					if (Math.abs(diffx) > 500 || Math.abs(diffy) > 500)
+						continue;
+
+					spriteFrame.draw(context, 
+						((this.rect.left + (this.rect.width/2)) + (diffx/this.radius*(this.rect.width/2))) + 2.5, 
+						((this.rect.top + (this.rect.height/2)) + (diffy/this.radius*(this.rect.width/2))) + 2.5);
+				}
+			}
+
 			context.fillStyle = "#050";
 			context.strokeStyle = "#666";
 			context.lineWidth = 3;
-			context.strokeRect(this.rect.left, this.rect.top, this.width, this.height);
+			context.strokeRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 
 			// current player dot (always centred)
 			context.fillStyle = "white";
-			context.fillRect((this.rect.left + (this.width/2)) - 2.5, (this.rect.top + (this.height/2)) - 2.5, 5, 5);
+			context.fillRect((this.rect.left + (this.rect.width/2)) - 2.5, (this.rect.top + (this.rect.height/2)) - 2.5, 5, 5);
 
 			// npcs
 			context.fillStyle = "yellow";
@@ -50,16 +88,22 @@
 			for (var i in this.groundItems) {
 				this.drawOnMap(context, this.groundItems[i].pos.x, this.groundItems[i].pos.y, 15);
 			}
+			
+			if (Math.abs(Game.getPlayer().x - this.playerDestX) > 32 || Math.abs(Game.getPlayer().y - this.playerDestY) > 32) {
+				context.fillStyle = "red";
+				this.drawOnMap(context, this.playerDestX, this.playerDestY, 15, "x");
+			}
 		},
 		drawOnMap: function(context, x, y, size, icon) {
 			var diffx = x - Game.getPlayer().x;
 			var diffy = y - Game.getPlayer().y;
 			context.font = "bold {0}px Consolas".format(size || 12);
 			context.textAlign = "center";
+			context.textBaseline = "middle";
 			if (Math.abs(diffx) < this.radius && Math.abs(diffy) < this.radius) {
 				context.fillText(icon || ".", 
-					((this.rect.left + (this.width/2)) + (diffx/this.radius*(this.width/2))), 
-					((this.rect.top + (this.height/2)) + (diffy/this.radius*(this.width/2))) + 2.5);
+					((this.rect.left + (this.rect.width/2)) + (diffx/this.radius*(this.rect.width/2))), 
+					((this.rect.top + (this.rect.height/2)) + (diffy/this.radius*(this.rect.width/2))));
 			}
 		},
 		process: function(dt) {
@@ -74,46 +118,60 @@
 			this.npcs = npcs;
 		},
 		onMouseDown: function(button) {
-			var x = ((Game.mousePos.x - (this.rect.left + (this.width/2))) / (this.width/2)) * this.radius;
-			var y = ((Game.mousePos.y - (this.rect.top + (this.height/2))) / (this.height/2)) * this.radius;
-			Game.ws.send({action: "move", id: Game.getPlayer().id, x: ~~(Game.getPlayer().x + x), y: ~~(Game.getPlayer().y + y)});
+			var x = ((Game.mousePos.x - (this.rect.left + (this.rect.width/2))) / (this.rect.width/2)) * this.radius;
+			var y = ((Game.mousePos.y - (this.rect.top + (this.rect.height/2))) / (this.rect.height/2)) * this.radius;
+
+			if (Game.ctrlPressed) {
+				let tileId = xyToTileId(~~(Game.getPlayer().x + x), ~~(Game.getPlayer().y + y));
+				Game.ws.send({
+					action: "message",
+					id: Game.getPlayer().id,
+					message: `::tele ${tileId}`
+				});
+			} else {
+				Game.ws.send({action: "move", id: Game.getPlayer().id, x: ~~(Game.getPlayer().x + x), y: ~~(Game.getPlayer().y + y)});
+			}
+			this.setPlayerDestXY(~~(Game.getPlayer().x + x), ~~(Game.getPlayer().y + y));
+			
 		},
 		setRect: function(x, y, w, h) {
 			this.rect = new Game.Rectangle(x, y, w, h);
 		},
-		bakeMinimap: function(image, sceneryInstances) {
-			if (0) {
-				var ctx = document.createElement("canvas").getContext("2d");
-				ctx.canvas.width = image.width;
-				ctx.canvas.height = image.height;
-				ctx.drawImage(image, 0, 0, ctx.canvas.width, ctx.canvas.height);
-				sceneryInstances.forEach(function(value, key, map) {
-					for (var i = 0; i < value.length; ++i) {
-						for (var j = 0; j < value[i].sprite.length; ++j) {
-							value[i].sprite[j].draw(ctx, value[i].x, key);
-						}
-				}});
+		setPlayerDestXY: function(x, y) {
+			this.playerDestX = ~~x - (~~x % 32) + 16;
+			this.playerDestY = ~~y - (~~y % 32) + 16;
+		},
+		load: function(image, segmentId) {
+			this.images.set(this.tileIdFromSegmentId(segmentId), image);
+		},
+		removeMinimapsBySegmentId: function(segmentId) {
+			let topLeftTileId = this.tileIdFromSegmentId(segmentId);
+			this.images.delete(topLeftTileId);
 
-				// this.sceneryInstances.get(xy.y).push({
-				// 	id: sceneryJson[i].id,
-				// 	name: sceneryJson[i].name,
-				// 	x: xy.x, 
-				// 	tileId: sceneryJson[i].instances[j], 
-				// 	leftclickOption: sceneryJson[i].leftclickOption,
-				// 	sprite: [spriteFrames],
-				// 	type: "scenery"
-				// });
+			let topLeftTileX = topLeftTileId % 25000;
+			let topLeftTileY = Math.floor(topLeftTileId / 25000);
+			for (let [spriteMapId, tileIds] of this.minimapIcons) {
+				this.minimapIcons.set(spriteMapId, tileIds.filter(e => {
+					let tileX = e % 25000;
+					let tileY = Math.floor(e / 25000);
 
-				this.image = new Image();
-				this.image.src = ctx.canvas.toDataURL("image/png");// this is slow af, takes over a second
-				ctx = null;
-			} else {
-				this.image = new Image();
+					return !((tileX >= topLeftTileX && tileX < topLeftTileX + 25) && (tileY >= topLeftTileY && tileY < topLeftTileY + 25));
+				}));
 			}
 		},
-		load: function(image) {
-			console.log("loaded minimap");
-			this.image = image;
+		tileIdFromSegmentId: function(segmentId) {
+			let segmentX = segmentId % 1000;
+			let segmentY = Math.floor(segmentId / 1000);
+
+			let tileX = segmentX * 25;
+			let tileY = segmentY * 25;
+
+			return (tileY * 25000) + tileX;
+		},
+		addMinimapIconLocations: function(iconLocations) {
+			for (const [spriteMapId, tileIds] of Object.entries(iconLocations)) {
+				this.minimapIcons.set(Number(spriteMapId), tileIds.concat(this.minimapIcons.get(Number(spriteMapId)) || []));
+			}
 		}
 	};
 	
