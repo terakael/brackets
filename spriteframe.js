@@ -42,6 +42,12 @@
 			}
 	};
 
+	SpriteFrame.prototype.drawDetailed = function(ctx, sx, sy, sw, sh, dx, dy, dw, dh) {
+		let spriteMap = Game.SpriteManager.getSpriteMapById(this.spriteMapId);
+		if (spriteMap)
+			ctx.drawImage(spriteMap, sx, sy, sw, sh, dx, dy, dw, dh);
+	}
+
 	SpriteFrame.prototype.getCurrentFrame = function() {
 		return this.frames[this.currentFrame];
 	}

@@ -16,7 +16,6 @@
 				let map = new Image();
 				map.src = "data:image/png;base64,{0}".format(spriteMaps[i].dataBase64);
 				map.onload = function() {
-					console.log("loaded " + spriteMaps[i].name);
 					that.spriteMaps.push({
 						id: spriteMaps[i].id,
 						name: spriteMaps[i].name,

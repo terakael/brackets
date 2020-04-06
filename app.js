@@ -1495,10 +1495,10 @@ $(function () {
                                     var sprite = room.drawableNpcs[i].getCurrentSpriteFrame();
                                     var spriteFrame = sprite.getCurrentFrame();
                                     let rect = new Game.Rectangle(
-                                        room.drawableNpcs[i].pos.x - (spriteFrame.width * sprite.anchor.x), 
-                                        room.drawableNpcs[i].pos.y - (spriteFrame.height * sprite.anchor.y), 
-                                        spriteFrame.width, 
-                                        spriteFrame.height);
+                                        room.drawableNpcs[i].pos.x - ((spriteFrame.width * sprite.scale.x) * sprite.anchor.x), 
+                                        room.drawableNpcs[i].pos.y - ((spriteFrame.height * sprite.scale.y) * sprite.anchor.y), 
+                                        (spriteFrame.width * sprite.scale.x), 
+                                        (spriteFrame.height * sprite.scale.y));
 
                                     if (rect.pointWithin(cursor.mousePos)) {
                                         cursor.handleClick(true);
@@ -1659,10 +1659,10 @@ $(function () {
                             let npc = room.npcs[i];
                             var spriteFrame = room.npcs[i].getCurrentSpriteFrame();
                                 var rect = new Game.Rectangle(
-                                    npc.pos.x - (spriteFrame.getCurrentFrame().width * spriteFrame.anchor.x), 
-                                    npc.pos.y - (spriteFrame.getCurrentFrame().height * spriteFrame.anchor.y), 
-                                    spriteFrame.getCurrentFrame().width, 
-                                    spriteFrame.getCurrentFrame().height);
+                                    npc.pos.x - ((spriteFrame.getCurrentFrame().width * spriteFrame.scale.x) * spriteFrame.anchor.x), 
+                                    npc.pos.y - ((spriteFrame.getCurrentFrame().height * spriteFrame.scale.y) * spriteFrame.anchor.y), 
+                                    (spriteFrame.getCurrentFrame().width * spriteFrame.scale.x), 
+                                    (spriteFrame.getCurrentFrame().height * spriteFrame.scale.y));
 
                             if (rect.pointWithin(cursor.mousePos)) {
                                 if (room.player.inventory.slotInUse) {

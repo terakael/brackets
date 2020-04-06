@@ -141,20 +141,20 @@
             }
             
             if (moving || this.inCombat) {
-                let current = this.currentAnimation;
-
                 // only process one part of the player, then reflect the current frame through all the rest
                 this.getBaseSpriteFrame().process(step);
-                let currentFrame = this.getBaseSpriteFrame().currentFrame;
-
-                this.spriteframes.forEach((value, key, map) => {
-                    value[current].currentFrame = currentFrame;
-                });
-
-                this.baseframes.forEach((value, key, map) => {
-                    value[current].currentFrame = currentFrame;
-                });
+                
             }
+
+            let currentFrame = (moving || this.inCombat) ? this.getBaseSpriteFrame().currentFrame : 1;
+
+            this.spriteframes.forEach((value, key, map) => {
+                value[this.currentAnimation].currentFrame = currentFrame;
+            });
+
+            this.baseframes.forEach((value, key, map) => {
+                value[this.currentAnimation].currentFrame = currentFrame;
+            });
 
             this.stats.process(step);
             this.inventory.process(step);
