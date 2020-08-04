@@ -446,7 +446,8 @@ $(function () {
                         if (player != null) {
                             player.inCombat = false;
                             player.currentAnimation = player.attackingFromRight ? "left" : "right";
-                            player.setDestPosAndSpeedByTileId(obj.playerTileId);
+                            if (obj.playerTileId)
+                                player.setDestPosAndSpeedByTileId(obj.playerTileId);
                         }
 
                         for (var i = 0; i < room.npcs.length; ++i) {
@@ -474,7 +475,9 @@ $(function () {
                         if (player1 != null) {
                             player1.inCombat = false;
                             player1.currentAnimation = player1.attackingFromRight ? "left" : "right";
-                            player1.setDestPosAndSpeedByTileId(obj.playerTileId);
+
+                            if (obj.playerTileId)
+                                player1.setDestPosAndSpeedByTileId(obj.playerTileId);
                         }
 
                         let player2 = null;
@@ -491,7 +494,9 @@ $(function () {
                         if (player2 != null) {
                             player2.inCombat = false;
                             player2.currentAnimation = player2.attackingFromRight ? "left" : "right";
-                            player2.setDestPosAndSpeedByTileId(obj.player2TileId);
+
+                            if (obj.player2TileId)
+                                player2.setDestPosAndSpeedByTileId(obj.player2TileId);
                         }
 
                         break;
@@ -818,6 +823,17 @@ $(function () {
                         break;
                     }
 
+                    case "teleport_explosion": {
+                        let xy = tileIdToXY(obj.tileId);
+                        room.teleportExplosions.push({
+                            x: xy.x,
+                            y: xy.y - 16,
+                            lifetime: 1
+                        });
+                        
+                        break;
+                    }
+
                     // sometimes a response comes back just showing a message; don't do anything else in these cases
                     // we need these here though in order to prevent the "invalid action" default message.
                     case "use":
@@ -869,6 +885,7 @@ $(function () {
         drawableSceneryMap: new Map(),
         drawableNpcs: [],
         spells: [],
+        teleportExplosions: [], // [{x, y, lifetime}]
         groundItems: [],
         t: new Game.Transform(),
         loadMinimap: function(minimapBase64, segmentId) {
@@ -921,8 +938,6 @@ $(function () {
         },
         loadTextureMaps: function() {
             this.groundTexturesMap = new Map();
-            // this.groundTextureInstances = new Map();
-
             let groundTextures = Game.SpriteManager.groundTextures;
             
             let spriteMaps = new Map();
@@ -930,7 +945,6 @@ $(function () {
                 if (!spriteMaps.has(groundTextures[i].spriteMapId))
                     spriteMaps.set(groundTextures[i].spriteMapId, Game.SpriteManager.getSpriteMapById(groundTextures[i].spriteMapId));
             }
-
 
             let that = this;
             spriteMaps.forEach(function(spriteMap, spriteMapId, map) {
@@ -1173,6 +1187,19 @@ $(function () {
                 }
             });
 
+            for (let i = 0; i < this.teleportExplosions.length; ++i) {
+                let lifetime = (1 - this.teleportExplosions[i].lifetime); // 0 -> 1
+                let size = Math.sin(1 - lifetime) * 64;
+
+                ctx.globalAlpha = 1 - lifetime;
+                ctx.fillStyle = `rgb(${lifetime * 255}, 255, ${(1 - lifetime) * 255}`;
+
+                ctx.beginPath();
+                ctx.arc(this.teleportExplosions[i].x - xview, 
+                        this.teleportExplosions[i].y - yview, size, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
             // these draw calls still draw stuff like the death curtain, health bars, chat etc so draw these last.
             this.player.draw(ctx, xview, yview);
             for (var i in this.otherPlayers) {
@@ -1208,6 +1235,10 @@ $(function () {
                 this.spells[i].process(dt);
             this.spells = this.spells.filter(spell => spell.lifetime > 0);
 
+            for (let i = 0; i < this.teleportExplosions.length; ++i)
+                this.teleportExplosions[i].lifetime -= dt;
+            this.teleportExplosions = this.teleportExplosions.filter(e => e.lifetime > 0);
+
             Game.Minimap.setOtherPlayers(this.otherPlayers);
             Game.Minimap.setGroundItems(this.groundItems);
             Game.Minimap.setNpcs(this.drawableNpcs);
@@ -1225,8 +1256,6 @@ $(function () {
                 let firstEle = null;
                 for (let i = 0; i < data.length; ++i) {
                     if (!data[i]) {
-                        // console.log(`data null for element ${i}, full data:`);
-                        // console.log(data);
                         continue;
                     }
 
@@ -1341,11 +1370,12 @@ $(function () {
                         textureWithMostInstances = key;
                 }
 
+                let offsetX = -xview % 32;
+                let offsetY = -yview % 32;
+
                 if (textureWithMostInstances > 0) {
                     ctx.fillStyle = this.groundTexturesMap.get(textureWithMostInstances);
-
-                    let offsetX = -xview % 32;
-                    let offsetY = -yview % 32;
+                    
                     ctx.save();
                     ctx.translate(offsetX, offsetY);
                     ctx.fillRect(-offsetX, -offsetY, ((canvas.width - 250) * (1/Game.scale)), (canvas.height*(1/Game.scale)));
@@ -1356,25 +1386,26 @@ $(function () {
                     if (key === textureWithMostInstances)
                         continue;
 
-                    ctx.fillStyle = this.groundTexturesMap.get(key);
+                    ctx.save();
+                    ctx.translate(offsetX, offsetY);
+                    
+                    ctx.beginPath();
                     for (let i = 0; i < value.length; ++i) {
-                        let offsetX = -xview % 32;
-                        let offsetY = -yview % 32;
-                        ctx.save();
-                        ctx.translate(offsetX, offsetY);
-
                         let minx = this.player.destPos.x - this.player.combatOffsetX - xview - (12*32);
-                        let miny = this.player.destPos.y - yview - (12*32);
+                        let miny = (this.player.destPos.y - yview - (12*32));
 
-                        ctx.fillRect(value[i].x + minx - offsetX, value[i].y + miny - offsetY, value[i].w, value[i].h);
+                        ctx.rect((value[i].x + minx - offsetX), (value[i].y + miny - offsetY), value[i].w, value[i].h);
 
                         if (Game.drawGroundTextureOutline) {
                             ctx.strokeStyle = "white";
                             ctx.strokeRect(value[i].x + minx - offsetX, value[i].y + miny - offsetY, value[i].w, value[i].h);
                         }
-
-                        ctx.restore();
                     }
+
+                    ctx.fillStyle = this.groundTexturesMap.get(key);
+                    ctx.fill();
+
+                    ctx.restore();
                 }
 
 

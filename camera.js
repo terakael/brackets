@@ -65,12 +65,13 @@
                 this.targetyView = this.followed.y - this.yDeadZone*(1/Game.scale);
             }
 
-            // if we teleport greater than a certain amount, snap the camera straight to position instead of dragging across the world
+            // if we teleport greater than a certain amount, snap the camera straight to position 
+            // instead of dragging across the world (with a slight variance for smoothness)
             if (Math.abs(this.targetxView - this.xView) > 500)
-                this.xView = this.targetxView;
+                this.xView = this.targetxView + Math.getRandom(-20, 20);
 
             if (Math.abs(this.targetyView - this.yView) > 500)
-                this.yView = this.targetyView;
+                this.yView = this.targetyView + Math.getRandom(-20, 20);
             
             this.xView += (this.targetxView - this.xView) * (dt * 5);
             this.yView += (this.targetyView - this.yView) * (dt * 5);

@@ -31,6 +31,9 @@
             { name: "cook", amount: 0 },
         ];
 
+        this.expDrops = [];
+        this.statIconSpriteMap = Game.SpriteManager.getSpriteMapById(10);
+
         this.bonuses = null;
         
         this.x = 10;
@@ -80,7 +83,7 @@
         ctx.fillStyle = "#555";
 		ctx.fillText("Stats", ~~(this.x + xview) + 0.5, ~~(yview - 5) + 0.5);
 		ctx.strokeStyle = "rgba(100, 100, 100, 0.6)";
-        var statBoxWidth = 230;
+        let statBoxWidth = 230;
 
         ctx.textAlign = "right";
         ctx.fillStyle = "red";
@@ -88,14 +91,12 @@
 
         // ctx.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
         
-        var spritemap = Game.SpriteManager.getSpriteMapById(10);
-        
         let hoveringOverAStat = false;
         ctx.lineWidth = 1;
-        for (var i = 0; i < this.stats.length; ++i) {
-            var xOffset = (i % 3) * 80; 
+        for (let i = 0; i < this.stats.length; ++i) {
+            let xOffset = (i % 3) * 80; 
 
-            var clickbox = new Game.Rectangle(this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 80, 16);
+            let clickbox = new Game.Rectangle(this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 80, 16);
             if (clickbox.pointWithin(Game.mousePos)) {
                 ctx.fillStyle = "rgba(100, 100, 100, 0.6)";
                 ctx.fillRect(clickbox.left, clickbox.top, clickbox.width, clickbox.height);
@@ -103,7 +104,7 @@
                 hoveringOverAStat = true;
             }
 
-            ctx.drawImage(spritemap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 16, 16);
+            ctx.drawImage(this.statIconSpriteMap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 16, 16);
 
             ctx.textAlign = "left";
             ctx.textBaseline = "middle";
@@ -115,24 +116,24 @@
             this.hoverStatId = null;
         
         
-        var yOffset = this.y + yview + ~~(this.stats.length / 3) * (16 + 5) + 10;
+        let yOffset = this.y + yview + ~~(this.stats.length / 3) * (16 + 5) + 10;
         ctx.strokeRect(~~(this.x + xview) + 0.5, ~~yOffset + 0.5, statBoxWidth, 16);
         if (this.hoverStatId !== null) {
-            var expSinceLvl = this.stats[this.hoverStatId].exp - this.lvl2exp(this.stats[this.hoverStatId].lvl);
-            var expDiff = this.lvl2exp(this.stats[this.hoverStatId].lvl + 1) - this.lvl2exp(this.stats[this.hoverStatId].lvl);
-            var remaining = (expSinceLvl / expDiff);
+            let expSinceLvl = this.stats[this.hoverStatId].exp - this.lvl2exp(this.stats[this.hoverStatId].lvl);
+            let expDiff = this.lvl2exp(this.stats[this.hoverStatId].lvl + 1) - this.lvl2exp(this.stats[this.hoverStatId].lvl);
+            let remaining = (expSinceLvl / expDiff);
             ctx.fillStyle = "rgba(0, 100, 0, 0.6)";
             ctx.fillRect(this.x + xview, yOffset, remaining * statBoxWidth, 16);
 
             ctx.textAlign = "center";
             ctx.fillStyle = "red";
             ctx.textBaseline = "middle";
-            ctx.fillText("{0}: {1}xp ({2}%)".format(this.stats[this.hoverStatId].name, this.stats[this.hoverStatId].exp, ~~(remaining * 100)), this.x + xview + (statBoxWidth / 2), yOffset + 8);
+            ctx.fillText("{0}: {1}xp ({2}%)".format(this.stats[this.hoverStatId].name, ~~this.stats[this.hoverStatId].exp, ~~(remaining * 100)), this.x + xview + (statBoxWidth / 2), yOffset + 8);
         } else {
             ctx.textAlign = "center";
             ctx.fillStyle = "red";
             ctx.textBaseline = "middle";
-            ctx.fillText("total: {0} ({1}xp)".format(this.totalLvl(), this.totalExp()), this.x + xview + (statBoxWidth / 2), yOffset + 8);
+            ctx.fillText("total: {0} ({1}xp)".format(this.totalLvl(), ~~this.totalExp()), this.x + xview + (statBoxWidth / 2), yOffset + 8);
         }
 
         ctx.font = "15px Consolas";
@@ -142,21 +143,44 @@
         ctx.fillText("Bonuses", ~~(this.x + xview) + 0.5, ~~yOffset + 0.5);
         yOffset += 15;
 
-        var bonusStats = ["acc", "str", "def", "agil", "mage", "hp"];
-        for (var i = 0; i < this.stats.length; ++i) {
+        let bonusStats = ["acc", "str", "def", "agil", "mage", "hp"];
+        for (let i = 0; i < this.stats.length; ++i) {
             if (!bonusStats.includes(this.stats[i].name))
                 continue;
 
-            var xOffset = (i % 6) * 38; 
+                let xOffset = (i % 6) * 38; 
 
-            ctx.drawImage(spritemap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, yOffset - 8, 16, 16);
+            ctx.drawImage(this.statIconSpriteMap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, yOffset - 8, 16, 16);
 
             ctx.textBaseline = "middle";
             ctx.fillStyle = "red";
 
-            var bonus = (this.bonuses && this.bonuses[this.stats[i].name]) || 0;
+            let bonus = (this.bonuses && this.bonuses[this.stats[i].name]) || 0;
             ctx.fillText(bonus, this.x + xview + 16 + xOffset, yOffset);
         }
+
+        ctx.textAlign = "right";
+        ctx.font = "18px Consolas";
+        for (let i = 0; i < this.expDrops.length; ++i) {
+            if (this.expDrops[i].lifetime === 1)
+                continue;
+
+            let yOffset = 100 * (1 - this.expDrops[i].lifetime);
+            ctx.globalAlpha = this.expDrops[i].lifetime < 0.2 ? (this.expDrops[i].lifetime * 5) : 1;
+
+            let expTextWidth = ctx.measureText(String(this.expDrops[i].exp)).width;
+            ctx.drawImage(this.statIconSpriteMap, 
+                          (this.expDrops[i].statId%3) * 32, 
+                          ~~(this.expDrops[i].statId/3) * 32, 
+                          32, 
+                          32, 
+                          this.rect.left - expTextWidth - 25, 
+                          100 - yOffset - 8, 
+                          16, 
+                          16);
+            ctx.fillText(this.expDrops[i].exp, this.rect.left - 10, 100 - yOffset);
+        }
+        
 
         ctx.restore();
     }
@@ -166,6 +190,18 @@
             if (this.healthBarTimer < 0)
                 this.healthBarTimer = 0;
         }
+
+        // basically if there's an exp drop that's not 1 but is greater than 0.9, we wanna pause
+        // the exp drops that are set to 1 so they don't overlap eachother.
+        let pauseMaxLifetimes = this.expDrops.filter(e => e.lifetime < 1 && e.lifetime > 0.8).length > 0;
+        for (let i = 0; i < this.expDrops.length; ++i) {
+            if (this.expDrops[i].lifetime === 1 && pauseMaxLifetimes)
+                continue;
+
+            this.expDrops[i].lifetime -= dt;
+            pauseMaxLifetimes = this.expDrops.filter(e => e.lifetime < 1 && e.lifetime > 0.8).length > 0;
+        }
+        this.expDrops = this.expDrops.filter(e => e.lifetime > 0);
     }
     Stats.prototype.drawHealthBar = function(ctx, x, y, currentHp, maxHp) {
         if (this.healthBarTimer === 0)
@@ -187,10 +223,11 @@
             if (this.stats[i].name === stat) {
 				var oldLevel = this.stats[i].lvl;
                 this.stats[i].exp += exp;
-				this.stats[i].lvl = this.exp2lvl(this.stats[i].exp);
+                this.stats[i].lvl = this.exp2lvl(this.stats[i].exp);                
 				if (this.stats[i].lvl > oldLevel) {
 					Game.ChatBox.add("Your {0} level is now {1}!".format(this.stats[i].name, this.stats[i].lvl), '#0f0');
-				}
+                }
+                this.expDrops.push({statId: i, exp: ~~exp, lifetime: 1});
                 return;
             }
         }
