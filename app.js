@@ -1,7 +1,13 @@
 $(function () {
     // prepare our game canvas
-    var canvas = document.getElementById("game"), 
-    context = canvas.getContext("2d"), ip = "localhost", port = "45555", resourcePort = "45556";
+    const canvas = document.getElementById("game");
+    const context = canvas.getContext("2d");
+    const ip = "localhost", port = "45555", resourcePort = "45556";
+
+    const otherCanvas = document.createElement("canvas");
+    otherCanvas.width = canvas.width;
+    otherCanvas.height = canvas.height
+    Game.otherContext = otherCanvas.getContext("2d");
     
     Game.resourceWs = new Game.WebSocket("ws://{0}:{1}/ws/resources".format(ip, resourcePort), function (obj) {
         if (obj["success"] == 0) {
@@ -895,6 +901,11 @@ $(function () {
         },
         init: function () {
             this.show = 1.0;
+            let groundTextureCanvas = document.createElement("canvas");
+            groundTextureCanvas.width = 32 * 24; // 24 tiles across, 32 pixels each
+            groundTextureCanvas.height = 32 * 24; // 24 tiles across, 32 pixels each
+
+            this.groundTextureCtx = groundTextureCanvas.getContext("2d");
         },
         loadSceneryInstances: function() {   
             this.sceneryInstances = new Map();
@@ -916,20 +927,6 @@ $(function () {
                         tileId: tileIdList[i], 
                         leftclickOption: scenery.leftclickOption,
                         sprite: [new Game.SpriteFrame(spriteFrame.frameData)],
-                        // sprite: [new Game.SpriteFrame({
-                        //     id: scenery.id,
-                        //     sprite_map_id: scenery.spriteMapId,
-                        //     x: scenery.x,
-                        //     y: scenery.y,
-                        //     w: scenery.w,
-                        //     h: scenery.h,
-                        //     margin: 0,
-                        //     frame_count: scenery.framecount,
-                        //     framerate: scenery.framerate,
-                        //     animation_type_id: 1,
-                        //     anchorX: scenery.anchorX,
-                        //     anchorY: scenery.anchorY
-                        // })],
                         type: "scenery",
                         attributes: scenery.attributes
                     });
@@ -1140,7 +1137,7 @@ $(function () {
 
                     ctx.globalAlpha = value[i].transparency || 1;
                     for (var j = 0; j < value[i].sprite.length; ++j)
-                        value[i].sprite[j].draw(ctx, value[i].x - xview, value[i].y - yview);
+                        value[i].sprite[j].draw(ctx, value[i].x - xview, value[i].y - yview, value[i].sprite[j].color);
 
                     if (Game.activeUiWindow == null) {
                         var rect = new Game.Rectangle(
@@ -1244,6 +1241,46 @@ $(function () {
             Game.Minimap.setNpcs(this.drawableNpcs);
         },
         updateGroundTextures: function() {
+            // we can group identical tiles and draw them once as a group with a repeating texture
+            // e.g. 
+            // grass=0, dirt=1
+            /*
+              now: 100 draw calls
+              0000000000
+              0000000000
+              1111110000
+              0000010000
+              0000010000
+              0000010000
+              0000011100
+              0000000100
+              0011111100
+              0010000000
+            
+              optimized ('-'=unprocessed grass, "="=unprocessed dirt): 13 draw calls
+              0---------
+              ----------
+              1=====0---
+              0----1----
+              -----=----
+              -----=----
+              -----=1=0-
+              -----0-1--
+              0-1=====--
+              --10------
+
+              algorithm:
+              We know that we've got a grid of x*y, let's say 10*10, sorted by y, x
+              Starting from the top-left tile, we branch out once left, then once down.
+              We keep branching out alternating left and down, until we either hit a different
+                tile or we hit the last element in the row/column.
+              When we hit the first different tile/last element, we just continue down the other
+                direction until we hit the end of that one too.
+              The final result is the square of tiles that we will group into a single draw call.
+              All of the tiles in the draw call are marked as processed.
+              Now repeat over and over with the first "unprocessed" tile until there's no more tiles.
+
+            */
             let gridW = 24;
             let gridH = 24;
 
@@ -1251,7 +1288,7 @@ $(function () {
             this.optimizedDrawableTextureInstance = new Map();
 
             let counter = 0;
-            while (++counter < 2000) { 
+            while (++counter < 24*24) { 
                 // run through the array until we find the first unprocessed element
                 let firstEle = null;
                 for (let i = 0; i < data.length; ++i) {
@@ -1309,116 +1346,53 @@ $(function () {
                     this.optimizedDrawableTextureInstance.set(textureId, []);
 
                 this.optimizedDrawableTextureInstance.get(textureId).push({
-                    x: (~~(firstEle%gridW) * 32) - 16, 
-                    y: (~~(firstEle/gridW) * 32) - 16, 
+                    x: (~~(firstEle%gridW) * 32), 
+                    y: (~~(firstEle/gridW) * 32), 
                     w: w * 32, 
                     h: h * 32, 
                     textureId: textureId
                 });
             }
+
+            // save the current ground textures to a background canvas, then we can draw it in a single draw call each frame
+            this.saveGroundTexturesToCanvas(this.groundTextureCtx);
+        },
+        saveGroundTexturesToCanvas: function(ctx) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            // take the ground texture with the most instances and draw it first as the entire background
+            let textureWithMostInstances = 0;
+            let mostInstances = 0;
+            for (const [key, value] of this.optimizedDrawableTextureInstance) {
+                mostInstances = Math.max(mostInstances, value.length);
+                if (mostInstances === value.length)
+                    textureWithMostInstances = key;
+            }
+
+            if (textureWithMostInstances > 0) {
+                ctx.fillStyle = this.groundTexturesMap.get(textureWithMostInstances);
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            }
+
+            for (const [key, value] of this.optimizedDrawableTextureInstance) {
+                if (key === textureWithMostInstances)
+                    continue;
+
+                ctx.save();
+                ctx.beginPath();
+                for (let i = 0; i < value.length; ++i) {
+                    ctx.rect(value[i].x, value[i].y, value[i].w, value[i].h);
+                }
+
+                ctx.fillStyle = this.groundTexturesMap.get(key);
+                ctx.fill();
+
+                ctx.restore();
+            }
         },
         drawGroundTextures: function(ctx, xview, yview) {
-            // we can group identical tiles and draw them once as a group with a repeating texture
-            // e.g. 
-            // grass=0, dirt=1
-            /*
-              now: 100 draw calls
-              0000000000
-              0000000000
-              1111110000
-              0000010000
-              0000010000
-              0000010000
-              0000011100
-              0000000100
-              0011111100
-              0010000000
-            
-              optimized ('-'=unprocessed grass, "="=unprocessed dirt): 13 draw calls
-              0---------
-              ----------
-              1=====0---
-              0----1----
-              -----=----
-              -----=----
-              -----=1=0-
-              -----0-1--
-              0-1=====--
-              --10------
-
-              algorithm:
-              We know that we've got a grid of x*y, let's say 10*10, sorted by y, x
-              Starting from the top-left tile, we branch out once left, then once down.
-              We keep branching out alternating left and down, until we either hit a different
-                tile or we hit the last element in the row/column.
-              When we hit the first different tile/last element, we just continue down the other
-                direction until we hit the end of that one too.
-              The final result is the square of tiles that we will group into a single draw call.
-              All of the tiles in the draw call are marked as processed.
-              Now repeat over and over with the first "unprocessed" tile until there's no more tiles.
-
-            */
-
-            let newAlgorithm = true;
-            if (newAlgorithm) {
-                // take the ground texture with the most instances and draw it first as the entire background
-                let textureWithMostInstances = 0;
-                let mostInstances = 0;
-                for (const [key, value] of this.optimizedDrawableTextureInstance) {
-                    mostInstances = Math.max(mostInstances, value.length);
-                    if (mostInstances === value.length)
-                        textureWithMostInstances = key;
-                }
-
-                let offsetX = -xview % 32;
-                let offsetY = -yview % 32;
-
-                if (textureWithMostInstances > 0) {
-                    ctx.fillStyle = this.groundTexturesMap.get(textureWithMostInstances);
-                    
-                    ctx.save();
-                    ctx.translate(offsetX, offsetY);
-                    ctx.fillRect(-offsetX, -offsetY, ((canvas.width - 250) * (1/Game.scale)), (canvas.height*(1/Game.scale)));
-                    ctx.restore();
-                }
-
-                for (const [key, value] of this.optimizedDrawableTextureInstance) {
-                    if (key === textureWithMostInstances)
-                        continue;
-
-                    ctx.save();
-                    ctx.translate(offsetX, offsetY);
-                    
-                    ctx.beginPath();
-                    for (let i = 0; i < value.length; ++i) {
-                        let minx = this.player.destPos.x - this.player.combatOffsetX - xview - (12*32);
-                        let miny = (this.player.destPos.y - yview - (12*32));
-
-                        ctx.rect((value[i].x + minx - offsetX), (value[i].y + miny - offsetY), value[i].w, value[i].h);
-
-                        if (Game.drawGroundTextureOutline) {
-                            ctx.strokeStyle = "white";
-                            ctx.strokeRect(value[i].x + minx - offsetX, value[i].y + miny - offsetY, value[i].w, value[i].h);
-                        }
-                    }
-
-                    ctx.fillStyle = this.groundTexturesMap.get(key);
-                    ctx.fill();
-
-                    ctx.restore();
-                }
-
-
-            } else {
-                let offsetX = this.player.destPos.x - xview - (12*32);
-                let offsetY = this.player.destPos.y - yview - (12*32);
-                for (let i = 0; i < this.drawableTextureInstances.length; ++i) {
-                    let x = (i%24) * 32;
-                    let y = ~~(i/24) * 32;
-                    let spriteFrame = Game.SpriteManager.getGroundTextureById(this.drawableTextureInstances[i]);
-                    spriteFrame.draw(ctx, x + offsetX, y + offsetY);
-                }
-            }
+            let minx = this.player.destPos.x - this.player.combatOffsetX - xview - (12*32);
+            let miny = (this.player.destPos.y - yview - (12*32));
+            ctx.drawImage(this.groundTextureCtx.canvas, minx-16, miny-16);
         },
         compileDrawableSceneryMap: function(xview, yview) {
             this.drawableSceneryMap = this.sceneryInstances;

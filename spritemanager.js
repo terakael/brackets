@@ -6,6 +6,7 @@
 	SpriteManager.prototype = {
 		constructor: SpriteManager,
 		spriteMaps: [],
+		spriteMapsWithColor: [],
 		spriteFrames: [],
 		items: [],
 		groundTextures: [],
@@ -25,6 +26,9 @@
 					if (that.spriteMaps.length === spriteMaps.length) {
 						postaction();
 					}
+				}
+				map.onerror = function() {
+					console.log("error loading spritemap " + spriteMaps[i].name);
 				}
 			}
 
@@ -85,6 +89,14 @@
 			for (var i in this.spriteMaps) {
 				if (this.spriteMaps[i].id === id) {
 					return this.spriteMaps[i].map;
+				}
+			}
+			return null;
+		},
+		getSpriteMapByIdAndColor: function(id, color) {
+			for (let i in this.spriteMapsWithColor) {
+				if (this.spriteMapsWithColor[i].id === id && this.spriteMapsWithColor[i].color === color) {
+					return this.spriteMapsWithColor[i];
 				}
 			}
 			return null;

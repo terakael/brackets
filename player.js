@@ -331,7 +331,13 @@
                 this.spriteframes.set(part, []);
 
                 for (let type in animations[part]) {// up, down, left, right, attack
+                    if (type === "color") {
+                        continue;
+                    }
                     this.spriteframes.get(part)[type] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(animations[part][type]).frameData);
+                    if (animations[part]["color"]) {
+                        this.spriteframes.get(part)[type].color = animations[part]["color"];
+                    }
                     this.spriteframes.get(part)[type].currentFrame=this.getBaseSpriteFrame().currentFrame;
                 }
             }

@@ -26,21 +26,79 @@
 		this.scale = {x: scale.x, y: scale.y};
 	}
 
-	SpriteFrame.prototype.draw = function(ctx, x, y) {
+	
+	SpriteFrame.prototype.draw = function(ctx, x, y, color) {
 		let spriteMap = Game.SpriteManager.getSpriteMapById(this.spriteMapId);
+		if (color) {
+			let spriteMapObj = Game.SpriteManager.getSpriteMapByIdAndColor(this.spriteMapId, color);
+			if (spriteMapObj && spriteMapObj.ready) {
+				spriteMap = spriteMapObj.map;
+			} else if (!spriteMapObj) {
+				let c = Game.otherContext;
+				c.canvas.width = spriteMap.width;
+				c.canvas.height = spriteMap.height;
+				c.clearRect(0, 0, c.canvas.width, c.canvas.height);
+				
+				c.globalCompositeOperation = "source-over";
+				c.drawImage(spriteMap, 0, 0, spriteMap.width, spriteMap.height);
+
+				let hsl = decToHsl(color);
+
+				// adjust "lightness"
+				c.globalCompositeOperation =  "color-dodge";
+				// for common slider, to produce a valid value for both directions
+				l = hsl.l >= 100 ? hsl.l - 100 : 100 - (100 - hsl.l);
+				c.fillStyle = "hsl(0, 50%, " + hsl.l + "%)";
+				c.fillRect(0, 0, spriteMap.width, spriteMap.height);
+				
+				// adjust saturation
+				c.globalCompositeOperation = "saturation";
+				c.fillStyle = "hsl(0," + hsl.s + "%, 50%)";
+				c.fillRect(0, 0, spriteMap.width, spriteMap.height);
+			
+				// adjust hue
+				c.globalCompositeOperation = "hue";
+				c.fillStyle = "hsl(" + hsl.h + ",1%, 50%)";
+				c.fillRect(0, 0, spriteMap.width, spriteMap.height);
+
+				c.globalCompositeOperation = "destination-in";
+				c.drawImage(spriteMap, 0, 0, spriteMap.width, spriteMap.height);
+
+				let spriteMapId = this.spriteMapId;
+				console.log("creating new colored spritemap: id=" + spriteMapId + "; color=" + color);
+				let map = new Image();
+				map.src = c.canvas.toDataURL();
+				let spriteMapWithColor = {
+					id: spriteMapId,
+					name: "",
+					map: map,
+					color: color,
+					ready: false
+				};
+				Game.SpriteManager.spriteMapsWithColor.push(spriteMapWithColor);
+				map.onload = function() {
+					spriteMapWithColor.ready = true;
+					console.log("created new colored spritemap: id=" + spriteMapId + "; color=" + color);
+				}
+			}
+		}
 
 		if (spriteMap) {
-			ctx.drawImage(spriteMap, 
-						this.frames[this.currentFrame].left + 0.5, 
-						this.frames[this.currentFrame].top + 0.5, 
-						this.frames[this.currentFrame].width-1, 
-						this.frames[this.currentFrame].height-1, 
-						x-((this.frames[this.currentFrame].width * this.scale.x) * this.anchor.x), 
-						y-((this.frames[this.currentFrame].height * this.scale.y) * this.anchor.y), 
-						this.frames[this.currentFrame].width * this.scale.x, 
-						this.frames[this.currentFrame].height * this.scale.y);
-			}
+			this.drawImage(ctx, x, y, spriteMap);
+		}
 	};
+
+	SpriteFrame.prototype.drawImage = function(ctx, x, y, spriteMap) {
+		ctx.drawImage(spriteMap, 
+			this.frames[this.currentFrame].left + 0.5, 
+			this.frames[this.currentFrame].top + 0.5, 
+			this.frames[this.currentFrame].width-1, 
+			this.frames[this.currentFrame].height-1, 
+			x-((this.frames[this.currentFrame].width * this.scale.x) * this.anchor.x), 
+			y-((this.frames[this.currentFrame].height * this.scale.y) * this.anchor.y), 
+			this.frames[this.currentFrame].width * this.scale.x, 
+			this.frames[this.currentFrame].height * this.scale.y);
+	}
 
 	SpriteFrame.prototype.drawDetailed = function(ctx, sx, sy, sw, sh, dx, dy, dw, dh) {
 		let spriteMap = Game.SpriteManager.getSpriteMapById(this.spriteMapId);
