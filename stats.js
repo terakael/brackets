@@ -4,7 +4,7 @@
             { name: "str", exp: 0 },
             { name: "acc", exp: 0 },
             { name: "def", exp: 0 },
-            { name: "agil", exp: 0 },
+            { name: "pray", exp: 0 },
             { name: "hp", exp: 10 },
 			{ name: "mage", exp: 0 },
 			{ name: "mine", exp: 0 },
@@ -21,7 +21,7 @@
             { name: "str", amount: 0 },
             { name: "acc", amount: 0 },
             { name: "def", amount: 0 },
-            { name: "agil", amount: 0 },
+            { name: "pray", amount: 0 },
             { name: "hp", amount: 0 },
 			{ name: "mage", amount: 0 },
 			{ name: "mine", amount: 0 },
@@ -41,7 +41,7 @@
         this.healthBarTimer = 0;
         this.hoverStatId = null;
 
-        this.rect = new Game.Rectangle(Game.hudCameraRect.left, 480, Game.hudCameraRect.width, 150);
+        this.rect = new Game.Rectangle(Game.hudCameraRect.left, 450, Game.hudCameraRect.width, 150);
     }
     Stats.prototype.exp2lvl = function(exp) {
         let lvl = 99;
@@ -81,13 +81,13 @@
         ctx.font = "15px Consolas";
         ctx.textAlign = "left";
         ctx.fillStyle = "#555";
-		ctx.fillText("Stats", ~~(this.x + xview) + 0.5, ~~(yview - 5) + 0.5);
+		ctx.fillText("Stats", ~~(this.x + xview) + 0.5, ~~(yview) + 0.5);
 		ctx.strokeStyle = "rgba(100, 100, 100, 0.6)";
         let statBoxWidth = 230;
 
         ctx.textAlign = "right";
         ctx.fillStyle = "red";
-        ctx.fillText("cmb: " + Game.currentPlayer.combatLevel, ~~(this.x + xview + statBoxWidth - 10) + 0.5, ~~(yview - 5) + 0.5);
+        ctx.fillText("cmb: " + Game.currentPlayer.combatLevel, ~~(this.x + xview + statBoxWidth - 25) + 0.5, ~~(yview) + 0.5);
 
         // ctx.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
         
@@ -143,7 +143,7 @@
         ctx.fillText("Bonuses", ~~(this.x + xview) + 0.5, ~~yOffset + 0.5);
         yOffset += 15;
 
-        let bonusStats = ["acc", "str", "def", "agil", "mage", "hp"];
+        let bonusStats = ["acc", "str", "def", "pray", "mage", "hp"];
         for (let i = 0; i < this.stats.length; ++i) {
             if (!bonusStats.includes(this.stats[i].name))
                 continue;

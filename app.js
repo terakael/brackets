@@ -105,6 +105,7 @@ $(function () {
                         room.player.currentHp = obj.playerDto.currentHp;
                         room.player.maxHp = obj.playerDto.maxHp;
                         room.player.combatLevel = obj.playerDto.combatLevel;
+                        room.player.currentPrayer = obj.playerDto.currentPrayer;
 
                         camera.follow(room.player, (canvas.width - 250 - (room.player.width / 2)) / 2, (canvas.height) / 2);
 
@@ -510,6 +511,7 @@ $(function () {
 
                     case "toggle_attack_style": {
                         Game.currentPlayer.setAttackStyle(obj.attackStyleId);
+                        Game.ChatBox.add(`attack style switched to ${Game.currentPlayer.getCurrentAttackStyle()}.`);
                         break;
                     }
 
@@ -840,6 +842,15 @@ $(function () {
                         break;
                     }
 
+                    case "load_prayers": {
+                        Game.HUD.loadPrayers(obj.prayers);
+                        break;
+                    }
+
+                    case "toggle_prayer": {
+                        Game.HUD.setActivePrayers(obj.activePrayers);
+                    }
+
                     // sometimes a response comes back just showing a message; don't do anything else in these cases
                     // we need these here though in order to prevent the "invalid action" default message.
                     case "use":
@@ -848,6 +859,8 @@ $(function () {
                     case "value":
                     case "buy":
                     case "pick":
+                    case "pray at":
+                    case "bury":
                         break;
 
                     default: {

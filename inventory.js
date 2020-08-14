@@ -48,7 +48,7 @@
 		this.slotCount = 20;
 		this.slotSize = 46;
 		this.columns = 5;
-		this.rect = new Game.Rectangle(Game.hudCameraRect.left + 9, 270, this.slotSize * this.columns + 2, ~~(this.slotCount / this.columns) * this.slotSize + 2);
+		this.rect = new Game.Rectangle(Game.hudCameraRect.left + 9, 250, this.slotSize * this.columns + 2, ~~(this.slotCount / this.columns) * this.slotSize + 2);
 
 		this.mousePosOnClick = {x: 0, y: 0};
 		this.selectedSlot = null;// the slot held by the mouse when dragging

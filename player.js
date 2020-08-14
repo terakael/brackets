@@ -26,6 +26,7 @@
             this.hitsplat = null;
             this.currentHp = 1;
             this.maxHp = 1;
+            this.currentPrayer = 0;
             this.respawnPos = {x: 0, y: 0};
             this.deathsCurtain = 1;
             this.deathSequence = false;
@@ -182,7 +183,8 @@
                 }
 
                 if (this.hitsplat) {
-                    context.fillStyle = this.hitsplat.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";
+                    // context.fillStyle = this.hitsplat.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";
+                    context.fillStyle = this.hitsplat.color;
                     context.fillRect((this.x - xView - 8) * Game.scale, (this.y - yView - 8) * Game.scale, 16 * Game.scale, 16 * Game.scale);
                     
                     context.fillStyle = "white";
@@ -389,17 +391,41 @@
                 this.stats.setBoost("hp", -this.maxHp + this.currentHp);
             }
 
+            if (obj.hasOwnProperty("currentPrayer")) {
+                this.currentPrayer = obj.currentPrayer;
+                this.stats.setBoost("pray", -this.stats.getLevelByStat("pray") + this.currentPrayer);
+            }
+
             if (obj.hasOwnProperty("combatLevel")) {
                 this.combatLevel = obj.combatLevel;
             }
 
             if (obj.hasOwnProperty("damage")) {
+                let color = "red";
+                if (obj.hasOwnProperty("damageType")) {
+                    switch (obj.damageType) {
+                        case 0: // standard
+                            color = obj.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";
+                            break;
+                        case 1: // poison
+                            color = "green";
+                            break;
+                        case 2:// magic
+                            color = "magenta";
+                            break;
+                        default:
+                            break;
+                    }
+                }
                 // damage hitsplat on top of the npc, set health bar timer
-                this.stats.showHealthBar();
                 this.hitsplat = {
                     damage: obj.damage,
-                    lifetime: 1
+                    lifetime: 1,
+                    color: color
                 };
+                
+                // damage hitsplat on top of the npc, set health bar timer
+                this.stats.showHealthBar();
             }
 
             if (obj.hasOwnProperty("equipAnimations")) {
