@@ -717,9 +717,9 @@ $(function () {
                     case "cast_spell": {
                         let target = null;
                         if (obj.targetType === "npc") {
-                            for (let i = 0; i < room.drawableNpcs.length; ++i) {
-                                if (room.drawableNpcs[i].instanceId === obj.targetId) {
-                                    target = room.drawableNpcs[i];
+                            for (let i = 0; i < room.npcs.length; ++i) {
+                                if (room.npcs[i].instanceId === obj.targetId) {
+                                    target = room.npcs[i];
                                     break;
                                 }
                             }
@@ -774,10 +774,6 @@ $(function () {
                         }
 
                         room.updateGroundTextures();
-                        
-                        // this is here because it won't get called if there's no scenery
-                        // and on the case of room wrap we need to re-call it to update scenery positions to wrap them too
-                        // room.loadSceneryInstances();
                         break;
                     }
 
@@ -786,6 +782,8 @@ $(function () {
                             room.sceneryInstancesBySceneryId.set(sceneryId, tileIds.concat(room.sceneryInstancesBySceneryId.get(sceneryId) || []));
                         }
                         room.loadSceneryInstances();
+
+                        room.addSceneryToCanvas(room.sceneryInstancesBySceneryId);
 
                         // once the scenery has reloaded, all the depleted scenery is back in its primary state.
                         // we need to go through each of the depleted scenery and toggle the depleted ones into their off state
@@ -889,7 +887,6 @@ $(function () {
     STEP = INTERVAL / 1000; // seconds
     // setup an object that represents the room
     var room = {
-        map: new Game.Map(800000, 800000, canvas.width - 250, canvas.height),
         player: {},
         show: 0,
         currentShow: 0,
@@ -902,7 +899,6 @@ $(function () {
         optimizedDrawableTextureInstance: new Map(),
         groundTexturesMap: new Map(),
         drawableSceneryMap: new Map(),
-        drawableNpcs: [],
         spells: [],
         teleportExplosions: [], // [{x, y, lifetime}]
         groundItems: [],
@@ -917,8 +913,12 @@ $(function () {
             let groundTextureCanvas = document.createElement("canvas");
             groundTextureCanvas.width = 32 * 24; // 24 tiles across, 32 pixels each
             groundTextureCanvas.height = 32 * 24; // 24 tiles across, 32 pixels each
-
             this.groundTextureCtx = groundTextureCanvas.getContext("2d");
+
+            let sceneryCanvas = document.createElement("canvas");
+            sceneryCanvas.width = groundTextureCanvas.width;
+            sceneryCanvas.height = groundTextureCanvas.height;
+            this.sceneryCtx = sceneryCanvas.getContext("2d");
         },
         loadSceneryInstances: function() {   
             this.sceneryInstances = new Map();
@@ -943,6 +943,26 @@ $(function () {
                         type: "scenery",
                         attributes: scenery.attributes
                     });
+                }
+            }
+        },
+        addSceneryToCanvas: function(instances) {
+            console.log("adding to canvas")
+            this.sceneryCtx.clearRect(0, 0, this.sceneryCtx.canvas.width, this.sceneryCtx.canvas.height);
+
+            let playerTileId = xyToTileId(~~Game.currentPlayer.destPos.x, ~~Game.currentPlayer.destPos.y);
+            let localOriginTileX = (playerTileId % 25000) - 12; // cos 24x24 tiles
+            let localOriginTileY = ~~(playerTileId / 25000) - 12; // cos 24x24 tiles
+            for (const [sceneryId, tileIds] of instances.entries()) {
+                let scenery = Game.sceneryMap.get(Number(sceneryId));
+                let spriteFrame = Game.SpriteManager.getSpriteFrameById(scenery.spriteFrameId);
+                for (let i = 0; i < tileIds.length; ++i) {
+                    // get the tileId local to the player (i.e. tileId 0 being the top-left corner, knowing the canvas is 24x24 tiles)
+                    let tileX = tileIds[i] % 25000;
+                    let tileY = ~~(tileIds[i] / 25000);
+                    let localTileId = (tileX - localOriginTileX) + ((tileY - localOriginTileY) * 25000);
+                    let xy = tileIdToXY(localTileId);
+                    spriteFrame.draw(this.sceneryCtx, xy.x, xy.y);
                 }
             }
         },
@@ -1030,9 +1050,12 @@ $(function () {
 
             this.t.scale(Game.scale, Game.scale);
             ctx.setTransform.apply(ctx, this.t.m);
-            // this.map.draw(ctx, xview, yview);
 
-            this.drawGroundTextures(ctx, xview, yview);
+            // draw the ground textures
+            let minx = this.player.destPos.x - this.player.combatOffsetX - xview - (12*32);
+            let miny = (this.player.destPos.y - yview - (12*32));
+            ctx.drawImage(this.groundTextureCtx.canvas, minx-16, miny-16);
+            // ctx.drawImage(this.sceneryCtx.canvas, minx-16, miny-16);
 
             ctx.save();// make the items on the ground smaller than in the inventory
             ctx.scale(0.5, 0.5);
@@ -1065,7 +1088,40 @@ $(function () {
                     }
                 }
             }
+
+            this.drawLegacy(ctx, xview, yview);
+
+            for (let i = 0; i < this.teleportExplosions.length; ++i) {
+                let lifetime = (1 - this.teleportExplosions[i].lifetime); // 0 -> 1
+                let size = Math.sin(1 - lifetime) * 64;
+
+                ctx.globalAlpha = 1 - lifetime;
+                ctx.fillStyle = `rgb(${lifetime * 255}, 255, ${(1 - lifetime) * 255}`;
+
+                ctx.beginPath();
+                ctx.arc(this.teleportExplosions[i].x - xview, 
+                        this.teleportExplosions[i].y - yview, size, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            // these draw calls still draw stuff like the death curtain, health bars, chat etc so draw these last.
+            this.player.draw(ctx, xview, yview);
+            for (var i in this.otherPlayers) {
+                this.otherPlayers[i].draw(ctx, xview, yview);
+            }
+
+            for (var i in this.npcs) {
+                this.npcs[i].draw(ctx, xview, yview);
+            }
             
+            var mp = Game.mousePos || { x: 0, y: 0 };
+            var transformed = this.t.transformPoint(mp.x, mp.y);
+            cursor.setPos({ x: transformed.x + xview, y: transformed.y + yview });
+            cursor.draw(ctx, xview, yview);
+
+            ctx.restore();
+        },
+        drawLegacy: function(ctx, xview, yview) {
             // add everything to the draw map so we can draw in the correct order
             var drawMap = new Map();
             
@@ -1074,6 +1130,7 @@ $(function () {
             let mapKey = this.player.y + (playerSpriteFrame.getCurrentFrame().height * playerSpriteFrame.scale.y) - ((playerSpriteFrame.anchor.y * playerSpriteFrame.getCurrentFrame().height) * playerSpriteFrame.scale.y);
             if (!drawMap.has(mapKey))
                 drawMap.set(mapKey, []);
+                
             drawMap.get(mapKey).push({
                 id: this.player.id,
                 name: this.player.name,
@@ -1104,23 +1161,22 @@ $(function () {
             }
 
             // add the NPCs
-            this.compileDrawableNpcs(xview, yview);
-            for (var i = 0; i < this.drawableNpcs.length; ++i) {
-                let currentSpriteFrame = this.drawableNpcs[i].getCurrentSpriteFrame();
-                let mapKey = this.drawableNpcs[i].pos.y + (currentSpriteFrame.getCurrentFrame().height * currentSpriteFrame.scale.y) - ((currentSpriteFrame.anchor.y * currentSpriteFrame.getCurrentFrame().height) * currentSpriteFrame.scale.y);
+            for (var i = 0; i < this.npcs.length; ++i) {
+                let currentSpriteFrame = this.npcs[i].getCurrentSpriteFrame();
+                let mapKey = this.npcs[i].pos.y + (currentSpriteFrame.getCurrentFrame().height * currentSpriteFrame.scale.y) - ((currentSpriteFrame.anchor.y * currentSpriteFrame.getCurrentFrame().height) * currentSpriteFrame.scale.y);
                 if (!drawMap.has(mapKey))
                     drawMap.set(mapKey, []);
 
                 drawMap.get(mapKey).push({
-                    id: this.drawableNpcs[i].instanceId,
-                    name: this.drawableNpcs[i].get("name") + (this.drawableNpcs[i].get("leftclickOption") == 4096 ? ` (lvl ${this.drawableNpcs[i].get("cmb")})` : ""),
-                    x: this.drawableNpcs[i].pos.x, 
-                    y: this.drawableNpcs[i].pos.y - (this.drawableNpcs[i].deathTimer * 32),
-                    sprite: [this.drawableNpcs[i].getCurrentSpriteFrame()],
+                    id: this.npcs[i].instanceId,
+                    name: this.npcs[i].get("name") + (this.npcs[i].get("leftclickOption") == 4096 ? ` (lvl ${this.npcs[i].get("cmb")})` : ""),
+                    x: this.npcs[i].pos.x, 
+                    y: this.npcs[i].pos.y - (this.npcs[i].deathTimer * 32),
+                    sprite: [this.npcs[i].getCurrentSpriteFrame()],
                     type: "npc",
-                    leftclickOption: this.drawableNpcs[i].get("leftclickOption"),
-                    label: this.drawableNpcs[i].getLeftclickLabel(),
-                    transparency: Math.max(1 - this.drawableNpcs[i].deathTimer, 0.01)
+                    leftclickOption: this.npcs[i].get("leftclickOption"),
+                    label: this.npcs[i].getLeftclickLabel(),
+                    transparency: Math.max(1 - this.npcs[i].deathTimer, 0.01)
                 });
             }
 
@@ -1196,51 +1252,85 @@ $(function () {
                     }
                 }
             });
-
-            for (let i = 0; i < this.teleportExplosions.length; ++i) {
-                let lifetime = (1 - this.teleportExplosions[i].lifetime); // 0 -> 1
-                let size = Math.sin(1 - lifetime) * 64;
-
-                ctx.globalAlpha = 1 - lifetime;
-                ctx.fillStyle = `rgb(${lifetime * 255}, 255, ${(1 - lifetime) * 255}`;
-
-                ctx.beginPath();
-                ctx.arc(this.teleportExplosions[i].x - xview, 
-                        this.teleportExplosions[i].y - yview, size, 0, 2 * Math.PI);
-                ctx.fill();
-            }
-
-            // these draw calls still draw stuff like the death curtain, health bars, chat etc so draw these last.
-            this.player.draw(ctx, xview, yview);
-            for (var i in this.otherPlayers) {
-                this.otherPlayers[i].draw(ctx, xview, yview);
-            }
-
-            for (var i in this.drawableNpcs) {
-                this.drawableNpcs[i].draw(ctx, xview, yview);
-            }
-            
-            var mp = Game.mousePos || { x: 0, y: 0 };
-            var transformed = this.t.transformPoint(mp.x, mp.y);
-            cursor.setPos({ x: transformed.x + xview, y: transformed.y + yview });
-            cursor.draw(ctx, xview, yview);
-
-            ctx.restore();
         },
         process: function (dt) {
             this.currentShow += (this.show - this.currentShow) * dt;
+
+            // we need to figure out which players/npcs/scenery moved in the past frame,
+            // so that we only redraw them when necessary.  moving can mean physically changing
+            // position, or having the sprite update (e.g. fires, fishing spots).
+
+            // there are certain cases where something can either move or just change sprite while 
+            // standing still (e.g. butterfly), or future idle animations for npcs/players,
+            // so we will need to save the previous/current positions AND sprite frames, then filter
+            // for all the things that had a modification in either of the two.
+            let playerPrevPositions = new Map();
+            let playerNewPositions = new Map();
+            playerPrevPositions.set(this.player.id, {x: this.player.x, y: this.player.y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame});
             this.player.process(dt);
+            playerNewPositions.set(this.player.id, {x: this.player.x, y: this.player.y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame});
             for (let i in this.otherPlayers) {
+                playerPrevPositions.set(this.otherPlayers[i].id, {x: this.otherPlayers[i].x, y: this.otherPlayers[i].y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame});
                 this.otherPlayers[i].process(dt);
+                playerPrevPositions.set(this.otherPlayers[i].id, {x: this.otherPlayers[i].x, y: this.otherPlayers[i].y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame});
             }
+
+            let changedPlayerIds = [];
+            for (let [key, value] of playerPrevPositions.entries()) {
+                if (!playerNewPositions[key])
+                    continue;
+                
+                if (playerNewPositions[key].x !== value.x 
+                        || playerNewPositions[key].y !== value.y 
+                        || playerNewPositions.spriteFrame !== value.spriteFrame) {
+                            changedPlayerIds.add(key)
+                }
+            }
+
+            let npcPrevPositions = new Map();
+            let npcNewPositions = new Map();
             this.npcs = this.npcs.filter(npc => npc.deathTimer < 1);
-            for (let i in this.drawableNpcs) {
-                this.drawableNpcs[i].process(dt);
+            for (let i in this.npcs) {
+                npcPrevPositions.set(this.npcs[i].instanceId, {x: this.npcs[i].pos.x, y: this.npcs[i].pos.y, spriteFrame: this.npcs[i].getCurrentSpriteFrame().currentFrame});
+                this.npcs[i].process(dt);
+                npcNewPositions.set(this.npcs[i].instanceId, {x: this.npcs[i].pos.x, y: this.npcs[i].pos.y, spriteFrame: this.npcs[i].getCurrentSpriteFrame().currentFrame});
             }
+
+            let changedNpcInstanceIds = [];
+            for (let [key, value] of npcPrevPositions.entries()) {
+                if (!npcNewPositions[key])
+                    continue;
+
+                if (npcNewPositions[key].x !== value.x 
+                    || npcNewPositions[key].y !== value.y 
+                    || npcNewPositions.spriteFrame !== value.spriteFrame) {
+                        changedNpcInstanceIds.add(key)
+                }
+            }
+
+            // scenery never moves, so we just need to record the sprite frame
+            let sceneryPrevPositions = new Map();
+            let sceneryNewPositions = new Map();
             this.drawableSceneryMap.forEach(function(value, key, map) {
-                for (let i in value)
+                for (let i in value) {
+                    sceneryPrevPositions.set(value[i].tileId, value[i].sprite[0].currentFrame)
                     value[i].sprite[0].process(dt);
+                    sceneryNewPositions.set(value[i].tileId, value[i].sprite[0].currentFrame)
+                }
             });
+
+            let changedSceneryInstanceIds = [];
+            for (let [key, value] of sceneryPrevPositions.entries()) {
+                if (!sceneryNewPositions[key])
+                    continue;
+
+                if (sceneryNewPositions[key].x !== value.x 
+                    || sceneryNewPositions[key].y !== value.y 
+                    || sceneryNewPositions.spriteFrame !== value.spriteFrame) {
+                        changedSceneryInstanceIds.add(key)
+                }
+            }
+            
             for (let i = 0; i < this.spells.length; ++i)
                 this.spells[i].process(dt);
             this.spells = this.spells.filter(spell => spell.lifetime > 0);
@@ -1251,7 +1341,7 @@ $(function () {
 
             Game.Minimap.setOtherPlayers(this.otherPlayers);
             Game.Minimap.setGroundItems(this.groundItems);
-            Game.Minimap.setNpcs(this.drawableNpcs);
+            Game.Minimap.setNpcs(this.npcs);
         },
         updateGroundTextures: function() {
             // we can group identical tiles and draw them once as a group with a repeating texture
@@ -1402,16 +1492,8 @@ $(function () {
                 ctx.restore();
             }
         },
-        drawGroundTextures: function(ctx, xview, yview) {
-            let minx = this.player.destPos.x - this.player.combatOffsetX - xview - (12*32);
-            let miny = (this.player.destPos.y - yview - (12*32));
-            ctx.drawImage(this.groundTextureCtx.canvas, minx-16, miny-16);
-        },
         compileDrawableSceneryMap: function(xview, yview) {
             this.drawableSceneryMap = this.sceneryInstances;
-        },
-        compileDrawableNpcs: function(xview, yview) {
-            this.drawableNpcs = this.npcs;
         },
         refreshGroundItems: function(obj) {
             // {tileId: [itemId, itemId, itemId, ...]}
@@ -1509,12 +1591,12 @@ $(function () {
 
                             // npc
                             if (!handled) {
-                                for (let i = 0; i < room.drawableNpcs.length; ++i) {
-                                    var sprite = room.drawableNpcs[i].getCurrentSpriteFrame();
+                                for (let i = 0; i < room.npcs.length; ++i) {
+                                    var sprite = room.npcs[i].getCurrentSpriteFrame();
                                     var spriteFrame = sprite.getCurrentFrame();
                                     let rect = new Game.Rectangle(
-                                        room.drawableNpcs[i].pos.x - ((spriteFrame.width * sprite.scale.x) * sprite.anchor.x), 
-                                        room.drawableNpcs[i].pos.y - ((spriteFrame.height * sprite.scale.y) * sprite.anchor.y), 
+                                        room.npcs[i].pos.x - ((spriteFrame.width * sprite.scale.x) * sprite.anchor.x), 
+                                        room.npcs[i].pos.y - ((spriteFrame.height * sprite.scale.y) * sprite.anchor.y), 
                                         (spriteFrame.width * sprite.scale.x), 
                                         (spriteFrame.height * sprite.scale.y));
 
@@ -1526,7 +1608,7 @@ $(function () {
                                             id: room.player.id,
                                             src: room.player.inventory.slotInUse.item.id,
                                             slot: room.player.inventory.slotInUse.id,
-                                            dest: room.drawableNpcs[i].instanceId
+                                            dest: room.npcs[i].instanceId
                                         });
                                         room.player.inventory.slotInUse = null;
                                         handled = true;
@@ -1793,7 +1875,7 @@ $(function () {
         uiWindow.background = hudcamera.pat;
     };
     // setup the magic camera !!!
-    var camera = new Game.Camera(room.player.x, room.player.y, canvas.width - 250, canvas.height, room.map.width, room.map.height);
+    var camera = new Game.Camera(room.player.x, room.player.y, canvas.width - 250, canvas.height);
     Game.cam = camera;
     Game.worldCameraRect = new Game.Rectangle(0, 0, canvas.width - 250, canvas.height);
     var hudcamera = new Game.Camera(camera.viewportRect.width, 0, canvas.width - camera.viewportRect.width, canvas.height);
@@ -1801,7 +1883,6 @@ $(function () {
     Game.HUD = new Game.HeadsUpDisplay(Game.hudCameraRect);
 
     Game.Minimap.setRect(hudcamera.viewportRect.left + 10, hudcamera.viewportRect.top + 10, 230, 230);
-    Game.currentMap = room.map;
     var cursor = new Game.Cursor((hudcamera.xView + hudcamera.wView) - 10, hudcamera.yView + 20);
     Game.cursor = cursor;
 
