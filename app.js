@@ -2,7 +2,11 @@ $(function () {
     // prepare our game canvas
     const canvas = document.getElementById("game");
     const context = canvas.getContext("2d");
+    Game.context = context;
     const ip = "localhost", port = "45555", resourcePort = "45556";
+
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     const otherCanvas = document.createElement("canvas");
     otherCanvas.width = canvas.width;
@@ -223,12 +227,12 @@ $(function () {
                     }
 
                     case "accept_trade": {// both players have agreed to trade with eachother
-                        let gameWindowWidth = canvas.width - 250;
-                        let uiWidth = gameWindowWidth / 1.25;
-                        let uiHeight = canvas.height / 2;
-                        let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
-                        let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
-                        let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+                        // let gameWindowWidth = Game.canvas.width - 250;
+                        // let uiWidth = gameWindowWidth / 1.25;
+                        // let uiHeight = Game.canvas.height / 2;
+                        // let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
+                        // let uiy = ~~((Game.canvas.height / 2) - (uiHeight / 2)) + 0.5;
+                        // let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
 
                         let otherPlayerName = null;
                         for (let i in room.otherPlayers) {
@@ -238,7 +242,7 @@ $(function () {
                             }
                         }
 
-                        Game.activeUiWindow = new Game.TradeWindow(rect, otherPlayerName);
+                        Game.activeUiWindow = new Game.TradeWindow(Game.worldCameraRect, otherPlayerName);
                         break;
                     }
 
@@ -582,24 +586,12 @@ $(function () {
                     }
 
                     case "dialogue": {
-                        let gameWindowWidth = canvas.width - 250;
-                        let uiWidth = gameWindowWidth / 1.25;
-                        let uiHeight = canvas.height / 8;
-                        let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
-                        let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
-                        let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
-                        Game.activeUiWindow = obj.dialogue === "" ? null : new Game.DialogueWindow(rect, obj);
+                        Game.activeUiWindow = obj.dialogue === "" ? null : new Game.DialogueWindow(Game.worldCameraRect, obj);
                         break;
                     }
 
                     case "dialogue_option": {
-                        let gameWindowWidth = canvas.width - 250;
-                        let uiWidth = gameWindowWidth / 2;
-                        let uiHeight = (obj.options.length * 40) + 30; // 30 is button height + 10 buffer for each; 30 is top/bottom buffer
-                        let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
-                        let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
-                        let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
-                        Game.activeUiWindow = new Game.DialogueOptionWindow(rect, obj.options);
+                        Game.activeUiWindow = new Game.DialogueOptionWindow(Game.worldCameraRect, obj.options);
                         break;
                     }
 
@@ -609,29 +601,13 @@ $(function () {
                     }
 
                     case "shop": {
-                        let gameWindowWidth = canvas.width - 250;
-                        let uiWidth = gameWindowWidth / 2;
-                        let uiHeight = canvas.height / 2;
-
-                        let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
-                        let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
-                        let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
-
-                        Game.activeUiWindow = new Game.ShopWindow(rect, obj.shopStock, obj.shopName);
+                        Game.activeUiWindow = new Game.ShopWindow(Game.worldCameraRect, obj.shopStock, obj.shopName);
                         break;
                     }
 
                     case "show_stat_window": {
-                        let gameWindowWidth = canvas.width - 250;
-                        let uiWidth = gameWindowWidth / 3;
-                        let uiHeight = canvas.height / 2;
-
-                        let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
-                        let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
-                        let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
-
                         if (obj.statId === 8) {// potions
-                            Game.activeUiWindow = new Game.PotionWindow(rect, obj.rows, "potions");
+                            Game.activeUiWindow = new Game.PotionWindow(Game.worldCameraRect, obj.rows, "potions");
                         }
                         break;
                     }
@@ -1881,6 +1857,7 @@ $(function () {
     var hudcamera = new Game.Camera(camera.viewportRect.width, 0, canvas.width - camera.viewportRect.width, canvas.height);
     Game.hudCameraRect = new Game.Rectangle(camera.viewportRect.width, 0, canvas.width - camera.viewportRect.width, canvas.height);
     Game.HUD = new Game.HeadsUpDisplay(Game.hudCameraRect);
+    Game.hudcam = hudcamera;
 
     Game.Minimap.setRect(hudcamera.viewportRect.left + 10, hudcamera.viewportRect.top + 10, 230, 230);
     var cursor = new Game.Cursor((hudcamera.xView + hudcamera.wView) - 10, hudcamera.yView + 20);
@@ -1916,41 +1893,40 @@ $(function () {
 
     // Game draw function
     var draw = function () {
-        context.canvas.width = context.canvas.width;
-        context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-        context.beginPath();
+        Game.context.canvas.width = Game.context.canvas.width;
+        Game.context.clearRect(0, 0, Game.context.canvas.width, Game.context.canvas.height);
+        Game.context.beginPath();
 
         if (Game.state === 'game' || Game.state === 'uiwindow') {
             
             // redraw all room objects
-            context.fillStyle = "#000";
-            context.fillRect(0, 0, camera.viewportRect.width * Game.scale, camera.viewportRect.height * Game.scale);
-            room.draw(context, camera.xView, camera.yView);
+            Game.context.fillStyle = "#000";
+            Game.context.fillRect(0, 0, Game.cam.viewportRect.width * Game.scale, Game.cam.viewportRect.height * Game.scale);
+            room.draw(Game.context, Game.cam.xView, Game.cam.yView);
             // redraw all hud objects
-            context.fillStyle = hudcamera.pat || "black";
-            context.fillRect(hudcamera.xView, hudcamera.yView, hudcamera.viewportRect.width, hudcamera.viewportRect.height);
-            Game.Minimap.draw(context, camera.xView, camera.yView);
-            room.player.inventory.draw(context, hudcamera.xView, hudcamera.yView + Game.Minimap.height + 20);
-            room.player.stats.draw(context, hudcamera.xView, room.player.stats.rect.top);
-            // room.player.stats.draw(context, hudcamera.xView, hudcamera.viewportRect.height - ((room.player.stats.stats.length + 2) * room.player.stats.y));
-            Game.HUD.draw(context);
+            Game.context.fillStyle = Game.hudcam.pat || "black";
+            Game.context.fillRect(Game.hudcam.xView, Game.hudcam.yView, Game.hudcam.viewportRect.width, Game.hudcam.viewportRect.height);
+            Game.Minimap.draw(Game.context, Game.cam.xView, Game.cam.yView);
+            room.player.inventory.draw(Game.context, Game.hudcam.xView, Game.hudcam.yView + Game.Minimap.height + 20);
+            room.player.stats.draw(Game.context, Game.hudcam.xView, room.player.stats.rect.top);
+            Game.HUD.draw(Game.context);
             
             if (room.currentShow <= 0.98) {
                 // fade out the logon screen background
-                context.save();
-                context.globalAlpha = 1 - room.currentShow;
-                context.drawImage(Game.LogonScreen.bkg, 0, 0, Game.LogonScreen.bkg.width, Game.LogonScreen.bkg.height);
-                context.restore();
+                Game.context.save();
+                Game.context.globalAlpha = 1 - room.currentShow;
+                Game.context.drawImage(Game.LogonScreen.bkg, 0, 0, Game.LogonScreen.bkg.width, Game.LogonScreen.bkg.height);
+                Game.context.restore();
             }
-            Game.ChatBox.draw(context, 0, canvas.height);
+            Game.ChatBox.draw(Game.context, 0, Game.context.canvas.height);
 
             if (Game.activeUiWindow)
-                Game.activeUiWindow.draw(context);
+                Game.activeUiWindow.draw(Game.context);
             
-            Game.ContextMenu.draw(context);
+            Game.ContextMenu.draw(Game.context);
         }
         else if (Game.state === 'logonscreen') {
-            Game.LogonScreen.draw(context, canvas.width, canvas.height);
+            Game.LogonScreen.draw(Game.context, Game.context.canvas.width, Game.context.canvas.height);
         }
     };
     // Game Loop
@@ -2080,4 +2056,29 @@ window.addEventListener("keyup", function (e) {
     if (event.keyCode === 17) // ctrl
         Game.ctrlPressed = false;
 });
+window.addEventListener("resize", function(e) {
+    Game.context.canvas.width  = window.innerWidth;
+    Game.context.canvas.height = window.innerHeight;
+    Game.boundingRect = Game.context.canvas.getBoundingClientRect();
+
+    Game.otherContext.canvas.width  = Game.context.canvas.width;
+    Game.otherContext.canvas.height = Game.context.canvas.height;
+
+
+    Game.cam.updateCanvasSize(0, 0, Game.context.canvas.width - 250, Game.context.canvas.height);
+    Game.worldCameraRect.set(0, 0, Game.context.canvas.width - 250, Game.context.canvas.height);
+    Game.cam.follow(Game.getPlayer(), (Game.context.canvas.width - 250 - (Game.getPlayer().width / 2)) / 2, (Game.context.canvas.height) / 2);
+
+    Game.hudCameraRect.set(Game.cam.viewportRect.width, 0, Game.context.canvas.width - Game.cam.viewportRect.width, Game.context.canvas.height);
+    Game.hudcam.updateCanvasSize(Game.cam.viewportRect.width, 0, Game.context.canvas.width - Game.cam.viewportRect.width, Game.context.canvas.height);
+
+    Game.Minimap.setRect(Game.hudcam.viewportRect.left + 10, Game.hudcam.viewportRect.top + 10, 230, 230);
+
+    Game.getPlayer().inventory.onResize(Game.hudcam.viewportRect.left);
+    Game.getPlayer().stats.onResize(Game.hudcam.viewportRect.left);
+    Game.HUD.onResize(Game.hudcam.viewportRect.left);
+
+    if (Game.activeUiWindow)
+        Game.activeUiWindow.onResize(Game.worldCameraRect);
+}, true);
 // -->

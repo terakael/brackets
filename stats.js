@@ -284,5 +284,8 @@
             });
         }
     }
+    Stats.prototype.onResize = function(newLeft) {
+        this.rect.setPos(newLeft, this.rect.top);
+    }
     window.Game.Stats = Stats;
 }());

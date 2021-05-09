@@ -1,11 +1,9 @@
 (function() {
-    function DialogueWindow(rect, obj) {
-        this.rect = rect;
+    function DialogueWindow(worldRect, obj) {
         this.dialogue = obj.dialogue;
         this.speaker = obj.speaker;
 
-        let maxCharsPerLine = 60;
-        this.lines = wordWrap(this.dialogue, maxCharsPerLine).split('\n');
+        this.onResize(worldRect);
     }
     
     DialogueWindow.prototype.draw = function(context, xview, yview) {
@@ -31,7 +29,7 @@
         context.fillStyle = "red";
         context.font = "15pt Consolas";
         for (let i = 0; i < this.lines.length; ++i) {
-            context.fillText(this.lines[i], this.rect.left + (this.rect.width / 2), this.rect.top + (this.rect.height / 2) - (totalLineHeight / 2) + (i * lineHeight));
+            context.fillText(this.lines[i], this.rect.left + (this.rect.width / 2), this.rect.top + (this.rect.height / 2) - (totalLineHeight / 2) + (i * lineHeight) + 15);
         }
         context.restore();
     }
@@ -50,6 +48,17 @@
 
     DialogueWindow.prototype.onMouseUp = function(e) {
 
+    }
+
+    DialogueWindow.prototype.onResize = function(worldRect) {
+        let uiWidth = worldRect.width / 1.25;
+        this.lines = wordWrap(this.dialogue, uiWidth / 15).split('\n');
+
+        let uiHeight = (this.lines.length * 15) + 60;
+        let uix = ~~((worldRect.width / 2) - (uiWidth / 2)) + 0.5;
+        let uiy = ~~((worldRect.height / 2) - (uiHeight / 2)) + 0.5;
+        this.rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+        
     }
 
     Game.DialogueWindow = DialogueWindow;

@@ -72,6 +72,14 @@
         this.viewportRect.set(this.xView, this.yView, wView, hView);
     };
 
+    Camera.prototype.updateCanvasSize = function(x, y, w, h) {
+        this.xView = x || 0;
+        this.yView = y || 0;
+        this.wView = w;
+        this.hView = h;
+        this.viewportRect.set(this.xView, this.yView, this.wView, this.hView);
+    }
+
     // add "class" Camera to our Game object
     window.Game.Camera = Camera;
 

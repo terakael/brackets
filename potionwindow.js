@@ -1,7 +1,6 @@
 (function() {
-    function PotionWindow(rect, rows, name) {
+    function PotionWindow(worldRect, rows, name) {
         this.type = "potionwindow";// used to check which uiWindow is open (dialogue, smithing window etc)
-        this.rect = rect;
         this.name = name;
         this.rows = rows;
 
@@ -10,18 +9,20 @@
             this.icons.push({
                 result: {
                     item: Game.SpriteManager.getItemById(this.rows[i].itemId),
-                    rect: new Game.Rectangle(this.rect.left + 70 - 16, this.rect.top + 5 + ((i + 1) * 40) - 16, 32, 32)
+                    rect: new Game.Rectangle(0, 0, 32, 32)
                 },
                 mix: {
                     item: Game.SpriteManager.getItemById(this.rows[i].itemId2),
-                    rect: new Game.Rectangle(this.rect.left + 170 - 16, this.rect.top + 5 + ((i + 1) * 40) - 16, 32, 32)
+                    rect: new Game.Rectangle(0, 0, 32, 32)
                 },
                 secondary: {
                     item: Game.SpriteManager.getItemById(this.rows[i].itemId3),
-                    rect: new Game.Rectangle(this.rect.left + 270 - 16, this.rect.top + 5 + ((i + 1) * 40) - 16, 32, 32)
+                    rect: new Game.Rectangle(0, 0, 32, 32)
                 }
             });
         }
+
+        this.onResize(worldRect);
     }
 
     PotionWindow.prototype.draw = function(context, xview, yview) {
@@ -47,13 +48,13 @@
 
         for (let i = 0; i < this.rows.length; ++i) {
             context.textAlign = "right";
-            context.fillText(`${this.rows[i].level}:`, this.rect.left + 50, this.rect.top + 5 + ((i + 1) * 40));
+            context.fillText(`${this.rows[i].level}:`, this.levelXPos, this.rect.top + 5 + ((i + 1) * 40));
 
             context.save()
             context.textAlign = "center";
             context.font = "25px Consolas";
-            context.fillText("=", this.rect.left + 120, this.rect.top + 5 + ((i + 1) * 40));
-            context.fillText("+", this.rect.left + 220, this.rect.top + 5 + ((i + 1) * 40));
+            context.fillText("=", this.equalsXPos, this.rect.top + 5 + ((i + 1) * 40));
+            context.fillText("+", this.plusXPos, this.rect.top + 5 + ((i + 1) * 40));
             context.restore();
         }
         
@@ -113,7 +114,6 @@
 
         // potion window
         if (!this.rect.pointWithin(Game.mousePos)) {
-            // Game.ws.send({action: "close_bank"});
             Game.activeUiWindow = null;
         }
     }
@@ -127,6 +127,25 @@
 
     PotionWindow.prototype.onMouseScroll = function(e) {
         
+    }
+
+    PotionWindow.prototype.onResize = function(worldRect) {
+        let uiWidth = clamp(worldRect.width, 600, 1000) / 3;
+        let uiHeight = (this.icons.length * 45);
+
+        let uix = ~~((worldRect.width / 2) - (uiWidth / 2)) + 0.5;
+        let uiy = ~~((worldRect.height / 2) - (uiHeight / 2)) + 0.5;
+        this.rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+
+        for (let i = 0; i < this.icons.length; ++i) {
+            this.icons[i].result.rect.setPos(this.rect.left + (uiWidth * (2/7)) - 16, this.rect.top + 5 + ((i + 1) * 40) - 16);
+            this.icons[i].mix.rect.setPos(this.rect.left + (uiWidth * (4/7)) - 16, this.rect.top + 5 + ((i + 1) * 40) - 16);
+            this.icons[i].secondary.rect.setPos(this.rect.left + (uiWidth * (6/7)) - 16, this.rect.top + 5 + ((i + 1) * 40) - 16);
+        }
+
+        this.levelXPos = this.rect.left + (uiWidth * (1/7));
+        this.plusXPos = this.rect.left + (uiWidth * (3/7));
+        this.equalsXPos = this.rect.left + (uiWidth * (5/7));
     }
 
     Game.PotionWindow = PotionWindow;

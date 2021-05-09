@@ -418,6 +418,13 @@
 				}
 				this.slotInUse = null;
 			}
+		},
+		onResize: function(newLeft) {
+			this.rect.set(newLeft + 9, this.rect.top, this.rect.width, this.rect.height);
+
+			for (var i = 0; i < this.slotCount; ++i) {
+				this.slots[i].rect.set(Game.hudCameraRect.left + 11 + (i % this.columns) * this.slotSize, this.rect.top + 2 + (~~(i/this.columns) * this.slotSize), this.slotSize - 2, this.slotSize - 2, i);
+			}
 		}
 	};
 	

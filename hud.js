@@ -11,6 +11,9 @@
             textColour: "white",
             request: {
                 action: "toggle_attack_style"
+            },
+            updateRect: function(hudRect) {
+                this.rect.set(~~(hudRect.left + hudRect.width - 20 - 8) + 0.5, 450-10 + 0.5, 16, 16);
             }
         }
 
@@ -20,11 +23,15 @@
     HUD.prototype.loadPrayers = function(prayers) {
         this.prayers = prayers;
 
+        this.setPrayerRects(this.rect);
+    }
+
+    HUD.prototype.setPrayerRects = function(hudRect) {
         const boxesAcross = 6;
         const boxWidth = 32;
         for (let i = 0; i < this.prayers.length; ++i) {
-            this.prayers[i].rect = new Game.Rectangle(~~(this.rect.left + 15 + ((i % boxesAcross) * boxWidth + (i % boxesAcross * 5))) + 0.5,
-                                            ~~(this.rect.bottom - 80 + (~~(i / boxesAcross) * boxWidth + (~~(i / boxesAcross) * 5))) + 0.5,
+            this.prayers[i].rect = new Game.Rectangle(~~(hudRect.left + 15 + ((i % boxesAcross) * boxWidth + (i % boxesAcross * 5))) + 0.5,
+                                            ~~(hudRect.bottom - 80 + (~~(i / boxesAcross) * boxWidth + (~~(i / boxesAcross) * 5))) + 0.5,
                                             boxWidth, boxWidth);
         }
     }
@@ -153,7 +160,13 @@
     }
 
     HUD.prototype.onMouseUp = function(e) {
-        
+     
+    }
+
+    HUD.prototype.onResize = function(newLeft) {
+        this.rect.set(newLeft, this.rect.top, this.rect.width, this.rect.height);
+        this.attackStyleButton.updateRect(this.rect);
+        this.setPrayerRects(this.rect);
     }
 
     Game.HeadsUpDisplay = HUD;

@@ -1,19 +1,16 @@
 (function() {
-    function ShopWindow(rect, stock, name) {
+    function ShopWindow(worldRect, stock, name) {
         this.type = "shop";// used to check which uiWindow is open (dialogue, smithing window etc)
-        this.rect = rect;
         this.name = name;
         this.slots = [];
         this.updateStock(stock);
+        this.onResize(worldRect);
     }
 
     ShopWindow.prototype.updateStock = function(stock) {
         this.slots = [];
         for (let slot in stock) {
             let shopSlot = new Game.ShopSlot(stock[slot].itemId, stock[slot].currentStock);
-            let currentRow = ~~(slot / 4);// four items per row
-            let currentColumn = slot % 4;
-            shopSlot.setLocalPosition(this.rect.left + 20 + (currentColumn * 100), this.rect.top + 30 + (currentRow * 80));
             this.slots.push(shopSlot);
         }
     }
@@ -85,6 +82,25 @@
 
     ShopWindow.prototype.onMouseScroll = function(e) {
         
+    }
+
+    ShopWindow.prototype.onResize = function(worldRect) {
+        let uiWidth = worldRect.width / 2;
+        let uix = ~~((worldRect.width / 2) - (uiWidth / 2)) + 0.5;
+
+        let maxRows = Math.max(~~(uiWidth / this.slots[0].rect.width), 1);
+        let uiHeight = Math.max(Math.ceil(this.slots.length / maxRows), 2) * this.slots[0].rect.height + 30;
+        let uiy = ~~((worldRect.height / 2) - (uiHeight / 2)) + 0.5;
+
+        this.rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+
+        for (let i = 0; i < this.slots.length; ++i) {
+            let margin = ((this.rect.width - (maxRows * this.slots[i].rect.width)) / 2);
+            let currentRow = ~~(i / maxRows);
+            let currentColumn = i % maxRows;
+            this.slots[i].rect.setPos(this.rect.left + margin + (currentColumn * this.slots[i].rect.width), this.rect.top + 30 + (currentRow * this.slots[i].rect.height));
+        }
+
     }
 
     Game.ShopWindow = ShopWindow;

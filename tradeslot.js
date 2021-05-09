@@ -35,7 +35,7 @@
     }
 
     TradeSlot.prototype.setLocalPosition = function(x, y) {
-        this.rect.set(~~(this.rect.left + x) + 0.5, ~~(this.rect.top + y) + 0.5);
+        this.rect.setPos(~~(this.rect.left + x) + 0.5, ~~(this.rect.top + y) + 0.5);
     }
     
     TradeSlot.prototype.draw = function(context) {

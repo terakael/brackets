@@ -52,7 +52,7 @@
         if (str.length <= maxWidth)
             return str;
             
-        var newLineStr = "\n"; done = false; res = '';
+        let newLineStr = "\n"; done = false; res = '';
         do {                    
             found = false;
             // Inserts new line at first whitespace of the line
@@ -75,6 +75,10 @@
         } while (!done);
     
         return res + str;
+    }
+
+    wordWrapUsingWidth = function(ctx, str, width) {
+        let done = false;
     }
     
     testWhite = function(x) {
@@ -136,5 +140,9 @@
         }
       
         return {h: h * 360, s: s * 100, l: l * 100};
+      }
+
+      clamp = function(val, min, max) {
+        return val > max ? max : val < min ? min : val;
       }
 }());
