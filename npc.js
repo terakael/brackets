@@ -1,9 +1,9 @@
 (function(){
     function NPC(obj){
-        let npc = Game.npcMap.get(obj.npcId);
+        const npc = Game.npcMap.get(obj.npcId);
 
         this.tileId = obj.tileId;
-        var xy = tileIdToXY(obj.tileId);
+        const xy = tileIdToXY(obj.tileId);
         this.id = npc.id,
         this.instanceId = obj.instanceId;// npc instance id is the spawn tile
         this.pos = {x: xy.x, y: xy.y};
@@ -35,7 +35,7 @@
 
         this.combatOffset = (this.spriteframes["attack"].getCurrentFrame().width * npc.scaleX) / 4;
 
-        let potentialStartAnimations = ["up", "down", "left", "right"];
+        const potentialStartAnimations = ["up", "down", "left", "right"];
         this.currentAnimation = potentialStartAnimations[Math.floor(Math.random() * potentialStartAnimations.length)];
     }
 
@@ -54,9 +54,6 @@
 
         if (this.deathTimer === 0)
             this.processMovement(step);
-
-        if (this.inCombat && Math.abs((this.dest.x + this.combatOffset) - this.pos.x) < 1 && Math.abs(this.dest.y - this.pos.y) < 1)
-            this.currentAnimation = "attack";
 
         if (this.healthBarTimer > 0) {
             this.healthBarTimer -= step;
@@ -84,8 +81,8 @@
         // we still draw hitsplats and health bar here though.
         context.save();
         context.setTransform(1, 0, 0, 1, 0, 0);
-        let frameHeight = this.spriteframes[this.currentAnimation].getCurrentFrame().height;
-        let scale = this.spriteframes[this.currentAnimation].scale.y;
+        const frameHeight = this.spriteframes[this.currentAnimation].getCurrentFrame().height;
+        const scale = this.spriteframes[this.currentAnimation].scale.y;
         if (this.deathTimer === 0)
             this.drawHealthBar(context, (this.pos.x - xView + 2.5) * Game.scale, (this.pos.y - yView - (frameHeight * scale) - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.get("maxHp"));
 
@@ -106,18 +103,19 @@
             context.fillStyle = "yellow"
             context.fillText(this.chatMessage, (this.pos.x - xView) * Game.scale, (this.pos.y - yView - frameHeight - (this.healthBarTimer > 0 ? 15 : 0)) * Game.scale);
         }
+
         context.restore();
     }
 
     NPC.prototype.processMovement = function(step) {
-        var diffx = (this.dest.x + (this.inCombat ? this.combatOffset : 0)) - this.pos.x;
-        var diffy = this.dest.y - this.pos.y;
+        const diffx = this.dest.x - this.pos.x;
+        const diffy = this.dest.y - this.pos.y;
         
         let moving = false;
         if (Math.abs(diffx) > 1 || Math.abs(diffy) > 1) {
-            var n = Math.getVectorNormal({x: diffx, y: diffy});
+            const n = Math.getVectorNormal({x: diffx, y: diffy});
             if (Math.abs(n.x * step * this.speed) > Math.abs(diffx) || Math.abs(diffx) > 64)
-                this.pos.x = this.dest.x + (this.inCombat ? this.combatOffset : 0);
+                this.pos.x = this.dest.x;
             else
                 this.pos.x += n.x * step * this.speed;
             
@@ -126,11 +124,9 @@
             else
                 this.pos.y += n.y * step * this.speed;
 
-            var atan = Math.atan2(n.y, n.x);
-            var d = (atan > 0 ? atan : (2*Math.PI + atan)) * 360 / (2*Math.PI);
+            const atan = Math.atan2(n.y, n.x);
+            const d = ((atan > 0 ? atan : (2*Math.PI + atan)) * 360 / (2*Math.PI)) - 45;
             
-            if (!Game.isometric)
-                d -= 45;// offset the angle slightly to adhere to non-isometric camera
             if (d >= 0 && d < 90) {
                 this.currentAnimation = "down";
             } else if (d >= 90 && d < 180) {
@@ -142,6 +138,9 @@
             }
             moving = true;
         }
+
+        if (this.inCombat && Math.abs(this.dest.x - this.pos.x) < 1 && Math.abs(this.dest.y - this.pos.y) < 1)
+            this.currentAnimation = "attack";
 
         if (moving || this.inCombat || this.getCurrentSpriteFrame().alwaysAnimate())
             this.spriteframes[this.currentAnimation].process(step);
@@ -155,14 +154,14 @@
 
     NPC.prototype.setDestPosAndSpeedByTileId = function(tileId) {
         this.tileId = tileId;
-        var xy = tileIdToXY(tileId);
+        const xy = tileIdToXY(tileId);
 
-        this.dest.x = xy.x;
+        this.dest.x = xy.x + (this.inCombat ? this.combatOffset : 0);
         this.dest.y = xy.y;
 
-        var diffx = xy.x - this.pos.x + (this.inCombat ? this.combatOffset : 0);
-        var diffy = xy.y - this.pos.y;
-        var mag = Math.getVectorMagnitude({x: diffx, y: diffy});
+        const diffx = this.dest.x - this.pos.x;
+        const diffy = this.dest.y - this.pos.y;
+        const mag = Math.getVectorMagnitude({x: diffx, y: diffy});
         this.speed = mag / 0.6;
     }
 
@@ -181,7 +180,8 @@
                 this.pos.x = xy.x;
                 this.pos.y = xy.y;
             } else {
-                this.setDestPosAndSpeedByTileId(obj.tileId);
+                if (!this.inCombat) // sometimes an npc has broadcasted a move message just before it gets into combat, which overwrites the combat location
+                    this.setDestPosAndSpeedByTileId(obj.tileId);
             }
         }
         
@@ -216,8 +216,8 @@
         if (this.healthBarTimer === 0)
             return false;
 
-        var barLength = 32;
-        var currentHpLength = ~~(barLength * (currentHp/maxHp));
+        const barLength = 32;
+        const currentHpLength = ~~(barLength * (currentHp/maxHp));
 
         ctx.fillStyle = "#0f0";
         ctx.fillRect(x - ~~(barLength/2), y - 2.5, currentHpLength, 5);

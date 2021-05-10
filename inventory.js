@@ -14,8 +14,14 @@
 		draw: function(context, xview, yview) {
 			context.fillStyle = this.selected ? this.selectedColor : this.fillColor;
 			context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
+
+			let slotsToProtect = 3;
+			if (Game.HUD.activePrayers.includes(6))
+				++slotsToProtect;
+			if (Game.HUD.activePrayers.includes(18))
+				slotsToProtect += 2;
 			// first three slots are protected on death, so they get a special outline
-			if (this.id < 3) {
+			if (this.id < slotsToProtect) {
 				context.save();
 				context.fillStyle = "rgba(150, 150, 0, 0.2)";
 				context.fillRect(~~this.rect.left + 0.5, ~~this.rect.top + 0.5, this.rect.width, this.rect.height);

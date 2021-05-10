@@ -380,7 +380,7 @@ $(function () {
                         if (obj.playerId == Game.currentPlayer.id) {
                             player = Game.currentPlayer;
                         } else {
-                            for (var i in room.otherPlayers) {
+                            for (let i in room.otherPlayers) {
                                 if (room.otherPlayers[i].id == obj.playerId) {
                                     player = room.otherPlayers[i];
                                     break;
@@ -388,7 +388,7 @@ $(function () {
                             }
                         }
 
-                        for (var i = 0; i < room.npcs.length; ++i) {
+                        for (let i = 0; i < room.npcs.length; ++i) {
                             if (room.npcs[i].instanceId === obj.monsterId) {
                                 monster = room.npcs[i];
                                 break;
@@ -411,7 +411,7 @@ $(function () {
                         if (obj.player1Id == Game.currentPlayer.id) {
                             player1 = Game.currentPlayer;
                         } else {
-                            for (var i in room.otherPlayers) {
+                            for (let i in room.otherPlayers) {
                                 if (room.otherPlayers[i].id == obj.player1Id) {
                                     player1 = room.otherPlayers[i];
                                     break;
@@ -422,7 +422,7 @@ $(function () {
                         if (obj.player2Id == Game.currentPlayer.id) {
                             player2 = Game.currentPlayer;
                         } else {
-                            for (var i in room.otherPlayers) {
+                            for (let i in room.otherPlayers) {
                                 if (room.otherPlayers[i].id == obj.player2Id) {
                                     player2 = room.otherPlayers[i];
                                     break;
