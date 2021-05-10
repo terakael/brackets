@@ -613,21 +613,14 @@ $(function () {
                     }
 
                     case "bank": {
-                        let gameWindowWidth = canvas.width - 250;
-                        let uiWidth = gameWindowWidth / 2;
-                        let uiHeight = canvas.height / 2;
-
-                        let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
-                        let uiy = ~~((canvas.height / 2) - (uiHeight / 2)) + 0.5;
-                        let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
-
-                        Game.activeUiWindow = new Game.BankWindow(rect, obj.items, "the bank");
+                        Game.activeUiWindow = new Game.BankWindow(Game.worldCameraRect, obj.items, "the bank");
                         break;
                     }
 
                     case "withdraw":
                     case "deposit": {
                         Game.activeUiWindow.updateStock(obj.items);
+                        Game.activeUiWindow.onResize(Game.worldCameraRect);
                         break;
                     }
 

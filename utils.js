@@ -76,10 +76,6 @@
     
         return res + str;
     }
-
-    wordWrapUsingWidth = function(ctx, str, width) {
-        let done = false;
-    }
     
     testWhite = function(x) {
         var white = new RegExp(/^\s$/);
