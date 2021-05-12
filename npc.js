@@ -11,7 +11,8 @@
         this.speed = 0;
         this.currentHp = obj.currentHp;
         this.healthBarTimer = 0;
-        this.hitsplat = null;
+        // this.hitsplat = null;
+        this.hitsplats = [];
         this.inCombat = false;
         this.chatMessage = "";
         this.chatMessageTimer = 0;
@@ -61,11 +62,18 @@
                 this.healthBarTimer = 0;
         }
 
-        if (this.hitsplat) {
-            this.hitsplat.lifetime -= step;
-            if (this.hitsplat.lifetime <= 0)
-                this.hitsplat = null;
+        // if (this.hitsplat) {
+        //     this.hitsplat.lifetime -= step;
+        //     if (this.hitsplat.lifetime <= 0)
+        //         this.hitsplat = null;
+        // }
+
+        for (let i = 0; i < this.hitsplats.length; ++i) {
+            this.hitsplats[i].lifetime -= step;
+            if (this.hitsplats[i].lifetime < 0)
+                this.hitsplats[i].lifetime = 0;
         }
+        // this.hitsplats = this.hitsplats.filter(e => e.lifetime > 0);
 
         if (this.chatMessageTimer > 0) {
             this.chatMessageTimer -= step;
@@ -86,15 +94,15 @@
         if (this.deathTimer === 0)
             this.drawHealthBar(context, (this.pos.x - xView + 2.5) * Game.scale, (this.pos.y - yView - (frameHeight * scale) - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.get("maxHp"));
 
-        if (this.hitsplat) {
-            context.fillStyle = this.hitsplat.color;
-            context.fillRect((this.pos.x - xView - 8) * Game.scale, (this.pos.y - yView - 8) * Game.scale, 16 * Game.scale, 16 * Game.scale);
-            
-            context.fillStyle = "white";
-            context.textAlign = "center";
-            context.textBaseline = "middle";
-            context.font = "bold 20pt Consolas";
-            context.fillText(this.hitsplat.damage, (this.pos.x - xView) * Game.scale, (this.pos.y - yView) * Game.scale);
+        const hitsplatPositions = [
+            {x: this.pos.x - xView, y: this.pos.y - yView - 8},
+            {x: this.pos.x - xView, y: this.pos.y - yView - 16},
+            {x: this.pos.x - xView + 8, y: this.pos.y - yView - 12}
+        ]
+
+        for (let i = 0; i < this.hitsplats.length; ++i) {
+            if (this.hitsplats[i].lifetime > 0)
+                this.drawHitsplat(context, hitsplatPositions[i].x * Game.scale, hitsplatPositions[i].y * Game.scale, this.hitsplats[i]);
         }
 
         if (this.chatMessage != "") {
@@ -105,6 +113,16 @@
         }
 
         context.restore();
+    }
+
+    NPC.prototype.drawHitsplat = function(context, x, y, hitsplat) {
+        Game.SpriteManager.getSpriteFrameById(hitsplat.damageSpriteFrameId).draw(context, x, y);
+        
+        context.fillStyle = "white";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.font = "bold 16pt Consolas";
+        context.fillText(hitsplat.damage, x, y);
     }
 
     NPC.prototype.processMovement = function(step) {
@@ -186,28 +204,20 @@
         }
         
         if (obj.hasOwnProperty("damage")) {
-            let color = "red";
-            if (obj.hasOwnProperty("damageType")) {
-                switch (obj.damageType) {
-                    case 0: // standard
-                        color = obj.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";
-                        break;
-                    case 1: // poison
-                        color = "green";
-                        break;
-                    case 2:// magic
-                        color = "magenta";
-                        break;
-                    default:
-                        break;
-                }
-            }
-            // damage hitsplat on top of the npc, set health bar timer
-            this.hitsplat = {
+            const hitsplat = {
                 damage: obj.damage,
-                lifetime: 1,
-                color: color
+                lifetime: 0.8,
+                damageSpriteFrameId: obj.damageSpriteFrameId
             };
+            if (this.hitsplats.length < 3)
+                this.hitsplats.push(hitsplat);  
+            else {
+                let hitsplatToReplace = this.hitsplats.reduce(function(res, obj) {
+                    return (obj.lifetime < res.lifetime) ? obj : res;
+                });
+                let idxReplaceHitsplat = this.hitsplats.map(e => e.lifetime).indexOf(hitsplatToReplace.lifetime);
+                this.hitsplats[idxReplaceHitsplat] = hitsplat;
+            }
             this.healthBarTimer = 5;
         }
     }

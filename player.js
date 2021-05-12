@@ -23,7 +23,7 @@
             this.chatMessageTimer = 0;// counter until the chat message is cleared
             this.clickBox = new Game.Rectangle(0, 0, this.width, this.height);
             this.contextActions = ["follow", "trade", "duel"];
-            this.hitsplat = null;
+            this.hitsplats = [];
             this.currentHp = 1;
             this.maxHp = 1;
             this.currentPrayer = 0;
@@ -163,10 +163,10 @@
             this.stats.process(step);
             this.inventory.process(step);
 
-            if (this.hitsplat) {
-                this.hitsplat.lifetime -= step;
-                if (this.hitsplat.lifetime <= 0)
-                    this.hitsplat = null;
+            for (let i = 0; i < this.hitsplats.length; ++i) {
+                this.hitsplats[i].lifetime -= step;
+                if (this.hitsplats[i].lifetime < 0)
+                    this.hitsplats[i].lifetime = 0;
             }
 
             this.clickBox.setPos(this.x - this.width/2, this.y - this.height);
@@ -185,16 +185,15 @@
                     context.fillText(this.chatMessage, (this.x - xView) * Game.scale, (this.y - yView - this.height - (showingHealthBar ? 15 : 0)) * Game.scale);
                 }
 
-                if (this.hitsplat) {
-                    // context.fillStyle = this.hitsplat.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";
-                    context.fillStyle = this.hitsplat.color;
-                    context.fillRect((this.x - xView - 8) * Game.scale, (this.y - yView - 8) * Game.scale, 16 * Game.scale, 16 * Game.scale);
-                    
-                    context.fillStyle = "white";
-                    context.textAlign = "center";
-                    context.textBaseline = "middle";
-                    context.font = "bold 20pt Consolas";
-                    context.fillText(this.hitsplat.damage, (this.x - xView) * Game.scale, (this.y - yView) * Game.scale);
+                const hitsplatPositions = [
+                    {x: this.x - xView, y: this.y - yView - 8},
+                    {x: this.x - xView, y: this.y - yView - 16},
+                    {x: this.x - xView + (8 * (this.attackingFromRight ? 1 : -1)), y: this.y - yView - 12}
+                ]
+        
+                for (let i = 0; i < this.hitsplats.length; ++i) {
+                    if (this.hitsplats[i].lifetime > 0)
+                        this.drawHitsplat(context, hitsplatPositions[i].x * Game.scale, hitsplatPositions[i].y * Game.scale, this.hitsplats[i]);
                 }
 
                 if (this.actionBubbleTimer > 0) {
@@ -218,6 +217,16 @@
             }
 
             this.drawDeathSequence(context, xView, yView);
+        }
+
+        Player.prototype.drawHitsplat = function(context, x, y, hitsplat) {
+            Game.SpriteManager.getSpriteFrameById(hitsplat.damageSpriteFrameId).draw(context, x, y);
+            
+            context.fillStyle = "white";
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            context.font = "bold 16pt Consolas";
+            context.fillText(hitsplat.damage, x, y);
         }
 
         Player.prototype.drawDeathSequence = function(context, xView, yView) {
@@ -404,28 +413,20 @@
             }
 
             if (obj.hasOwnProperty("damage")) {
-                let color = "red";
-                if (obj.hasOwnProperty("damageType")) {
-                    switch (obj.damageType) {
-                        case 0: // standard
-                            color = obj.damage == 0 ? "rgba(0, 0, 255, 0.5)" : "rgba(255, 0, 0, 0.5)";
-                            break;
-                        case 1: // poison
-                            color = "green";
-                            break;
-                        case 2:// magic
-                            color = "magenta";
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                // damage hitsplat on top of the npc, set health bar timer
-                this.hitsplat = {
+                const hitsplat = {
                     damage: obj.damage,
-                    lifetime: 1,
-                    color: color
+                    lifetime: 0.8,
+                    damageSpriteFrameId: obj.damageSpriteFrameId
                 };
+                if (this.hitsplats.length < 3)
+                    this.hitsplats.push(hitsplat);  
+                else {
+                    let hitsplatToReplace = this.hitsplats.reduce(function(res, obj) {
+                        return (obj.lifetime < res.lifetime) ? obj : res;
+                    });
+                    let idxReplaceHitsplat = this.hitsplats.map(e => e.lifetime).indexOf(hitsplatToReplace.lifetime);
+                    this.hitsplats[idxReplaceHitsplat] = hitsplat;
+                }
                 
                 // damage hitsplat on top of the npc, set health bar timer
                 this.stats.showHealthBar();

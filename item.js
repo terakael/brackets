@@ -6,6 +6,7 @@
 		this.otherOptions = obj.otherOptions;
 		this.spriteFrame = obj.spriteFrame;
 		this.attributes = obj.attributes;
+		this.shiftclickOption = obj.shiftclickOption;
 	};
 
 	Item.prototype.draw = function(ctx, x, y) {

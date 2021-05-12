@@ -828,6 +828,7 @@ $(function () {
                     case "pick":
                     case "pray at":
                     case "bury":
+                    case "climb":
                         break;
 
                     default: {
@@ -846,7 +847,7 @@ $(function () {
     Game.scale = 3;
     Game.targetScale = 3;
     Game.maxScale = 3;
-    Game.minScale = 2;
+    Game.minScale = 1;
     Game.sceneryMap = new Map();
     Game.npcMap = new Map();
     Game.drawBoundingBoxes = false;
@@ -1992,6 +1993,8 @@ window.addEventListener("keydown", function (e) {
     var event = window.event ? window.event : e;
     if (event.keyCode === 9) //tab
         event.preventDefault(); // don't tab focus off the canvas
+    if (event.keyCode === 16) // shift
+        Game.shiftPressed = true;
     if (event.keyCode === 17) // ctrl
         Game.ctrlPressed = true;
     if (Game.state === 'logonscreen') {
@@ -2068,6 +2071,8 @@ window.addEventListener("keydown", function (e) {
 });
 window.addEventListener("keyup", function (e) {
     let event = window.event ? window.event : e;
+    if (event.keyCode === 16) // shift
+        Game.shiftPressed = false;
     if (event.keyCode === 17) // ctrl
         Game.ctrlPressed = false;
 });

@@ -53,7 +53,8 @@
 					spriteFrame: this.getSpriteFrameById(items[i].spriteFrameId),
 					leftclickOption: items[i].leftclickOption,
 					otherOptions: items[i].otherOptions,
-					attributes: items[i].attributes
+					attributes: items[i].attributes,
+					shiftclickOption: items[i].shiftclickOption
 				}));
 			}
 		},

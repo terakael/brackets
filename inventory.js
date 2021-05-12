@@ -85,8 +85,11 @@
 				if (this.slots[i].rect.pointWithin(Game.mousePos) && this.slots[i].item.id != 0) {
 					if (Game.activeUiWindow) {
 						Game.ContextMenu.setLeftclick(Game.mousePos, this.getLeftclickOption(this.slots[i], Game.activeUiWindow.type));
-					} else if (!this.slotInUse) {// if the slot is not in use then show the left-click hover option
-						var contextOpt = Game.ContextMenu.getContextOptionById(this.slots[i].item.leftclickOption);
+					} else if (!this.slotInUse) {// if the slot is not in use then show the left-click hover option (or shift-click option if shift is pressed and it's nonzero)
+						const relevantHoverOption = (Game.shiftPressed && this.slots[i].item.shiftclickOption) 
+							? this.slots[i].item.shiftclickOption 
+							: this.slots[i].item.leftclickOption;
+						const contextOpt = Game.ContextMenu.getContextOptionById(relevantHoverOption);
 
 						Game.ContextMenu.setLeftclick(Game.mousePos, {
 							id: Game.currentPlayer.id,
