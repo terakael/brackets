@@ -174,28 +174,28 @@
 			this.images.set(this.tileIdFromSegmentId(segmentId), image);
 		},
 		removeMinimapsBySegmentId: function(segmentId) {
-			let topLeftTileId = this.tileIdFromSegmentId(segmentId);
+			const topLeftTileId = this.tileIdFromSegmentId(segmentId);
 			this.images.delete(topLeftTileId);
 
-			let topLeftTileX = topLeftTileId % 25000;
-			let topLeftTileY = Math.floor(topLeftTileId / 25000);
+			const topLeftTileX = topLeftTileId % Game.worldTileWidth;
+			const topLeftTileY = Math.floor(topLeftTileId / Game.worldTileWidth);
 			for (let [spriteMapId, tileIds] of this.minimapIcons) {
 				this.minimapIcons.set(spriteMapId, tileIds.filter(e => {
-					let tileX = e % 25000;
-					let tileY = Math.floor(e / 25000);
+					const tileX = e % Game.worldTileWidth;
+					const tileY = Math.floor(e / Game.worldTileWidth);
 
-					return !((tileX >= topLeftTileX && tileX < topLeftTileX + 25) && (tileY >= topLeftTileY && tileY < topLeftTileY + 25));
+					return !((tileX >= topLeftTileX && tileX < topLeftTileX + Game.segmentWidth) && (tileY >= topLeftTileY && tileY < topLeftTileY + Game.segmentWidth));
 				}));
 			}
 		},
 		tileIdFromSegmentId: function(segmentId) {
-			let segmentX = segmentId % 1000;
-			let segmentY = Math.floor(segmentId / 1000);
+			const segmentX = segmentId % Game.worldSegmentWidth();
+			const segmentY = Math.floor(segmentId / Game.worldSegmentWidth());
 
-			let tileX = segmentX * 25;
-			let tileY = segmentY * 25;
+			const tileX = segmentX * Game.segmentWidth;
+			const tileY = segmentY * Game.segmentWidth;
 
-			return (tileY * 25000) + tileX;
+			return (tileY * Game.worldTileWidth) + tileX;
 		},
 		addMinimapIconLocations: function(iconLocations) {
 			for (const [spriteMapId, tileIds] of Object.entries(iconLocations)) {

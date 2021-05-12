@@ -20,7 +20,6 @@
         };
         
         this.send = function(obj) {
-			//Game.ChatBox.add("sending: {0}".format(JSON.stringify(obj)));
             this.ws.send(JSON.stringify(obj));
         };
         

@@ -145,6 +145,9 @@
                 // only process one part of the player, then reflect the current frame through all the rest
                 this.getBaseSpriteFrame().process(step);
                 
+            } else if (this.pendingFaceDirection) {
+                this.currentAnimation = this.pendingFaceDirection;
+                this.pendingFaceDirection = null;
             }
 
             let currentFrame = (moving || this.inCombat) ? this.getBaseSpriteFrame().currentFrame : 1;
@@ -434,6 +437,10 @@
 
             if (obj.hasOwnProperty("respawn")) {
                 this.deathSequence = false;
+            }
+
+            if (obj.hasOwnProperty("faceDirection")) {
+                this.pendingFaceDirection = obj.faceDirection;
             }
         }
 

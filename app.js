@@ -920,16 +920,16 @@ $(function () {
             this.sceneryCtx.clearRect(0, 0, this.sceneryCtx.canvas.width, this.sceneryCtx.canvas.height);
 
             let playerTileId = xyToTileId(~~Game.currentPlayer.destPos.x, ~~Game.currentPlayer.destPos.y);
-            let localOriginTileX = (playerTileId % 25000) - 12; // cos 24x24 tiles
-            let localOriginTileY = ~~(playerTileId / 25000) - 12; // cos 24x24 tiles
+            let localOriginTileX = (playerTileId % Game.worldTileWidth) - 12; // cos 24x24 tiles
+            let localOriginTileY = ~~(playerTileId / Game.worldTileWidth) - 12; // cos 24x24 tiles
             for (const [sceneryId, tileIds] of instances.entries()) {
                 let scenery = Game.sceneryMap.get(Number(sceneryId));
                 let spriteFrame = Game.SpriteManager.getSpriteFrameById(scenery.spriteFrameId);
                 for (let i = 0; i < tileIds.length; ++i) {
                     // get the tileId local to the player (i.e. tileId 0 being the top-left corner, knowing the canvas is 24x24 tiles)
-                    let tileX = tileIds[i] % 25000;
-                    let tileY = ~~(tileIds[i] / 25000);
-                    let localTileId = (tileX - localOriginTileX) + ((tileY - localOriginTileY) * 25000);
+                    let tileX = tileIds[i] % Game.worldTileWidth;
+                    let tileY = ~~(tileIds[i] / Game.worldTileWidth);
+                    let localTileId = (tileX - localOriginTileX) + ((tileY - localOriginTileY) * Game.worldTileWidth);
                     let xy = tileIdToXY(localTileId);
                     spriteFrame.draw(this.sceneryCtx, xy.x, xy.y);
                 }
@@ -1908,10 +1908,19 @@ $(function () {
                 // fade out the logon screen background
                 Game.context.save();
                 Game.context.globalAlpha = 1 - room.currentShow;
-                Game.context.drawImage(Game.LogonScreen.bkg, 0, 0, Game.LogonScreen.bkg.width, Game.LogonScreen.bkg.height);
+                Game.context.drawImage(Game.LogonScreen.bkg, 0, 0, Game.worldCameraRect.width, Game.worldCameraRect.height);
                 Game.context.restore();
             }
             Game.ChatBox.draw(Game.context, 0, Game.context.canvas.height);
+
+            if (Game.displayFps) {
+                Game.context.save();
+                context.textAlign = "right";
+                context.font = "15px Consolas";
+                context.fillStyle = "yellow";
+                context.fillText(Game.fps, Game.worldCameraRect.width - 5, 10);
+                Game.context.restore();
+            }
 
             if (Game.activeUiWindow)
                 Game.activeUiWindow.draw(Game.context);
@@ -1932,12 +1941,20 @@ $(function () {
     var runningId = -1;
     var start = Date.now();
     var remainingInterval = INTERVAL;
+    Game.fps = 0;
+    Game.displayFps = true;
+    let fpsSamples = [];
     Game.play = function () {        
         setTimeout(function() {
         	// TODO game loop should return exec ms to subtract off INTERVAL
         	gameLoop();
 
         	var actual = Date.now() - start;
+            fpsSamples.push(actual);
+            if (fpsSamples.length > 60)
+                fpsSamples.shift();
+            let average = fpsSamples.reduce((a, b) => a + b, 0) / fpsSamples.length;
+            Game.fps = ~~(600 / average);
 	        // subtract any extra ms from the delay for the next cycle
 	        remainingInterval = INTERVAL - (actual - INTERVAL);
 	        start = Date.now();
@@ -2012,6 +2029,11 @@ window.addEventListener("keydown", function (e) {
 
                         case "::groundTextureOutline": {
                             Game.drawGroundTextureOutline = !Game.drawGroundTextureOutline;
+                            break;
+                        }
+
+                        case "::fps": {
+                            Game.displayFps = !Game.displayFps;
                             break;
                         }
 

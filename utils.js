@@ -36,8 +36,8 @@
 
     tileIdToXY = function(tileId) {
         return {
-            x: ((tileId % 25000) * 32) + 16,
-            y: (Math.trunc(tileId / 25000) * 32) + 16
+            x: ((tileId % Game.worldTileWidth) * 32) + 16,
+            y: (Math.trunc(tileId / Game.worldTileWidth) * 32) + 16
         }
     }
 
@@ -45,7 +45,7 @@
         var destX = Math.trunc(x / 32);
 		var destY = Math.trunc(y / 32);
 			
-        return destX + (destY * 25000);
+        return destX + (destY * Game.worldTileWidth);
     }
 
     wordWrap = function(str, maxWidth) {

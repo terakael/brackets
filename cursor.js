@@ -34,7 +34,7 @@
             context.fillRect((tilex * this.size) - xview, (tiley * this.size) - yview, this.size, this.size);
             context.strokeRect((tilex * this.size) - xview, (tiley * this.size) - yview, this.size, this.size);
 
-            let tileId = tilex + (tiley * 25000);
+            let tileId = tilex + (tiley * Game.worldTileWidth);
             context.textAlign = "center";
             context.textBaseline = "top";
             context.font = "10px Consolas";
