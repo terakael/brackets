@@ -62,18 +62,15 @@
                 this.healthBarTimer = 0;
         }
 
-        // if (this.hitsplat) {
-        //     this.hitsplat.lifetime -= step;
-        //     if (this.hitsplat.lifetime <= 0)
-        //         this.hitsplat = null;
-        // }
-
+        let cumulativeHitsplatLifetime = 0;
         for (let i = 0; i < this.hitsplats.length; ++i) {
+            cumulativeHitsplatLifetime += this.hitsplats[i].lifetime;
             this.hitsplats[i].lifetime -= step;
             if (this.hitsplats[i].lifetime < 0)
                 this.hitsplats[i].lifetime = 0;
         }
-        // this.hitsplats = this.hitsplats.filter(e => e.lifetime > 0);
+        if (cumulativeHitsplatLifetime <= 0)
+            this.hitsplats = [];
 
         if (this.chatMessageTimer > 0) {
             this.chatMessageTimer -= step;

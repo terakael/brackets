@@ -638,6 +638,18 @@ $(function () {
                         }
                         break;
                     }
+
+                    case "open": {
+                        for (const [mapKey, sceneryList] of room.sceneryInstances.entries()) {
+                            for (let i = 0; i < sceneryList.length; ++i) {
+                                if (sceneryList[i].tileId === obj.tileId) {
+                                    sceneryList[i].sprite[0].nextFrame();
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    }
                     
                     case "stat_boosts": {
                         Game.currentPlayer.stats.setBoosts(obj.boosts);
@@ -768,6 +780,16 @@ $(function () {
                                 }
                             }
                         }
+
+                        if (obj.openDoors) {
+                            for (const [mapKey, sceneryList] of room.sceneryInstances.entries()) {
+                                for (let i = 0; i < sceneryList.length; ++i) {
+                                    if (obj.openDoors.includes(sceneryList[i].tileId)) {
+                                        sceneryList[i].sprite[0].nextFrame();
+                                    }
+                                }
+                            }
+                        }
                         break;
                     }
                     
@@ -893,12 +915,14 @@ $(function () {
         loadSceneryInstances: function() {   
             this.sceneryInstances = new Map();
             for (const [sceneryId, tileIdList] of this.sceneryInstancesBySceneryId.entries()) {
-                let scenery = Game.sceneryMap.get(Number(sceneryId));
+                const scenery = Game.sceneryMap.get(Number(sceneryId));
                 for (let i = 0; i < tileIdList.length; ++i) {
-                    let xy = tileIdToXY(tileIdList[i]);
+                    const xy = tileIdToXY(tileIdList[i]);
 
-                    let spriteFrame = Game.SpriteManager.getSpriteFrameById(scenery.spriteFrameId);
-                    let mapKey = xy.y + spriteFrame.frames[0].height - (spriteFrame.anchor.y * spriteFrame.frames[0].height);
+                    const spriteFrame = Game.SpriteManager.getSpriteFrameById(scenery.spriteFrameId);
+                    const mapKey = xy.y - (spriteFrame.getCurrentFrame().height * spriteFrame.scale.y * spriteFrame.anchor.y) 
+                                        + (spriteFrame.getCurrentFrame().height * spriteFrame.scale.y);
+
                     if (!this.sceneryInstances.has(mapKey))
                         this.sceneryInstances.set(mapKey, []);
 
@@ -917,7 +941,6 @@ $(function () {
             }
         },
         addSceneryToCanvas: function(instances) {
-            console.log("adding to canvas")
             this.sceneryCtx.clearRect(0, 0, this.sceneryCtx.canvas.width, this.sceneryCtx.canvas.height);
 
             let playerTileId = xyToTileId(~~Game.currentPlayer.destPos.x, ~~Game.currentPlayer.destPos.y);
@@ -998,7 +1021,7 @@ $(function () {
             }
         },
         addPlayer: function (obj) {
-            var player = new Game.Player(obj.tileId);
+            let player = new Game.Player(obj.tileId);
             player.id = obj.id;
             player.name = obj.name;
 
@@ -1029,14 +1052,14 @@ $(function () {
 
             ctx.save();// make the items on the ground smaller than in the inventory
             ctx.scale(0.5, 0.5);
-            for (var i in this.groundItems) {
+            for (let i in this.groundItems) {
                 this.groundItems[i].draw(ctx, xview, yview, 0.5, 0.5);
             }
             ctx.restore();
 
             if (Game.activeUiWindow == null) {// if there's a window up then don't show hover texts for items behind it
-                for (var i in this.groundItems) {
-                    var rect = new Game.Rectangle(
+                for (let i in this.groundItems) {
+                    const rect = new Game.Rectangle(
                         this.groundItems[i].clickBox.left - xview, 
                         this.groundItems[i].clickBox.top - yview, 
                         this.groundItems[i].clickBox.width, this.groundItems[i].clickBox.height);
@@ -1169,20 +1192,18 @@ $(function () {
                 });
             }
 
-            var orderedDrawMap = new Map([...drawMap.entries()].sort());// order by ypos
+            const orderedDrawMap = new Map([...drawMap.entries()].sort());// order by ypos
             orderedDrawMap.forEach(function(value, key, map) {
-                for (var i = 0; i < value.length; ++i) {
-                    var currentFrame = value[i].sprite[0].getCurrentFrame();
-
+                for (let i = 0; i < value.length; ++i) {
                     ctx.globalAlpha = value[i].transparency || 1;
-                    for (var j = 0; j < value[i].sprite.length; ++j)
+                    for (let j = 0; j < value[i].sprite.length; ++j)
                         value[i].sprite[j].draw(ctx, value[i].x - xview, value[i].y - yview, value[i].sprite[j].color);
 
                     if (Game.activeUiWindow == null) {
-                        var rect = new Game.Rectangle(
-                            value[i].x - xview - ((currentFrame.width * value[i].sprite[0].scale.x) * value[i].sprite[0].anchor.x), 
-                            value[i].y - yview - ((currentFrame.height * value[i].sprite[0].scale.y) * value[i].sprite[0].anchor.y), 
-                            currentFrame.width * value[i].sprite[0].scale.x, currentFrame.height * value[i].sprite[0].scale.y);
+                        const clickBox = value[i].sprite[0].getBoundingBox();
+                        const rect = new Game.Rectangle(value[i].x + clickBox.left - xview,
+                                                        value[i].y + clickBox.top - yview,
+                                                        clickBox.width, clickBox.height);
 
                         // mouse position needs to account for scale because the whole context is currently scaled
                         if (rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
@@ -1531,19 +1552,18 @@ $(function () {
                             // are we hovering over a player/scenery/npc?
                             let handled = false;
                             room.drawableSceneryMap.forEach(function(value, key, map) {
-                                for (var i in value) {
-                                    var sprite = value[i].sprite[0];
-                                    var spriteFrame = sprite.getCurrentFrame();
-                                    var rect = new Game.Rectangle(
-                                        value[i].x - (spriteFrame.width * sprite.anchor.x), 
-                                        key - (spriteFrame.height * sprite.anchor.y), 
-                                        spriteFrame.width, 
-                                        spriteFrame.height);
+                                for (let i in value) {
+                                    const boundingBox = value[i].sprite[0].getBoundingBox();
+                                    const rect = new Game.Rectangle(
+                                        value[i].x + boundingBox.left, 
+                                        value[i].y + boundingBox.top, 
+                                        boundingBox.width, 
+                                        boundingBox.height);
     
-                                    let unusable = (value[i].attributes & 1) == 1;
+                                    const unusable = (value[i].attributes & 1) == 1;
                                     if (rect.pointWithin(cursor.mousePos) && !unusable) {// don't use with walls, fences etc
                                         cursor.handleClick(true);
-                                        var tileId = value[i].tileId;
+                                        const tileId = value[i].tileId;
                                         Game.ws.send({
                                             action: "use",
                                             id: room.player.id,
@@ -1562,13 +1582,12 @@ $(function () {
                             // npc
                             if (!handled) {
                                 for (let i = 0; i < room.npcs.length; ++i) {
-                                    var sprite = room.npcs[i].getCurrentSpriteFrame();
-                                    var spriteFrame = sprite.getCurrentFrame();
-                                    let rect = new Game.Rectangle(
-                                        room.npcs[i].pos.x - ((spriteFrame.width * sprite.scale.x) * sprite.anchor.x), 
-                                        room.npcs[i].pos.y - ((spriteFrame.height * sprite.scale.y) * sprite.anchor.y), 
-                                        (spriteFrame.width * sprite.scale.x), 
-                                        (spriteFrame.height * sprite.scale.y));
+                                    const boundingBox = room.npcs[i].getCurrentSpriteFrame().getBoundingBox();
+                                    const rect = new Game.Rectangle(
+                                        room.npcs[i].pos.x + boundingBox.left, 
+                                        room.npcs[i].pos.y + boundingBox.top, 
+                                        boundingBox.width, 
+                                        boundingBox.height);
 
                                     if (rect.pointWithin(cursor.mousePos)) {
                                         cursor.handleClick(true);
@@ -1589,13 +1608,13 @@ $(function () {
 
                             if (!handled) {
                                 for (let i = 0; i < room.otherPlayers.length; ++i) {
-                                    let player = room.otherPlayers[i];
-                                    var spriteFrame = player.getCurrentSpriteFrame();
-                                        var rect = new Game.Rectangle(
-                                            player.x - (spriteFrame.getCurrentFrame().width * spriteFrame.anchor.x), 
-                                            player.y - (spriteFrame.getCurrentFrame().height * spriteFrame.anchor.y), 
-                                            spriteFrame.getCurrentFrame().width, 
-                                            spriteFrame.getCurrentFrame().height);
+                                    const player = room.otherPlayers[i];
+                                    const boundingBox = player.getCurrentSpriteFrame().getBoundingBox();
+                                    const rect = new Game.Rectangle(
+                                        player.x + boundingBox.left, 
+                                        player.y + boundingBox.top, 
+                                        boundingBox.width, 
+                                        boundingBox.height);
         
                                     if (rect.pointWithin(cursor.mousePos)) {
                                         cursor.handleClick(true);
@@ -1615,12 +1634,12 @@ $(function () {
                             }
 
                             if (!handled) {
-                                var spriteFrame = room.player.getCurrentSpriteFrame();
-                                    var rect = new Game.Rectangle(
-                                        room.player.x - (spriteFrame.getCurrentFrame().width * spriteFrame.anchor.x), 
-                                        room.player.y - (spriteFrame.getCurrentFrame().height * spriteFrame.anchor.y), 
-                                        spriteFrame.getCurrentFrame().width, 
-                                        spriteFrame.getCurrentFrame().height);
+                                const boundingBox = room.player.getCurrentSpriteFrame().getBoundingBox();
+                                const rect = new Game.Rectangle(
+                                    room.player.x + boundingBox.left, 
+                                    room.player.y + boundingBox.top, 
+                                    boundingBox.width, 
+                                    boundingBox.height);
 
                                 if (rect.pointWithin(cursor.mousePos)) {
                                     cursor.handleClick(true);
@@ -1647,8 +1666,8 @@ $(function () {
                         if (Game.ContextMenu.active)
                             break;
                         // only check for the other players and ground items if the click was within the world rect
-                        for (var i in room.otherPlayers) {
-                            let p = room.otherPlayers[i];
+                        for (let i in room.otherPlayers) {
+                            const p = room.otherPlayers[i];
                             if (p.clickBox.pointWithin(cursor.mousePos)) {
                                 if (room.player.inventory.slotInUse) {
                                     Game.ContextMenu.push([{
@@ -1664,8 +1683,8 @@ $(function () {
                                 }
                             }
                         }
-                        for (var i in room.groundItems) {
-                            var groundItem = room.groundItems[i];
+                        for (let i in room.groundItems) {
+                            const groundItem = room.groundItems[i];
                             if (groundItem.clickBox.pointWithin(cursor.mousePos)) {
                                 Game.ContextMenu.push([
                                     { action: "take", objectName: groundItem.item.name, itemId: groundItem.item.id, tileId: groundItem.tileId },
@@ -1674,20 +1693,19 @@ $(function () {
                             }
                         }
                         room.drawableSceneryMap.forEach(function(value, key, map) {
-                            for (var i in value) {
-                                var sprite = value[i].sprite[0];
-                                var spriteFrame = sprite.getCurrentFrame();
-                                var rect = new Game.Rectangle(
-                                    value[i].x - (spriteFrame.width * sprite.anchor.x), 
-                                    key - (spriteFrame.height * sprite.anchor.y), 
-                                    spriteFrame.width, 
-                                    spriteFrame.height);
+                            for (let i in value) {
+                                const boundingBox = value[i].sprite[0].getBoundingBox();
+                                const rect = new Game.Rectangle(
+                                    value[i].x + boundingBox.left, 
+                                    value[i].y + boundingBox.top, 
+                                    boundingBox.width, 
+                                    boundingBox.height);
 
                                 if (rect.pointWithin(cursor.mousePos)) {
-                                    var tileId = value[i].tileId;
-                                    var scenery = Game.sceneryMap.get(value[i].id);
+                                    const tileId = value[i].tileId;
+                                    const scenery = Game.sceneryMap.get(value[i].id);
                                     
-                                    let unusable = ((value[i].attributes || 0) & 1) == 1;
+                                    const unusable = ((value[i].attributes || 0) & 1) == 1;
                                     if (room.player.inventory.slotInUse && scenery.name && !unusable) {
                                         Game.ContextMenu.push([{
                                             id: room.player.id,
@@ -1708,8 +1726,8 @@ $(function () {
                                                 type: "scenery"
                                             }]);
                                         }
-                                        for (var i = 0; i < Game.ContextMenu.contextOptions.length; ++i) {
-                                            var contextOption = Game.ContextMenu.contextOptions[i];
+                                        for (let i = 0; i < Game.ContextMenu.contextOptions.length; ++i) {
+                                            const contextOption = Game.ContextMenu.contextOptions[i];
                                             if (scenery.otherOptions & contextOption.id) {
                                                 Game.ContextMenu.push([{
                                                     action: contextOption.name, 
@@ -1726,13 +1744,14 @@ $(function () {
                         });
 
                         for (let i = 0; i < room.npcs.length; ++i) {
-                            let npc = room.npcs[i];
-                            var spriteFrame = room.npcs[i].getCurrentSpriteFrame();
-                                var rect = new Game.Rectangle(
-                                    npc.pos.x - ((spriteFrame.getCurrentFrame().width * spriteFrame.scale.x) * spriteFrame.anchor.x), 
-                                    npc.pos.y - ((spriteFrame.getCurrentFrame().height * spriteFrame.scale.y) * spriteFrame.anchor.y), 
-                                    (spriteFrame.getCurrentFrame().width * spriteFrame.scale.x), 
-                                    (spriteFrame.getCurrentFrame().height * spriteFrame.scale.y));
+                            const npc = room.npcs[i];
+
+                            const boundingBox = npc.getCurrentSpriteFrame().getBoundingBox();
+                            const rect = new Game.Rectangle(
+                                npc.pos.x + boundingBox.left, 
+                                npc.pos.y + boundingBox.top, 
+                                boundingBox.width, 
+                                boundingBox.height);
 
                             if (rect.pointWithin(cursor.mousePos)) {
                                 if (room.player.inventory.slotInUse) {
@@ -1756,8 +1775,8 @@ $(function () {
                                         }]);
                                     }
 
-                                    for (var j = 0; j < Game.ContextMenu.contextOptions.length; ++j) {
-                                        var contextOption = Game.ContextMenu.contextOptions[j];
+                                    for (let j = 0; j < Game.ContextMenu.contextOptions.length; ++j) {
+                                        const contextOption = Game.ContextMenu.contextOptions[j];
                                         if (npc.get("otherOptions") & contextOption.id) {
                                             Game.ContextMenu.push([{
                                                 action: contextOption.name, 
@@ -1771,12 +1790,12 @@ $(function () {
                             }
                         }
 
-                        var spriteFrame = room.player.getCurrentSpriteFrame();
-                            var rect = new Game.Rectangle(
-                                room.player.x - (spriteFrame.getCurrentFrame().width * spriteFrame.anchor.x), 
-                                room.player.y - (spriteFrame.getCurrentFrame().height * spriteFrame.anchor.y), 
-                                spriteFrame.getCurrentFrame().width, 
-                                spriteFrame.getCurrentFrame().height);
+                        const boundingBox = room.player.getCurrentSpriteFrame().getBoundingBox();
+                        const rect = new Game.Rectangle(
+                            room.player.x + boundingBox.left, 
+                            room.player.y + boundingBox.top, 
+                            boundingBox.width, 
+                            boundingBox.height);
 
                         if (rect.pointWithin(cursor.mousePos)) {
                             if (room.player.inventory.slotInUse) {

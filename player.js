@@ -163,11 +163,15 @@
             this.stats.process(step);
             this.inventory.process(step);
 
+            let cumulativeHitsplatLifetime = 0;
             for (let i = 0; i < this.hitsplats.length; ++i) {
+                cumulativeHitsplatLifetime += this.hitsplats[i].lifetime;
                 this.hitsplats[i].lifetime -= step;
                 if (this.hitsplats[i].lifetime < 0)
                     this.hitsplats[i].lifetime = 0;
             }
+            if (cumulativeHitsplatLifetime <= 0)
+                this.hitsplats = [];
 
             this.clickBox.setPos(this.x - this.width/2, this.y - this.height);
 		}

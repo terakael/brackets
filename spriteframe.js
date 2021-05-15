@@ -15,8 +15,15 @@
 
 		this.frames = [];
 		for (var i = 0; i < this.frameCount; ++i) {
-			let rect = new Game.Rectangle((obj.x + (this.margin * i) + (obj.w * i)), obj.y, obj.w, obj.h);
-			this.frames.push(rect);
+			this.frames.push(new Game.Rectangle((obj.x + (this.margin * i) + (obj.w * i)), obj.y, obj.w, obj.h));
+		}
+
+		this.customBoundingBoxes = new Map();
+		if (obj.customBoundingBoxes) {
+			for (const [frameId, frameData] of Object.entries(obj.customBoundingBoxes)) {
+				// framedata is x y w h in pct format (0-1)
+				this.customBoundingBoxes.set(Number(frameId), new Game.Rectangle(frameData.xPct * obj.w * this.scale.x, frameData.yPct * obj.h * this.scale.y, frameData.wPct * obj.w * this.scale.x, frameData.hPct * obj.h * this.scale.y));
+			}
 		}
 
 		this.currentFrame = 0;
@@ -24,6 +31,17 @@
 
 	SpriteFrame.prototype.setScale = function(scale) {
 		this.scale = {x: scale.x, y: scale.y};
+	}
+
+	SpriteFrame.prototype.getBoundingBox = function() {
+		const rect = this.customBoundingBoxes.has(this.currentFrame) 
+						? this.customBoundingBoxes.get(this.currentFrame) 
+						: new Game.Rectangle(0, 0, this.getCurrentFrame().width * this.scale.x, this.getCurrentFrame().height * this.scale.y);
+
+		return new Game.Rectangle(-(this.getCurrentFrame().width * this.scale.x * this.anchor.x) + rect.left,
+								  -(this.getCurrentFrame().height * this.scale.y * this.anchor.y) + rect.top,
+								  rect.width,
+								  rect.height);
 	}
 
 	
