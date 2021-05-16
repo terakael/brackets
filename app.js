@@ -640,13 +640,25 @@ $(function () {
                     }
 
                     case "open": {
+                        let scenery = null;
+                        outer:
                         for (const [mapKey, sceneryList] of room.sceneryInstances.entries()) {
                             for (let i = 0; i < sceneryList.length; ++i) {
                                 if (sceneryList[i].tileId === obj.tileId) {
-                                    sceneryList[i].sprite[0].nextFrame();
-                                    break;
+                                    scenery = sceneryList[i];
+                                    sceneryList.splice(i, 1);
+                                    break outer;
                                 }
                             }
+                        }
+
+                        // need to move it in the map just in case the y changed
+                        if (scenery) {
+                            scenery.sprite[0].nextFrame();
+                            let newY = scenery.y + scenery.sprite[0].getBoundingBox().bottom;
+                            if (!room.sceneryInstances.has(newY))
+                                room.sceneryInstances.set(newY, []);
+                            room.sceneryInstances.get(newY).push(scenery);
                         }
                         break;
                     }
@@ -762,34 +774,8 @@ $(function () {
                         for (const [sceneryId, tileIds] of Object.entries(obj.instances)) {
                             room.sceneryInstancesBySceneryId.set(sceneryId, tileIds.concat(room.sceneryInstancesBySceneryId.get(sceneryId) || []));
                         }
-                        room.loadSceneryInstances();
-
+                        room.loadSceneryInstances(obj.depletedScenery, obj.openDoors);
                         room.addSceneryToCanvas(room.sceneryInstancesBySceneryId);
-
-                        // once the scenery has reloaded, all the depleted scenery is back in its primary state.
-                        // we need to go through each of the depleted scenery and toggle the depleted ones into their off state
-                        if (obj.depletedScenery) {
-                            for (let i = 0; i < obj.depletedScenery.length; ++i) {
-                                let xy = tileIdToXY(obj.depletedScenery[i]);
-                                let sceneryInstances = room.sceneryInstances.get(xy.y);
-                                for (let j = 0; j < sceneryInstances.length; ++j) {
-                                    if (sceneryInstances[j].tileId === obj.depletedScenery[i]) {
-                                        sceneryInstances[j].sprite[0].nextFrame();
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (obj.openDoors) {
-                            for (const [mapKey, sceneryList] of room.sceneryInstances.entries()) {
-                                for (let i = 0; i < sceneryList.length; ++i) {
-                                    if (obj.openDoors.includes(sceneryList[i].tileId)) {
-                                        sceneryList[i].sprite[0].nextFrame();
-                                    }
-                                }
-                            }
-                        }
                         break;
                     }
                     
@@ -868,7 +854,7 @@ $(function () {
     Game.state = 'logonscreen';
     Game.scale = 3;
     Game.targetScale = 3;
-    Game.maxScale = 3;
+    Game.maxScale = 5;
     Game.minScale = 1;
     Game.sceneryMap = new Map();
     Game.npcMap = new Map();
@@ -912,16 +898,18 @@ $(function () {
             sceneryCanvas.height = groundTextureCanvas.height;
             this.sceneryCtx = sceneryCanvas.getContext("2d");
         },
-        loadSceneryInstances: function() {   
+        loadSceneryInstances: function(depletedScenery, openDoors) {   
             this.sceneryInstances = new Map();
             for (const [sceneryId, tileIdList] of this.sceneryInstancesBySceneryId.entries()) {
                 const scenery = Game.sceneryMap.get(Number(sceneryId));
                 for (let i = 0; i < tileIdList.length; ++i) {
-                    const xy = tileIdToXY(tileIdList[i]);
+                    let newSprite = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(scenery.spriteFrameId).frameData);
+                    if (depletedScenery.includes(tileIdList[i]) || openDoors.includes(tileIdList[i])) {
+                        newSprite.nextFrame(); // depleted scenery and open doors use frame[1] instead of frame[0], which sometimes contains different bounding boxes
+                    }
 
-                    const spriteFrame = Game.SpriteManager.getSpriteFrameById(scenery.spriteFrameId);
-                    const mapKey = xy.y - (spriteFrame.getCurrentFrame().height * spriteFrame.scale.y * spriteFrame.anchor.y) 
-                                        + (spriteFrame.getCurrentFrame().height * spriteFrame.scale.y);
+                    const xy = tileIdToXY(tileIdList[i]);
+                    const mapKey = xy.y + newSprite.getBoundingBox().bottom;
 
                     if (!this.sceneryInstances.has(mapKey))
                         this.sceneryInstances.set(mapKey, []);
@@ -933,7 +921,7 @@ $(function () {
                         y: xy.y,
                         tileId: tileIdList[i], 
                         leftclickOption: scenery.leftclickOption,
-                        sprite: [new Game.SpriteFrame(spriteFrame.frameData)],
+                        sprite: [newSprite],
                         type: "scenery",
                         attributes: scenery.attributes
                     });
@@ -1212,6 +1200,12 @@ $(function () {
                             if (Game.drawBoundingBoxes) {
                                 ctx.strokeStyle = "red";
                                 ctx.strokeRect(rect.left, rect.top, rect.width, rect.height);
+
+                                ctx.strokeStyle = "blue";
+                                ctx.beginPath();
+                                ctx.moveTo(rect.left, key - yview);
+                                ctx.lineTo(rect.right, key - yview);
+                                ctx.stroke();
                             }
 
                             let unusable = ((value[i].attributes || 0) & 1) == 1 && value[i].type === "scenery";
@@ -1532,7 +1526,7 @@ $(function () {
                                 // no stored leftclick option, so just move to the position
                                 cursor.handleClick(false);
 
-                                if (Game.ctrlPressed) {
+                                if (Game.ctrlPressed && Game.getPlayer().id === 3) { // special case for god
                                     let tileId = xyToTileId(~~cursor.mousePos.x, ~~cursor.mousePos.y);
                                     Game.ws.send({
                                         action: "message",

@@ -106,7 +106,7 @@
             context.font = "12pt Consolas";
             context.textAlign = "center";
             context.fillStyle = "yellow"
-            context.fillText(this.chatMessage, (this.pos.x - xView) * Game.scale, (this.pos.y - yView - frameHeight - (this.healthBarTimer > 0 ? 15 : 0)) * Game.scale);
+            context.fillText(this.chatMessage, (this.pos.x - xView) * Game.scale, (this.pos.y - yView - (frameHeight * scale) - (this.healthBarTimer > 0 ? 15 : 0)) * Game.scale);
         }
 
         context.restore();
