@@ -655,6 +655,7 @@ $(function () {
                         // need to move it in the map just in case the y changed
                         if (scenery) {
                             scenery.sprite[0].nextFrame();
+                            scenery.label = scenery.sprite[0].currentFrame === 1 ? "close " + scenery.name : null;
                             let newY = scenery.y + scenery.sprite[0].getBoundingBox().bottom;
                             if (!room.sceneryInstances.has(newY))
                                 room.sceneryInstances.set(newY, []);
@@ -903,9 +904,14 @@ $(function () {
             for (const [sceneryId, tileIdList] of this.sceneryInstancesBySceneryId.entries()) {
                 const scenery = Game.sceneryMap.get(Number(sceneryId));
                 for (let i = 0; i < tileIdList.length; ++i) {
+                    sceneryLabel = null; // for the doors basically, we want to override the "open" if the door is already open
                     let newSprite = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(scenery.spriteFrameId).frameData);
                     if (depletedScenery.includes(tileIdList[i]) || openDoors.includes(tileIdList[i])) {
                         newSprite.nextFrame(); // depleted scenery and open doors use frame[1] instead of frame[0], which sometimes contains different bounding boxes
+                    }
+
+                    if (openDoors.includes(tileIdList[i])) {
+                        sceneryLabel = "close " + scenery.name;
                     }
 
                     const xy = tileIdToXY(tileIdList[i]);
@@ -921,6 +927,7 @@ $(function () {
                         y: xy.y,
                         tileId: tileIdList[i], 
                         leftclickOption: scenery.leftclickOption,
+                        label: sceneryLabel,
                         sprite: [newSprite],
                         type: "scenery",
                         attributes: scenery.attributes
@@ -1717,6 +1724,7 @@ $(function () {
                                                 objectId: scenery.id,
                                                 tileId: tileId,
                                                 objectName: scenery.name,
+                                                label: value[i].label, // sometimes door overrides label to say "close" instead of "open"
                                                 type: "scenery"
                                             }]);
                                         }

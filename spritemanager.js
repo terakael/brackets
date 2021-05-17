@@ -19,7 +19,6 @@
 				map.onload = function() {
 					that.spriteMaps.push({
 						id: spriteMaps[i].id,
-						name: spriteMaps[i].name,
 						map: map
 					});
 
@@ -28,7 +27,7 @@
 					}
 				}
 				map.onerror = function() {
-					console.log("error loading spritemap " + spriteMaps[i].name);
+					console.log("error loading spritemap id=" + spriteMaps[i].id);
 				}
 			}
 
@@ -99,13 +98,6 @@
 				if (this.spriteMapsWithColor[i].id === id && this.spriteMapsWithColor[i].color === color) {
 					return this.spriteMapsWithColor[i];
 				}
-			}
-			return null;
-		},
-		getSpriteMapByName: function(name) {
-			for (var i in this.spriteMaps) {
-				if (this.spriteMaps[i].name === name)
-					return this.spriteMaps[i].map;
 			}
 			return null;
 		},
