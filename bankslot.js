@@ -54,16 +54,17 @@
 
         let spriteFrame = this.item.spriteFrame.getCurrentFrame();
         let spriteMap = Game.SpriteManager.getSpriteMapById(this.item.spriteFrame.spriteMapId);
-        context.drawImage(spriteMap, 
-            spriteFrame.left, 
-            spriteFrame.top, 
-            spriteFrame.width, 
-            spriteFrame.height, 
-            this.rect.left + (this.rect.width / 2) + buttonOffsetX - (itemWidth / 2), 
-            this.rect.top + (this.rect.height / 2) + buttonOffsetY - (itemHeight / 2), 
-            itemWidth, 
-            itemHeight);
-
+        if (spriteMap) {
+            context.drawImage(spriteMap, 
+                spriteFrame.left, 
+                spriteFrame.top, 
+                spriteFrame.width, 
+                spriteFrame.height, 
+                this.rect.left + (this.rect.width / 2) + buttonOffsetX - (itemWidth / 2), 
+                this.rect.top + (this.rect.height / 2) + buttonOffsetY - (itemHeight / 2), 
+                itemWidth, 
+                itemHeight);
+        }
         context.textAlign = "right";
         context.textBaseline = "top";
         context.font = "12px Consolas";

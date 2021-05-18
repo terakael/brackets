@@ -65,7 +65,7 @@
                 break;
         }
 
-        if (spriteRect)
+        if (spriteRect && Game.SpriteManager.getSpriteMapById(10))
             context.drawImage(Game.SpriteManager.getSpriteMapById(10), 
                             spriteRect.left, 
                             spriteRect.top, 

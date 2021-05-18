@@ -47,6 +47,9 @@
 	
 	SpriteFrame.prototype.draw = function(ctx, x, y, color) {
 		let spriteMap = Game.SpriteManager.getSpriteMapById(this.spriteMapId);
+		if (!spriteMap)
+			return; // maybe sprite map hasn't finished loading yet
+
 		if (color) {
 			let spriteMapObj = Game.SpriteManager.getSpriteMapByIdAndColor(this.spriteMapId, color);
 			if (spriteMapObj && spriteMapObj.ready) {

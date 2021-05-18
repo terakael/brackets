@@ -13,6 +13,8 @@
 		loadSpriteMaps: function(spriteMaps) {
 			let that = this;
 			let postaction = function(){};
+			let loadedImages = 0;
+
 			for (let i in spriteMaps) {
 				let map = new Image();
 				map.src = "data:image/png;base64,{0}".format(spriteMaps[i].dataBase64);
@@ -22,7 +24,7 @@
 						map: map
 					});
 
-					if (that.spriteMaps.length === spriteMaps.length) {
+					if (++loadedImages === spriteMaps.length) {
 						postaction();
 					}
 				}

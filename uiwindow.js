@@ -8,22 +8,6 @@
 
     UIWindow.prototype.setButtons = function(buttons) {
         this.uiButtons = buttons;
-        var initialBuffer = 30;
-        var buffer = 15;
-
-        let buttonRows = Math.ceil(this.uiButtons.length / 4);
-        let x = this.rect.left;
-        let h = initialBuffer + (buttonRows * buffer) + (buttonRows * this.uiButtons[0].rect.height);
-        let y = (Game.worldCameraRect.height / 2) - (h / 2);
-        let w = this.rect.width;
-        this.rect.set(x, y, w, h);
-
-        for (var i = 0; i < this.uiButtons.length; ++i) {
-            this.uiButtons[i].setLocalPosition(
-                ~~(this.rect.left + buffer + ((i % 4) * buffer) + ((i % 4) * this.uiButtons[i].rect.width)) + 0.5,
-                ~~(this.rect.top + initialBuffer + (Math.floor(i / 4) * buffer) + (Math.floor(i / 4) * this.uiButtons[i].rect.height) + 0.5)
-            );
-        }
     }
     
     UIWindow.prototype.draw = function(context, xview, yview) {
@@ -73,6 +57,27 @@
 
     UIWindow.prototype.onMouseScroll = function(e) {
         
+    }
+
+    UIWindow.prototype.onResize = function(worldRect) {
+        let uiWidth = worldRect.width / 2;
+        let uix = ~~((worldRect.width / 2) - (uiWidth / 2)) + 0.5;
+
+        const slotRectWidth = this.uiButtons[0].rect.width;
+        const slotRectHeight = this.uiButtons[0].rect.height;
+
+        let maxRows = Math.max(~~(uiWidth / (slotRectWidth + 10)), 1);
+        let uiHeight = Math.max(Math.ceil(this.uiButtons.length / maxRows), 2) * (slotRectHeight + 10) + 50;
+        let uiy = ~~((worldRect.height / 2) - (uiHeight / 2)) + 0.5;
+
+        this.rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+        
+        let margin = ((this.rect.width - (maxRows * (slotRectWidth + 10))) / 2);
+        for (let i = 0; i < this.uiButtons.length; ++i) {
+            let currentRow = ~~(i / maxRows);
+            let currentColumn = i % maxRows;
+            this.uiButtons[i].rect.setPos(this.rect.left + margin + (currentColumn * (slotRectWidth + 10)), this.rect.top + 30 + (currentRow * (slotRectHeight + 10)));
+        }
     }
 
     Game.UIWindow = UIWindow;

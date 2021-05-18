@@ -104,7 +104,8 @@
                 hoveringOverAStat = true;
             }
 
-            ctx.drawImage(this.statIconSpriteMap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 16, 16);
+            if (this.statIconSpriteMap)
+                ctx.drawImage(this.statIconSpriteMap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 16, 16);
 
             ctx.textAlign = "left";
             ctx.textBaseline = "middle";
@@ -150,7 +151,8 @@
 
                 let xOffset = (i % 6) * 38; 
 
-            ctx.drawImage(this.statIconSpriteMap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, yOffset - 8, 16, 16);
+            if (this.statIconSpriteMap)
+                ctx.drawImage(this.statIconSpriteMap, (i%3) * 32, ~~(i/3) * 32, 32, 32, this.x + xview + xOffset, yOffset - 8, 16, 16);
 
             ctx.textBaseline = "middle";
             ctx.fillStyle = "red";
@@ -169,15 +171,16 @@
             ctx.globalAlpha = this.expDrops[i].lifetime < 0.2 ? (this.expDrops[i].lifetime * 5) : 1;
 
             let expTextWidth = ctx.measureText(String(this.expDrops[i].exp)).width;
-            ctx.drawImage(this.statIconSpriteMap, 
-                          (this.expDrops[i].statId%3) * 32, 
-                          ~~(this.expDrops[i].statId/3) * 32, 
-                          32, 
-                          32, 
-                          this.rect.left - expTextWidth - 25, 
-                          100 - yOffset - 8, 
-                          16, 
-                          16);
+            if (this.statIconSpriteMap)
+                ctx.drawImage(this.statIconSpriteMap, 
+                            (this.expDrops[i].statId%3) * 32, 
+                            ~~(this.expDrops[i].statId/3) * 32, 
+                            32, 
+                            32, 
+                            this.rect.left - expTextWidth - 25, 
+                            100 - yOffset - 8, 
+                            16, 
+                            16);
             ctx.fillText(this.expDrops[i].exp, this.rect.left - 10, 100 - yOffset);
         }
         

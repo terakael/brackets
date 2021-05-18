@@ -24,7 +24,7 @@ $(function () {
                     Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
                     Game.SpriteManager.loadItems(obj["items"]);
                     Game.SpriteManager.loadGroundTextures(obj["groundTextures"]);
-                    room.loadTextureMaps();
+                    room.loadTextureMaps(obj.spriteMaps.map(e => e.id));
                     Game.ContextMenu.loadContextOptions(obj["contextOptions"]);
                     room.loadNpcs(obj.npcs);
                     Game.statMap = new Map(Object.entries(obj["statMap"]));
@@ -119,10 +119,10 @@ $(function () {
                         
                         room.player.loadStats(obj.stats, obj.boosts);
                         room.player.setBonuses(obj.bonuses);
-                        room.player.updateInventory(obj.inventory);
+                        // room.player.updateInventory(obj.inventory);
                         room.player.setAnimations(obj.playerDto.baseAnimations);
                         room.player.setEquipAnimations(obj.playerDto.equipAnimations);
-                        room.player.setEquippedSlots(obj.equippedSlots);
+                        // room.player.setEquippedSlots(obj.equippedSlots);
                         room.player.loadAttackStyles(obj.attackStyles);
                         room.player.setAttackStyle(obj.playerDto.attackStyleId);
                         
@@ -139,6 +139,21 @@ $(function () {
                         room.player = null;
                         room.otherPlayers = [];
                         Game.state = 'logonscreen';
+                        break;
+                    }
+
+                    case "add_resources": {
+                        let resource = obj;
+                        console.log(resource);
+                        Game.SpriteManager.loadSpriteMaps(resource.spriteMaps).done(function() {
+                            
+                            if (resource.groundTextureSpriteMaps) {
+                                room.loadTextureMaps(resource.groundTextureSpriteMaps).done(function() {
+                                    console.log("reloading ground textures to canvas");
+                                    room.saveGroundTexturesToCanvas();
+                                });
+                            }
+                        });
                         break;
                     }
 
@@ -356,6 +371,8 @@ $(function () {
                             storedCoal: obj["storedCoal"],
                             furnaceTile: obj["furnaceTile"]
                         };
+
+                        uiWindow.onResize(Game.worldCameraRect);
                         break;
                     }
 
@@ -756,7 +773,7 @@ $(function () {
                     case "add_ground_texture_instances": {
                         for (const [key, value] of Object.entries(obj.instances)) {
                             for (let i = 0; i < value.length; ++i) {
-                                room.groundTextureInstances.set(value[i], key);
+                                room.groundTextureInstances.set(value[i], key); // tileId, groundTextureId
                             }
                         }
 
@@ -954,16 +971,21 @@ $(function () {
                 }
             }
         },
-        loadTextureMaps: function() {
-            this.groundTexturesMap = new Map();
+        loadTextureMaps: function(spriteMapIds) {
+            // this.groundTexturesMap = new Map();
+            let postaction = function(){};
             let groundTextures = Game.SpriteManager.groundTextures;
             
             let spriteMaps = new Map();
             for (let i = 0; i < groundTextures.length; ++i) {
+                if (!spriteMapIds.includes(groundTextures[i].spriteMapId))
+                    continue;
+
                 if (!spriteMaps.has(groundTextures[i].spriteMapId))
                     spriteMaps.set(groundTextures[i].spriteMapId, Game.SpriteManager.getSpriteMapById(groundTextures[i].spriteMapId));
             }
 
+            let loadedImages = 0;
             let that = this;
             spriteMaps.forEach(function(spriteMap, spriteMapId, map) {
                 let imgCanvas = document.createElement("canvas");
@@ -981,6 +1003,7 @@ $(function () {
                 subImgCtx.width = 32;
                 subImgCtx.height = 32;
 
+                let loadedSubImages = 0;
                 let matchingGroundTextures = groundTextures.filter(e => e.spriteMapId == spriteMapId);
                 for (let i = 0; i < matchingGroundTextures.length; ++i) {
                     let groundTexture = matchingGroundTextures[i];
@@ -991,10 +1014,21 @@ $(function () {
                     subImg.onload = function() {
                         let pat = context.createPattern(this, "repeat");
                         that.groundTexturesMap.set(groundTexture.id, pat);
+
+                        if (++loadedSubImages === matchingGroundTextures.length) {
+                            if (++loadedImages === spriteMapIds.length)
+                                postaction();
+                        }
                     }
                     subImg.src = subImgCanvas.toDataURL("image/png");
                 }
             });
+
+            return {
+				done: function(f) {
+					postaction = f || postaction;
+				}
+			}
         },
         loadNpcs: function(npcJson) {
             for (let i = 0; i < npcJson.length; ++i) {
@@ -1450,9 +1484,10 @@ $(function () {
             }
 
             // save the current ground textures to a background canvas, then we can draw it in a single draw call each frame
-            this.saveGroundTexturesToCanvas(this.groundTextureCtx);
+            this.saveGroundTexturesToCanvas();
         },
-        saveGroundTexturesToCanvas: function(ctx) {
+        saveGroundTexturesToCanvas: function() {
+            let ctx = this.groundTextureCtx;
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
             // take the ground texture with the most instances and draw it first as the entire background
             let textureWithMostInstances = 0;
@@ -1464,7 +1499,7 @@ $(function () {
             }
 
             if (textureWithMostInstances > 0) {
-                ctx.fillStyle = this.groundTexturesMap.get(textureWithMostInstances);
+                ctx.fillStyle = this.groundTexturesMap.get(textureWithMostInstances) || "black";
                 ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
             }
 
@@ -1478,7 +1513,7 @@ $(function () {
                     ctx.rect(value[i].x, value[i].y, value[i].w, value[i].h);
                 }
 
-                ctx.fillStyle = this.groundTexturesMap.get(key);
+                ctx.fillStyle = this.groundTexturesMap.get(key) || "black";
                 ctx.fill();
 
                 ctx.restore();

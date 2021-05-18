@@ -26,7 +26,7 @@
     }
 
     UIButton.prototype.setLocalPosition = function(x, y) {
-        this.rect.set(~~(this.rect.left + x) + 0.5, ~~(this.rect.top + y) + 0.5);
+        this.rect.setPos(~~(this.rect.left + x) + 0.5, ~~(this.rect.top + y) + 0.5);
     }
     
     UIButton.prototype.draw = function(context) {
@@ -57,15 +57,17 @@
 
         let spriteFrame = drawItem.spriteFrame.getCurrentFrame();
         let spriteMap = Game.SpriteManager.getSpriteMapById(drawItem.spriteFrame.spriteMapId);
-        context.drawImage(spriteMap, 
-            spriteFrame.left, 
-            spriteFrame.top, 
-            spriteFrame.width, 
-            spriteFrame.height, 
-            this.rect.left + (this.rect.width / 2) + buttonOffsetX - (itemWidth * 1.5), 
-            this.rect.top + buttonOffsetY, 
-            itemWidth * 1.5, 
-            itemHeight * 1.5);
+        if (spriteMap) {
+            context.drawImage(spriteMap, 
+                spriteFrame.left, 
+                spriteFrame.top, 
+                spriteFrame.width, 
+                spriteFrame.height, 
+                this.rect.left + (this.rect.width / 2) + buttonOffsetX - (itemWidth * 1.5), 
+                this.rect.top + buttonOffsetY, 
+                itemWidth * 1.5, 
+                itemHeight * 1.5);
+        }
 
         context.textAlign = "left";
         context.textBaseline = "middle";
