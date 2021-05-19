@@ -23,14 +23,14 @@ $(function () {
                 Game.SpriteManager.loadSpriteMaps(obj["spriteMaps"]).done(function() {
                     Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
                     Game.SpriteManager.loadItems(obj["items"]);
-                    Game.SpriteManager.loadGroundTextures(obj["groundTextures"]);
+                    // Game.SpriteManager.loadGroundTextures(obj["groundTextures"]);
                     room.loadTextureMaps(obj.spriteMaps.map(e => e.id));
                     Game.ContextMenu.loadContextOptions(obj["contextOptions"]);
-                    room.loadNpcs(obj.npcs);
+                    // room.loadNpcs(obj.npcs);
                     Game.statMap = new Map(Object.entries(obj["statMap"]));
 
-                    for (let i = 0; i < obj.scenery.length; ++i)
-                        Game.sceneryMap.set(obj.scenery[i].id, obj.scenery[i]);
+                    // for (let i = 0; i < obj.scenery.length; ++i)
+                    //     Game.sceneryMap.set(obj.scenery[i].id, obj.scenery[i]);
 
                     Game.expMap = new Map();
                     for (let [key, value] of Object.entries(obj["expMap"]).sort((a, b) => b < a)) {
@@ -145,8 +145,23 @@ $(function () {
                     case "add_resources": {
                         let resource = obj;
                         console.log(resource);
+                        if (obj.spriteFrames)
+                            Game.SpriteManager.loadSpriteFrames(obj.spriteFrames);
+
+                        if (obj.items)
+                            Game.SpriteManager.loadItems(obj.items);
+
+                        if (obj.groundTextures)
+                            Game.SpriteManager.loadGroundTextures(obj.groundTextures);
+
+                        if (obj.scenery)
+                            for (let i = 0; i < obj.scenery.length; ++i)
+                                Game.sceneryMap.set(obj.scenery[i].id, obj.scenery[i]);
+                        
+                        if (obj.npcs)
+                            room.loadNpcs(obj.npcs);
+
                         Game.SpriteManager.loadSpriteMaps(resource.spriteMaps).done(function() {
-                            
                             if (resource.groundTextureSpriteMaps) {
                                 room.loadTextureMaps(resource.groundTextureSpriteMaps).done(function() {
                                     console.log("reloading ground textures to canvas");
@@ -2150,8 +2165,10 @@ window.addEventListener("resize", function(e) {
 
     Game.Minimap.setRect(Game.hudcam.viewportRect.left + 10, Game.hudcam.viewportRect.top + 10, 230, 230);
 
-    Game.getPlayer().inventory.onResize(Game.hudcam.viewportRect.left);
-    Game.getPlayer().stats.onResize(Game.hudcam.viewportRect.left);
+    if (Game.getPlayer()) {
+        Game.getPlayer().inventory.onResize(Game.hudcam.viewportRect.left);
+        Game.getPlayer().stats.onResize(Game.hudcam.viewportRect.left);
+    }
     Game.HUD.onResize(Game.hudcam.viewportRect.left);
 
     if (Game.activeUiWindow)
