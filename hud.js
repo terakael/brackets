@@ -133,7 +133,8 @@
     }
 
     HUD.prototype.setActivePrayers = function(activePrayers) {
-        this.activePrayers = activePrayers;
+        if (activePrayers)
+            this.activePrayers = activePrayers;
     }
 
     HUD.prototype.process = function(dt) {

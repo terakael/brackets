@@ -3,7 +3,9 @@ $(function () {
     const canvas = document.getElementById("game");
     const context = canvas.getContext("2d");
     Game.context = context;
-    const ip = "localhost", port = "45555", resourcePort = "45556";
+    const ip = "192.168.1.5", port = "45555", resourcePort = "45556";
+
+    Game.enableSmoothing = true;
 
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -272,13 +274,20 @@ $(function () {
                             }
                         }
 
-                        Game.activeUiWindow = new Game.TradeWindow(Game.worldCameraRect, otherPlayerName);
+                        Game.activeUiWindow = new Game.TradeWindow(Game.worldCameraRect, otherPlayerName, obj.duelRules); // duelRules is null if it's not a duel
                         break;
                     }
 
                     case "accept_trade_offer": {// player clicks "accept" button in trade screen
                         if (Game.activeUiWindow.type === "trade") {
                             Game.activeUiWindow.handleAccept(obj)
+                        }
+                        break;
+                    }
+
+                    case "toggle_duel_rule": {
+                        if (Game.activeUiWindow.type === "trade") {
+                            Game.activeUiWindow.setDuelRules(obj);
                         }
                         break;
                     }
@@ -553,8 +562,8 @@ $(function () {
 
                     case "talk to": {
                         for (let i = 0; i < room.npcs.length; ++i) {
-                            if (room.npcs[i].instanceId === obj["objectId"]) {
-                                room.npcs[i].setChatMessage(obj["message"]);
+                            if (room.npcs[i].instanceId === obj.objectId && obj.message) {
+                                room.npcs[i].setChatMessage(obj.message);
                                 break;
                             }
                         }
@@ -1003,6 +1012,8 @@ $(function () {
             let loadedImages = 0;
             let that = this;
             spriteMaps.forEach(function(spriteMap, spriteMapId, map) {
+                
+
                 let imgCanvas = document.createElement("canvas");
                 let imgCtx = imgCanvas.getContext("2d");
                 imgCanvas.width = spriteMap.width;
@@ -1561,7 +1572,10 @@ $(function () {
             if (Game.activeUiWindow) {
                 Game.activeUiWindow.onMouseDown(e);
             }
-            else if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos)) {
+            else if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos) || 
+                    (Game.ContextMenu.active && Game.getPlayer().inventory.rect.pointWithin({x: Game.ContextMenu.rect.left, y: Game.ContextMenu.rect.top}))) {
+                // if the player right-clicks on an item near the bottom of the inventory and the context option is off the inventory rect
+                // then we still want to handle the mouse click right
                 Game.getPlayer().inventory.onMouseDown(e.button);
             } 
             else if (Game.ContextMenu.active && e.button == 0) {// left
@@ -2042,7 +2056,9 @@ $(function () {
     // -->
 });
 Game.getMousePos = function (e) {
-    return { x: e.clientX - Game.boundingRect.left, y: e.clientY - Game.boundingRect.top };
+    if (Game.boundingRect)
+        return { x: e.clientX - Game.boundingRect.left, y: e.clientY - Game.boundingRect.top };
+    return {x: 0, y: 0};
 };
 window.addEventListener("mousemove", function (e) {
     Game.mousePos = Game.getMousePos(e);
@@ -2116,6 +2132,11 @@ window.addEventListener("keydown", function (e) {
                                 action: "bank",
                                 id: Game.getPlayer().id
                             });
+                            break;
+                        }
+
+                        case "::smoothing": {
+                            Game.enableSmoothing = !Game.enableSmoothing;
                             break;
                         }
 

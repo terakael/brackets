@@ -110,6 +110,12 @@
 	};
 
 	SpriteFrame.prototype.drawImage = function(ctx, x, y, spriteMap) {
+
+		ctx.mozImageSmoothingEnabled = Game.enableSmoothing;
+		ctx.webkitImageSmoothingEnabled = Game.enableSmoothing;
+		ctx.msImageSmoothingEnabled = Game.enableSmoothing;
+		ctx.imageSmoothingEnabled = Game.enableSmoothing;
+
 		ctx.drawImage(spriteMap, 
 			this.frames[this.currentFrame].left + 0.5, 
 			this.frames[this.currentFrame].top + 0.5, 

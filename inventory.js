@@ -257,14 +257,16 @@
 			} 
 			else {
 				var contextOption = Game.ContextMenu.getContextOptionById(slot.item.leftclickOption);
-				options.push({
-					action: contextOption.name, 
-					slot: slot.id, 
-					objectId: slot.item.id, 
-					objectName: slot.item.name, 
-					type: "item", 
-					priority: contextOption.priority
-				});
+				if (contextOption) {
+					options.push({
+						action: contextOption.name, 
+						slot: slot.id, 
+						objectId: slot.item.id, 
+						objectName: slot.item.name, 
+						type: "item", 
+						priority: contextOption.priority
+					});
+				}
 
 				for (var i = 0; i < Game.ContextMenu.contextOptions.length; ++i) {
 					var contextOption = Game.ContextMenu.contextOptions[i];
@@ -291,7 +293,6 @@
 					if (Game.ContextMenu.active) {
 						// handle context menu click
 						this.selectedMenuItem = true;
-						console.log("use");
 						let menuItem = Game.ContextMenu.handleMenuSelect();
 						if (menuItem.action === "use")
 							this.handleSlotAction(menuItem.action, menuItem.originalPos);
