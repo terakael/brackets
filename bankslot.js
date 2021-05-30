@@ -73,7 +73,7 @@
         // current stock
         context.fillText(this.currentStock, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
 
-        if (this.currentCharges > 0) {
+        if (this.item.isCharged()) {
             context.fillStyle = "red";
             context.textBaseline = "bottom";
             context.fillText(this.currentCharges, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.bottom + buttonOffsetY - 5);
