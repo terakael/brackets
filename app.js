@@ -528,8 +528,8 @@ $(function () {
                             player1.inCombat = false;
                             player1.currentAnimation = player1.attackingFromRight ? "left" : "right";
 
-                            if (obj.playerTileId)
-                                player1.setDestPosAndSpeedByTileId(obj.playerTileId);
+                            if (obj.player1TileId)
+                                player1.setDestPosAndSpeedByTileId(obj.player1TileId);
                         }
 
                         let player2 = null;
