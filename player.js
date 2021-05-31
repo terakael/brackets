@@ -442,6 +442,7 @@
 
             if (obj.hasOwnProperty("respawn")) {
                 this.deathSequence = false;
+                this.combatOffsetX = 0;
             }
 
             if (obj.hasOwnProperty("faceDirection")) {
