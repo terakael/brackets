@@ -54,7 +54,7 @@
 
         context.textAlign = "right";
         context.textBaseline = "top";
-        context.font = "10pt Consolas";
+        context.font = "10pt customFont";
         context.fillStyle = "yellow";
 
         let friendlyCount = countToFriendly(this.currentStock);

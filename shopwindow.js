@@ -25,7 +25,7 @@
 
         context.textBaseline = "top";
         context.textAlign = "center";
-        context.font = "15px Consolas";
+        context.font = "15px customFont";
         context.fillStyle = "white";
         context.fillText(this.name, ~~(this.rect.left + (this.rect.width / 2)) + 0.5, ~~(this.rect.top + 10) + 0.5);
 

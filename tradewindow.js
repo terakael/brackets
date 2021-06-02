@@ -13,7 +13,7 @@
 		draw: function(context, selected, opponentSelected) {
             context.save();
             context.textAlign = "center";
-            context.font = "15px Consolas";
+            context.font = "15px customFont";
             context.textBaseline = "middle";
             
 			if (this.rect) {
@@ -117,7 +117,7 @@
 
         context.textBaseline = "top";
         context.textAlign = "center";
-        context.font = "15px Consolas";
+        context.font = "15px customFont";
         context.fillStyle = "white";
         context.fillText(Game.currentPlayer.name, ~~(this.playerRect.left + (this.playerRect.width / 2)) + 0.5, ~~(this.playerRect.top + 10) + 0.5);
         context.fillText(this.otherPlayerName, ~~(this.otherRect.left + (this.otherRect.width / 2)) + 0.5, ~~(this.otherRect.top + 10) + 0.5);
@@ -137,7 +137,7 @@
 
         if (this.playerAccepted) {
             context.textAlign = "center";
-            context.font = "15px Consolas";
+            context.font = "15px customFont";
             context.fillStyle = "white";
             context.textBaseline = "middle";
             context.fillText("you have accepted.", 
@@ -147,7 +147,7 @@
 
         if (this.otherAccepted) {
             context.textAlign = "center";
-            context.font = "15px Consolas";
+            context.font = "15px customFont";
             context.fillStyle = "white";
             context.textBaseline = "middle";
             context.fillText(this.otherPlayerName + " has accepted.", 
@@ -194,7 +194,7 @@
         if (this.duelRules !== this.opponentDuelRules)
             context.fillStyle = "#555";
         context.textAlign = "center";
-        context.font = "25px Consolas";
+        context.font = "25px customFont";
         context.textBaseline = "middle";
         context.fillText("accept", this.acceptButtonRect.left + (this.acceptButtonRect.width / 2), this.acceptButtonRect.top + (this.acceptButtonRect.height / 2))
         context.restore();
@@ -211,7 +211,7 @@
 
         context.fillStyle = "white";
         context.textAlign = "center";
-        context.font = "18px Consolas";
+        context.font = "18px customFont";
         context.textBaseline = "middle";
 
         context.fillText("duel rules", this.duelRulesRect.left + (this.duelRulesRect.width / 2), this.duelRulesRect.top + 20);

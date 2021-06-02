@@ -81,11 +81,11 @@
     }
 
     HUD.prototype.drawPrayerSection = function(ctx) {
-        ctx.font = "15px Consolas";
+        ctx.font = "15px customFont";
         ctx.textBaseline = "top";
         ctx.textAlign = "left";
         ctx.fillStyle = "#555";
-		ctx.fillText("Prayers", this.rect.left + 10, this.rect.bottom - 95);
+		ctx.fillText("prayers", this.rect.left + 10, this.rect.bottom - 95);
 
         ctx.strokeStyle = "gray";
         for (let i = 0; i < this.prayers.length; ++i) {
@@ -104,11 +104,11 @@
                 ctx.strokeStyle = "gray";
                 ctx.strokeRect(statRect.left+10, statRect.top-10, statRect.width-20, statRect.height+10);
 
-                ctx.font = "17px Consolas";
+                ctx.font = "17px customFont";
                 ctx.fillStyle = "white";
                 ctx.fillText(`"${this.prayers[i].name}"`, statRect.left + 20, statRect.top + 5);
 
-                ctx.font = "13px Consolas";
+                ctx.font = "13px customFont";
                 ctx.fillText(`level ${this.prayers[i].level}`, statRect.left + 20, statRect.top + 35);
                 ctx.fillText(`drain rate: ${this.prayers[i].drainRate}`, statRect.left + 20, statRect.top + 50);
 

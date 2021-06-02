@@ -78,10 +78,10 @@
     }
     Stats.prototype.draw = function(ctx, xview, yview) {
         ctx.save();
-        ctx.font = "15px Consolas";
+        ctx.font = "15px customFont";
         ctx.textAlign = "left";
         ctx.fillStyle = "#555";
-		ctx.fillText("Stats", ~~(this.x + xview) + 0.5, ~~(yview) + 0.5);
+		ctx.fillText("stats", ~~(this.x + xview) + 0.5, ~~(yview) + 0.5);
 		ctx.strokeStyle = "rgba(100, 100, 100, 0.6)";
         let statBoxWidth = 230;
 
@@ -137,11 +137,11 @@
             ctx.fillText("total: {0} ({1}xp)".format(this.totalLvl(), ~~this.totalExp()), this.x + xview + (statBoxWidth / 2), yOffset + 8);
         }
 
-        ctx.font = "15px Consolas";
+        ctx.font = "15px customFont";
         ctx.textAlign = "left";
         ctx.fillStyle = "#555";
         yOffset += 30;
-        ctx.fillText("Bonuses", ~~(this.x + xview) + 0.5, ~~yOffset + 0.5);
+        ctx.fillText("bonuses", ~~(this.x + xview) + 0.5, ~~yOffset + 0.5);
         yOffset += 15;
 
         let bonusStats = ["acc", "str", "def", "pray", "mage", "hp"];
@@ -162,7 +162,7 @@
         }
 
         ctx.textAlign = "right";
-        ctx.font = "18px Consolas";
+        ctx.font = "18px customFont";
         for (let i = 0; i < this.expDrops.length; ++i) {
             if (this.expDrops[i].lifetime === 1)
                 continue;

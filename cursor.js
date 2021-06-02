@@ -37,12 +37,12 @@
             let tileId = tilex + (tiley * Game.worldTileWidth);
             context.textAlign = "center";
             context.textBaseline = "top";
-            context.font = "10px Consolas";
+            context.font = "10px customFont";
             context.fillStyle = "white";
             context.fillText(tileId, (tilex * this.size + (this.size/2)) - xview, (tiley * this.size) - yview - (this.size/2));
 
             context.textBaseline = "bottom";
-            context.font = "7px Consolas";
+            context.font = "7px customFont";
             context.fillText(`{${realx},${realy}}`, (tilex * this.size + (this.size/2)) - xview, (tiley * this.size) - yview + (this.size * 1.5))
             context.restore();
         }
@@ -51,7 +51,7 @@
             context.save();
             context.textAlign = "center";
             context.textBaseline = "middle";
-            context.font = "15px Consolas";
+            context.font = "15px customFont";
             context.fillStyle = "rgba(255, {0}, 0, {1}".format(this.actionClick ? 0 : 255, this.cursorLife);
             context.fillText("x", this.clickPos.x - xview, this.clickPos.y - yview);
             context.restore();

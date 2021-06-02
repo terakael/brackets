@@ -67,7 +67,7 @@
         }
         context.textAlign = "right";
         context.textBaseline = "top";
-        context.font = "12px Consolas";
+        context.font = "12px customFont";
         context.fillStyle = "yellow";
 
         // current stock

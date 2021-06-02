@@ -29,7 +29,7 @@
         }
         
         context.textAlign = "right";
-        context.font = "12px Consolas";
+        context.font = "12px customFont";
         context.fillText("stored coal: " + this.otherInfo.storedCoal, this.rect.left + this.rect.width - 10, this.rect.top + this.rect.height - 8);
         context.restore();
     }

@@ -126,7 +126,7 @@
 		drawOnMap: function(context, x, y, size, icon) {
 			var diffx = x - Game.getPlayer().x;
 			var diffy = y - Game.getPlayer().y;
-			context.font = "bold {0}px Consolas".format(size || 12);
+			context.font = "bold {0}px customFont".format(size || 12);
 			context.textAlign = "center";
 			context.textBaseline = "middle";
 			if (Math.abs(diffx) < this.radius && Math.abs(diffy) < this.radius) {

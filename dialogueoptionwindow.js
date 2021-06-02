@@ -16,7 +16,7 @@
         context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
         context.strokeRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 
-        context.font = "15pt Consolas";
+        context.font = "15pt customFont";
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.fillStyle = "red";

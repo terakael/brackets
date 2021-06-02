@@ -36,7 +36,7 @@
 				this.item.draw(context, this.rect.left + (this.rect.width/2), this.rect.top + (this.rect.height/2));
 
 				context.textAlign = "right";
-				context.font = "10pt Consolas";
+				context.font = "10pt customFont";
 				if (this.item.isStackable()) {
 					context.textBaseline = "top";
 					context.fillStyle = this.count.includes("M") ? "#8f8" : "yellow";
@@ -75,7 +75,7 @@
 
 			context.fillStyle = "#666";
 			context.textAlign = "left";
-			context.font = "15px Consolas";
+			context.font = "15px customFont";
 			context.fillText("Inventory", xview + 10, yview + 10);
 			context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 

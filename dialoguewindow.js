@@ -16,7 +16,7 @@
         context.fillRect(~~(this.rect.left) + 0.5, ~~(this.rect.top) + 0.5, this.rect.width, this.rect.height);
         context.strokeRect(~~(this.rect.left) + 0.5, ~~(this.rect.top) + 0.5, this.rect.width, this.rect.height);
 
-        context.font = "12pt Consolas";
+        context.font = "12pt customFont";
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.fillStyle = "white";
@@ -27,7 +27,7 @@
         let totalLineHeight = (this.lines.length - 1) * lineHeight;
 
         context.fillStyle = "red";
-        context.font = "15pt Consolas";
+        context.font = "15pt customFont";
         for (let i = 0; i < this.lines.length; ++i) {
             context.fillText(this.lines[i], this.rect.left + (this.rect.width / 2), this.rect.top + (this.rect.height / 2) - (totalLineHeight / 2) + (i * lineHeight) + 15);
         }

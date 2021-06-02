@@ -16,13 +16,13 @@
 		leftclickMenuOption: null,
 		leftclickPos: null,
 		contextOptions: [],
-		characterWidth: 8,// for figuring out the width of the context menu based on longest string
+		characterWidth: 8.5,// for figuring out the width of the context menu based on longest string
 
         draw: function(ctx) {
 			ctx.save();
 			ctx.textAlign = "left";
 			ctx.textBaseline = "middle";
-			ctx.font = "10pt Consolas";
+			ctx.font = "12pt customFont";
 			ctx.lineWidth = 1;
 
     		if (!this.active) {
@@ -59,7 +59,7 @@
 
 					if (levelPart) {
 						let matches = levelPart.match(/\(lvl (\d+)\)/);
-						ctx.font = "bold 10pt Consolas";
+						ctx.font = "bold 12pt customFont";
 						ctx.fillStyle = this.getFillStyleFromCombatLevelDifference(Game.currentPlayer.combatLevel, matches[1]);
 						ctx.fillText(levelPart, rect.left + 10 + (~~ctx.measureText(label).width + 0.5), rect.top + (rect.height / 2));
 					}
@@ -98,7 +98,7 @@
 				if (levelPart) {
 					ctx.save();
 					let matches = levelPart.match(/\(lvl (\d+)\)/);
-					ctx.font = "bold 10pt Consolas";
+					ctx.font = "bold 12pt customFont";
 					ctx.fillStyle = this.getFillStyleFromCombatLevelDifference(Game.currentPlayer.combatLevel, matches[1]);	
 					ctx.fillText(levelPart, this.rect.left + 10 + (~~ctx.measureText(label).width + 0.5), this.rect.top + ((this.menuOptionHeight * i) + (this.menuOptionHeight / 2)));
 					ctx.restore();

@@ -43,7 +43,7 @@
 
         context.textAlign = "right";
         context.textBaseline = "top";
-        context.font = "12px Consolas";
+        context.font = "12px customFont";
         context.fillStyle = Game.currentPlayer.stats.getLevelByStat("smith") < this.buttonInfo.level ? "red" : "white";
 
         // required smithing level
@@ -71,7 +71,7 @@
 
         context.textAlign = "left";
         context.textBaseline = "middle";
-        context.font = "15px Consolas";
+        context.font = "15px customFont";
 
         // TODO check if player has required materials; change fillstyle based on this
         context.fillStyle = "white";

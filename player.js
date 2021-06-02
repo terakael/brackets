@@ -183,7 +183,7 @@
                 let healthBarOffset = this.inCombat ? (this.attackingFromRight ? 2.5 : -2.5) : 0;
                 var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView + healthBarOffset) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, Math.min(this.currentHp, this.maxHp), this.maxHp);
                 if (this.chatMessage != "") {
-                    context.font = "12pt Consolas";
+                    context.font = "12pt customFont";
                     context.textAlign = "center";
                     context.fillStyle = "yellow"
                     context.fillText(this.chatMessage, (this.x - xView) * Game.scale, (this.y - yView - this.height - (showingHealthBar ? 15 : 0)) * Game.scale);
@@ -229,7 +229,7 @@
             context.fillStyle = "white";
             context.textAlign = "center";
             context.textBaseline = "middle";
-            context.font = "bold 16pt Consolas";
+            context.font = "bold 16pt customFont";
             context.fillText(hitsplat.damage, x, y);
         }
 
@@ -243,7 +243,7 @@
 
             context.fillStyle = "rgba(255, 0, 0, "+ (1-this.deathsCurtain) + ")";
             context.textAlign = "center";
-            context.font = "bold 40pt Consolas";
+            context.font = "bold 40pt customFont";
             context.fillText("You died!", ~~(Game.worldCameraRect.width/2) * (1/Game.scale), ~~(Game.worldCameraRect.height/2) * (1/Game.scale));
             context.restore();
         }

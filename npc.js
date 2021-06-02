@@ -103,7 +103,7 @@
         }
 
         if (this.chatMessage != "") {
-            context.font = "12pt Consolas";
+            context.font = "12pt customFont";
             context.textAlign = "center";
             context.fillStyle = "yellow"
             context.fillText(this.chatMessage, (this.pos.x - xView) * Game.scale, (this.pos.y - yView - (frameHeight * scale) - (this.healthBarTimer > 0 ? 15 : 0)) * Game.scale);
@@ -118,7 +118,7 @@
         context.fillStyle = "white";
         context.textAlign = "center";
         context.textBaseline = "middle";
-        context.font = "bold 16pt Consolas";
+        context.font = "bold 16pt customFont";
         context.fillText(hitsplat.damage, x, y);
     }
 

@@ -28,7 +28,7 @@
 		ctx.drawImage(this.bkg, 0, 0, this.bkg.width, this.bkg.height);
 
 		ctx.fillStyle = "white";
-		ctx.font = "30px Consolas";
+		ctx.font = "30px customFont";
 		ctx.textAlign = "center";
 		ctx.fillText("danscape", ~~(w/2), ~~(h/2) - 60);
 
@@ -38,7 +38,7 @@
 		ctx.strokeStyle = "rgb(255, {0}, {0})".format(255*(1-Math.min(this.logonErrorTimer, 1)));
 		ctx.strokeRect(~~(w/2)-150.5, ~~(h/2)-30.5, 300, 55);
 		
-		ctx.font = "15px Consolas";
+		ctx.font = "15px customFont";
 		ctx.textAlign = "left";
 		ctx.fillStyle = "white";
 

@@ -46,10 +46,15 @@ $(function () {
     });
 
     Game.resourceWs.ws.onopen = function() {
-        // get the initial resources for the game (sprite maps, scenery etc)
-        Game.resourceWs.send({
-            action: "resources",
-            id: 0
+        let f = new FontFace('customFont', 'url(./font.ttf)');
+        f.load().then(function() {
+            console.log("font loaded");
+            document.fonts.add(f);
+            // get the initial resources for the game (sprite maps, scenery etc)
+            Game.resourceWs.send({
+                action: "resources",
+                id: 0
+            });
         });
     };
     Game.resourceWs.ws.onclose = function() {
@@ -902,9 +907,6 @@ $(function () {
     Game.npcMap = new Map();
     Game.drawBoundingBoxes = false;
     Game.drawGroundTextureOutline = false;
-    // game settings:	
-    var FPS = 50, INTERVAL = 1000 / FPS, // milliseconds
-    STEP = INTERVAL / 1000; // seconds
     // setup an object that represents the room
     var room = {
         player: {},
@@ -1947,26 +1949,30 @@ $(function () {
     var uix = ~~(uiWidth - (uiWidth / 2)) + 0.5;
     var uiy = ~~(uiHeight - (uiHeight / 2)) + 0.5;
     var uiWindow = new Game.UIWindow(new Game.Rectangle(uix, uiy, uiWidth, uiHeight), hudcamera.pat);
+
+    const FPS = 50;
+    const INTERVAL = 1000 / FPS; // milliseconds
+    const STEP = INTERVAL / 1000; // seconds
     
     // Game update function
-    var update = function () {
+    var update = function (dt) {
         if (Game.state === 'game') {
             Game.ContextMenu.setLeftclick(null, null);
 
-            Game.scale += (Game.targetScale - Game.scale) * STEP * 10;
-            room.process(STEP);
-            cursor.process(STEP);
-            camera.update(STEP);
-            Game.ChatBox.process(STEP);
-            Game.HUD.process(STEP);
+            Game.scale += (Game.targetScale - Game.scale) * dt * 10;
+            room.process(dt);
+            cursor.process(dt);
+            camera.update(dt);
+            Game.ChatBox.process(dt);
+            Game.HUD.process(dt);
 
             if (Game.activeUiWindow)
-                Game.activeUiWindow.process(STEP);
+                Game.activeUiWindow.process(dt);
 
-            Game.ContextMenu.process(STEP);
+            Game.ContextMenu.process(dt);
         }
         else if (Game.state === 'logonscreen') {
-            Game.LogonScreen.process(STEP);
+            Game.LogonScreen.process(dt);
         }
     };
 
@@ -2002,7 +2008,7 @@ $(function () {
             if (Game.displayFps) {
                 Game.context.save();
                 context.textAlign = "right";
-                context.font = "15px Consolas";
+                context.font = "15px customFont";
                 context.fillStyle = "yellow";
                 context.fillText(Game.fps, Game.worldCameraRect.width - 5, 10);
                 Game.context.restore();
@@ -2018,34 +2024,32 @@ $(function () {
         }
     };
     // Game Loop
-    var gameLoop = function () {
-        update();
+    var gameLoop = function (dt) {
+        update(dt);
         draw();
     };
-    // I'll use setInterval instead of requestAnimationFrame for compatibility reason,
-    // but it's easy to change that.
-    var runningId = -1;
+
     var start = Date.now();
     var remainingInterval = INTERVAL;
     Game.fps = 0;
     Game.displayFps = true;
     let fpsSamples = [];
-    Game.play = function () {        
-        setTimeout(function() {
-        	// TODO game loop should return exec ms to subtract off INTERVAL
-        	gameLoop();
+    Game.play = function () {
+        requestTimeout(function() {
+            // TODO game loop should return exec ms to subtract off INTERVAL
+            gameLoop(INTERVAL / 1000);
 
-        	var actual = Date.now() - start;
+            var actual = Date.now() - start;
             fpsSamples.push(actual);
             if (fpsSamples.length > 60)
                 fpsSamples.shift();
             let average = fpsSamples.reduce((a, b) => a + b, 0) / fpsSamples.length;
-            Game.fps = ~~(600 / average);
-	        // subtract any extra ms from the delay for the next cycle
-	        remainingInterval = INTERVAL - (actual - INTERVAL);
-	        start = Date.now();
+            Game.fps = ~~(1000 / average);
+            // subtract any extra ms from the delay for the next cycle
+            remainingInterval = INTERVAL - (actual - INTERVAL);
+            start = Date.now();
 
-        	Game.play();
+            Game.play();
         }, remainingInterval);
     };
     Game.getPlayer = function () {

@@ -17,7 +17,7 @@
 		draw: function(context, xview, yview) {
 			context.save();
 			context.textAlign = "left";
-			context.font = "15px Consolas";
+			context.font = "15px customFont";
 			for (var i = this.messages.length-1; i >= 0; --i) {
 				context.fillStyle = this.messages[i].colour || "white";
 				context.fillText(this.messages[i].text, xview + 10, yview - (20 * (this.messages.length - i)) - 20);

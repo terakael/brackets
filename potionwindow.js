@@ -34,7 +34,7 @@
         context.strokeRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 
         context.textAlign = "center";
-        context.font = "15px Consolas";
+        context.font = "15px customFont";
         context.fillStyle = "white";
         context.textBaseline = "middle";
         context.fillText(this.name, ~~(this.rect.left + (this.rect.width / 2)) + 0.5, ~~(this.rect.top + 10) + 0.5);
@@ -52,7 +52,7 @@
 
             context.save()
             context.textAlign = "center";
-            context.font = "25px Consolas";
+            context.font = "25px customFont";
             context.fillText("=", this.equalsXPos, this.rect.top + 5 + ((i + 1) * 40));
             context.fillText("+", this.plusXPos, this.rect.top + 5 + ((i + 1) * 40));
             context.restore();
