@@ -12,6 +12,7 @@
 		this.frameTimer = this.frameSpeed;
 		this.anchor = {x: obj.anchorX || 0.5, y: obj.anchorY || 0.5};
 		this.scale = {x: obj.scaleX || 1, y: obj.scaleY || 1};
+		this.color = obj.color;
 
 		this.frames = [];
 		for (var i = 0; i < this.frameCount; ++i) {
@@ -46,6 +47,7 @@
 
 	
 	SpriteFrame.prototype.draw = function(ctx, x, y, color) {
+		color = color || this.color;
 		let spriteMap = Game.SpriteManager.getSpriteMapById(this.spriteMapId);
 		if (!spriteMap)
 			return; // maybe sprite map hasn't finished loading yet
