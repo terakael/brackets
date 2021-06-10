@@ -15,7 +15,7 @@
 		menuOptionHeight: 20,
 		leftclickMenuOption: null,
 		leftclickPos: null,
-		contextOptions: [],
+		contextOptions: new Map(),
 		characterWidth: 8.5,// for figuring out the width of the context menu based on longest string
 
         draw: function(ctx) {
@@ -125,13 +125,18 @@
 			this.originalPos = Game.mousePos;
 				
             if (Game.worldCameraRect.pointWithin(Game.mousePos) && !Game.activeUiWindow) {
-    	       this.menuOptions.push({label: "walk here", id: Game.getPlayer().id, action: "move", x: x, y: y, priority: 2});
+    	       this.menuOptions.push({label: "walk here", id: Game.getPlayer().id, action: "move", x: x, y: y});
 			}
 
-			this.menuOptions.sort((a,b) => b.priority - a.priority);
+			// push the "examine" option to the bottom
+			// this.menuOptions.sort((a,b) => a.action === "examine" ? 1 : 0);
+
+			const examineOptions = this.menuOptions.filter(e => e.action === "examine");
+			this.menuOptions.splice(this.menuOptions.findIndex(e => e.action === "examine"), 1);
+			this.menuOptions.push(...examineOptions);
 
 			// this one always goes at the bottom; it's basically useless
-			this.menuOptions.push({label: "cancel", action: "cancel", priority: -1});
+			this.menuOptions.push({label: "cancel", action: "cancel"});
 
 	    	var longestOption = 0;
 	    	for (var i in this.menuOptions) {
@@ -181,8 +186,8 @@
 	    			obj[i].label = "{0} {1}".format(obj[i].action, obj[i].objectName || "");
 
 				obj[i].id = Game.getPlayer().id;
-				if (!obj[i].priority)
-					obj[i].priority = this.getPriorityByAction(obj[i].action);
+				// if (!obj[i].priority)
+				// 	obj[i].priority = this.getPriorityByAction(obj[i].action);
 	    		this.menuOptions.push(obj[i]);
 			}
     	},
@@ -201,20 +206,22 @@
 			return menuItem;
 		},
 		loadContextOptions: function(obj) {
-			this.contextOptions = obj;
+			this.contextOptions = new Map(Object.entries(obj));
 		},
-		getPriorityByAction: function(action) {
-			for (var i = 0; i < this.contextOptions.length; ++i) {
-				if (this.contextOptions[i].name === action) {
-					return this.contextOptions[i].priority;
+		// getPriorityByAction: function(action) {
+		// 	for (var i = 0; i < this.contextOptions.length; ++i) {
+		// 		if (this.contextOptions[i].name === action) {
+		// 			return this.contextOptions[i].priority;
+		// 		}
+		// 	}
+		// 	return 0;
+		// },
+		getContextOptionById: function(id, type) {
+			if (this.contextOptions.has(type)) {
+				for (var i = 0; i < this.contextOptions.get(type).length; ++i) {
+					if (this.contextOptions.get(type)[i].id === id)
+						return this.contextOptions.get(type)[i];
 				}
-			}
-			return 0;
-		},
-		getContextOptionById: function(id) {
-			for (var i = 0; i < this.contextOptions.length; ++i) {
-				if (this.contextOptions[i].id === id)
-					return this.contextOptions[i];
 			}
 			return null;
 		},
@@ -236,31 +243,6 @@
 				return "#0f0";
 			} else {
 				return "#f22";
-			}
-			
-			// enemy is same combat
-			if (enemyCmb == playerCmb) {
-				return "yellow";
-			}
-
-			// enemy is a little bit higher
-			else if (enemyCmb > playerCmb && enemyCmb <= playerCmb + 8) {
-				return "#fc0";
-			}
-
-			// enemy is a little bit lower
-			else if (enemyCmb < playerCmb && enemyCmb >= playerCmb - 8) {
-				return "#cf0";
-			}
-
-			// enemy is lots higher
-			else if (enemyCmb > playerCmb + 8) {
-				return "#f55";
-			} 
-
-			// enemy is lots lower
-			else if (enemyCmb < playerCmb - 8) {
-				return "#0f0";
 			}
 		}
     };

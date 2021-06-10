@@ -27,7 +27,7 @@ $(function () {
                     Game.SpriteManager.loadItems(obj["items"]);
                     // Game.SpriteManager.loadGroundTextures(obj["groundTextures"]);
                     room.loadTextureMaps(obj.spriteMaps.map(e => e.id));
-                    Game.ContextMenu.loadContextOptions(obj["contextOptions"]);
+                    Game.ContextMenu.loadContextOptions(obj.contextOptions);
                     // room.loadNpcs(obj.npcs);
                     Game.statMap = new Map(Object.entries(obj["statMap"]));
 
@@ -323,20 +323,6 @@ $(function () {
                                 }
                             }
                         }
-                        break;
-                    }
-
-                    case "start_mining": {
-                        Game.ChatBox.add("you start mining the rock...");
-                        break;
-                    }
-
-                    case "finish_mining": {
-                        // keep mining automatically
-                        Game.ws.send({
-                            action: "mine",
-                            tileId: obj["tileId"]
-                        });
                         break;
                     }
 
@@ -873,22 +859,7 @@ $(function () {
                         Game.HUD.setActivePrayers(obj.activePrayers);
                     }
 
-                    // sometimes a response comes back just showing a message; don't do anything else in these cases
-                    // we need these here though in order to prevent the "invalid action" default message.
-                    case "use":
-                    case "smith":
-                    case "trade":                    
-                    case "value":
-                    case "buy":
-                    case "pick":
-                    case "pray at":
-                    case "bury":
-                    case "climb":
-                        break;
-
                     default: {
-                        Game.ChatBox.add("invalid action.", "#fff");
-                        console.log(obj);
                         break;
                     }
                 }
@@ -1290,7 +1261,7 @@ $(function () {
                             } else {
                                 if (value[i].leftclickOption) {
                                     var label = value[i].label || "";
-                                    var contextOpt = Game.ContextMenu.getContextOptionById(value[i].leftclickOption);
+                                    var contextOpt = Game.ContextMenu.getContextOptionById(value[i].leftclickOption, value[i].type);
                                     Game.ContextMenu.setLeftclick(Game.mousePos, {
                                         id: Game.currentPlayer.id,
                                         action: contextOpt.name,
@@ -1786,7 +1757,7 @@ $(function () {
                                         // add the leftclick option first (if there is one)
                                         if (scenery.leftclickOption != 0) {
                                             Game.ContextMenu.push([{
-                                                action: Game.ContextMenu.getContextOptionById(scenery.leftclickOption).name,
+                                                action: Game.ContextMenu.getContextOptionById(scenery.leftclickOption, "scenery").name,
                                                 objectId: scenery.id,
                                                 tileId: tileId,
                                                 objectName: scenery.name,
@@ -1794,8 +1765,9 @@ $(function () {
                                                 type: "scenery"
                                             }]);
                                         }
-                                        for (let i = 0; i < Game.ContextMenu.contextOptions.length; ++i) {
-                                            const contextOption = Game.ContextMenu.contextOptions[i];
+                                        const sceneryContextOptions = Game.ContextMenu.contextOptions.get("scenery");
+                                        for (let i = 0; i < sceneryContextOptions.length; ++i) {
+                                            const contextOption = sceneryContextOptions[i];
                                             if (scenery.otherOptions & contextOption.id) {
                                                 Game.ContextMenu.push([{
                                                     action: contextOption.name, 
@@ -1806,6 +1778,13 @@ $(function () {
                                                 }]);
                                             }
                                         }
+                                        Game.ContextMenu.push([{ 
+                                                action: "examine", 
+                                                objectName: scenery.name, 
+                                                objectId: scenery.id, 
+                                                type: "scenery"
+                                            }
+                                        ]);
                                     }
                                 }
                             }
@@ -1830,12 +1809,12 @@ $(function () {
                                         dest: npc.instanceId,
                                         type: "npc",
                                         label: "use {0} -> {1}".format(room.player.inventory.slotInUse.item.name, npc.get("name"))
-                                                    + (npc.get("leftclickOption") === 4096 ? ` (lvl ${npc.get("cmb")})` : "")
+                                                    + (npc.get("leftclickOption") === 1 ? ` (lvl ${npc.get("cmb")})` : "")
                                     }]);
                                 } else {
                                     if (npc.get("leftclickOption") != 0) {
                                         Game.ContextMenu.push([{
-                                            action: Game.ContextMenu.getContextOptionById(npc.get("leftclickOption")).name,
+                                            action: Game.ContextMenu.getContextOptionById(npc.get("leftclickOption"), "npc").name,
                                             objectId: npc.instanceId,
                                             objectName: npc.get("name"),
                                             type: "npc",
@@ -1843,8 +1822,9 @@ $(function () {
                                         }]);
                                     }
 
-                                    for (let j = 0; j < Game.ContextMenu.contextOptions.length; ++j) {
-                                        const contextOption = Game.ContextMenu.contextOptions[j];
+                                    const npcContextOptions = Game.ContextMenu.contextOptions.get("npc");
+                                    for (let j = 0; j < npcContextOptions.length; ++j) {
+                                        const contextOption = npcContextOptions[j];
                                         if (npc.get("otherOptions") & contextOption.id) {
                                             Game.ContextMenu.push([{
                                                 action: contextOption.name, 
@@ -1854,6 +1834,14 @@ $(function () {
                                             }]);
                                         }
                                     }
+
+                                    Game.ContextMenu.push([{ 
+                                        action: "examine", 
+                                        objectName: npc.get("name"), 
+                                        objectId: npc.instanceId, 
+                                        type: "npc"
+                                    }
+                                ]);
                                 }
                             }
                         }

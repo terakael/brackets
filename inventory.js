@@ -89,7 +89,7 @@
 						const relevantHoverOption = (Game.shiftPressed && this.slots[i].item.shiftclickOption) 
 							? this.slots[i].item.shiftclickOption 
 							: this.slots[i].item.leftclickOption;
-						const contextOpt = Game.ContextMenu.getContextOptionById(relevantHoverOption);
+						const contextOpt = Game.ContextMenu.getContextOptionById(relevantHoverOption, "item");
 
 						Game.ContextMenu.setLeftclick(Game.mousePos, {
 							id: Game.currentPlayer.id,
@@ -256,30 +256,36 @@
 				options.push(this.getUseContextMenuOption(this.slotInUse.item, slot.item));
 			} 
 			else {
-				var contextOption = Game.ContextMenu.getContextOptionById(slot.item.leftclickOption);
+				var contextOption = Game.ContextMenu.getContextOptionById(slot.item.leftclickOption, "item");
 				if (contextOption) {
 					options.push({
 						action: contextOption.name, 
 						slot: slot.id, 
 						objectId: slot.item.id, 
 						objectName: slot.item.name, 
-						type: "item", 
-						priority: contextOption.priority
+						type: "item"
 					});
 				}
 
-				for (var i = 0; i < Game.ContextMenu.contextOptions.length; ++i) {
-					var contextOption = Game.ContextMenu.contextOptions[i];
+				const itemContextOptions = Game.ContextMenu.contextOptions.get("item");
+				for (var i = 0; i < itemContextOptions.length; ++i) {
+					var contextOption = itemContextOptions[i];
 					if (slot.item.otherOptions & contextOption.id)
 						options.push({
 							action: contextOption.name, 
 							slot: slot.id, 
 							objectId: slot.item.id, 
 							objectName: slot.item.name, 
-							type: "item", 
-							priority: contextOption.priority
+							type: "item"
 						});
 				}
+
+				Game.ContextMenu.push([{ 
+					action: "examine", 
+					objectName: slot.item.name, 
+					objectId: slot.item.id, 
+					type: "item"
+				}]);
 			}
 
 			if (options.length > 0)
