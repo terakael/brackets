@@ -18,19 +18,19 @@
         this.deathTimer = 0;
 
         this.spriteframes = [];
-        this.spriteframes["up"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.upId).frameData);
+        this.spriteframes["up"] = new SpriteFrame(SpriteManager.getSpriteFrameById(npc.upId).frameData);
         this.spriteframes["up"].setScale({x: npc.scaleX, y: npc.scaleY});
         
-        this.spriteframes["down"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.downId).frameData);
+        this.spriteframes["down"] = new SpriteFrame(SpriteManager.getSpriteFrameById(npc.downId).frameData);
         this.spriteframes["down"].setScale({x: npc.scaleX, y: npc.scaleY});
         
-        this.spriteframes["left"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.leftId).frameData);
+        this.spriteframes["left"] = new SpriteFrame(SpriteManager.getSpriteFrameById(npc.leftId).frameData);
         this.spriteframes["left"].setScale({x: npc.scaleX, y: npc.scaleY});
         
-        this.spriteframes["right"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.rightId).frameData);
+        this.spriteframes["right"] = new SpriteFrame(SpriteManager.getSpriteFrameById(npc.rightId).frameData);
         this.spriteframes["right"].setScale({x: npc.scaleX, y: npc.scaleY});
 
-        this.spriteframes["attack"] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(npc.attackId).frameData);
+        this.spriteframes["attack"] = new SpriteFrame(SpriteManager.getSpriteFrameById(npc.attackId).frameData);
         this.spriteframes["attack"].setScale({x: npc.scaleX, y: npc.scaleY});
 
         this.combatOffset = (this.spriteframes["attack"].getCurrentFrame().width * npc.scaleX) / 4;
@@ -114,7 +114,7 @@
     }
 
     NPC.prototype.drawHitsplat = function(context, x, y, hitsplat) {
-        Game.SpriteManager.getSpriteFrameById(hitsplat.damageSpriteFrameId).draw(context, x, y);
+        SpriteManager.getSpriteFrameById(hitsplat.damageSpriteFrameId).draw(context, x, y);
         
         context.fillStyle = "white";
         context.textAlign = "center";

@@ -23,7 +23,7 @@
             this.inventory = new Game.Inventory();
             this.chatMessage = "";// the text over the player's head
             this.chatMessageTimer = 0;// counter until the chat message is cleared
-            this.clickBox = new Game.Rectangle(0, 0, this.width, this.height);
+            this.clickBox = new Rectangle(0, 0, this.width, this.height);
             this.contextActions = ["follow", "trade", "duel"];
             this.hitsplats = [];
             this.currentHp = obj.currentHp;
@@ -210,7 +210,7 @@
                         
                         context.save();
                         context.globalAlpha = 0.7;
-                        Game.SpriteManager.getSpriteFrameById(555).draw(context, (this.x - xView) * Game.scale, (this.y - yView - 32 - 8) * Game.scale);
+                        SpriteManager.getSpriteFrameById(555).draw(context, (this.x - xView) * Game.scale, (this.y - yView - 32 - 8) * Game.scale);
                         context.restore();
 
                         context.save();
@@ -229,7 +229,7 @@
         }
 
         Player.prototype.drawHitsplat = function(context, x, y, hitsplat) {
-            Game.SpriteManager.getSpriteFrameById(hitsplat.damageSpriteFrameId).draw(context, x, y);
+            SpriteManager.getSpriteFrameById(hitsplat.damageSpriteFrameId).draw(context, x, y);
             
             context.fillStyle = "white";
             context.textAlign = "center";
@@ -342,7 +342,7 @@
                     if (!this.baseframes.has(part))
                         this.baseframes.set(part, []);
             
-                    this.baseframes.get(part)[type] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(animations[part][type]).frameData);
+                    this.baseframes.get(part)[type] = new SpriteFrame(SpriteManager.getSpriteFrameById(animations[part][type]).frameData);
                 }
             }
         }
@@ -357,7 +357,7 @@
                     if (type === "color") {
                         continue;
                     }
-                    this.spriteframes.get(part)[type] = new Game.SpriteFrame(Game.SpriteManager.getSpriteFrameById(animations[part][type]).frameData);
+                    this.spriteframes.get(part)[type] = new SpriteFrame(SpriteManager.getSpriteFrameById(animations[part][type]).frameData);
                     if (animations[part]["color"]) {
                         this.spriteframes.get(part)[type].color = animations[part]["color"];
                     }
@@ -468,7 +468,7 @@
         }
 
         Player.prototype.setActionBubble = function(sprite) {
-            this.actionBubbleSprite = Game.SpriteManager.getSpriteFrameById(sprite);
+            this.actionBubbleSprite = SpriteManager.getSpriteFrameById(sprite);
             this.actionBubbleTimer = 3;
         }
 

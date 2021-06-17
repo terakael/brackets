@@ -95,7 +95,7 @@
         let uiHeight = Math.max(Math.ceil(this.slots.length / maxRows), 2) * slotRectHeight + 35;
         let uiy = ~~((worldRect.height / 2) - (uiHeight / 2)) + 0.5;
 
-        this.rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+        this.rect = new Rectangle(uix, uiy, uiWidth, uiHeight);
 
         let margin = ((this.rect.width - (maxRows * slotRectWidth)) / 2);
         for (let i = 0; i < this.slots.length; ++i) {

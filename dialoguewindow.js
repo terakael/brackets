@@ -57,7 +57,7 @@
         let uiHeight = (this.lines.length * 15) + 60;
         let uix = ~~((worldRect.width / 2) - (uiWidth / 2)) + 0.5;
         let uiy = ~~((worldRect.height / 2) - (uiHeight / 2)) + 0.5;
-        this.rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+        this.rect = new Rectangle(uix, uiy, uiWidth, uiHeight);
         
     }
 

@@ -8,8 +8,8 @@
 
     function BankSlot(slot, itemId, currentStock, currentCharges) {
         this.slot = slot;
-        this.rect = new Game.Rectangle(0, 0, 50, 50);
-        this.item = Game.SpriteManager.getItemById(itemId);
+        this.rect = new Rectangle(0, 0, 50, 50);
+        this.item = SpriteManager.getItemById(itemId);
         this.currentStock = currentStock;
         this.currentCharges = currentCharges;
 
@@ -53,7 +53,7 @@
         var itemHeight = this.item.spriteFrame.getCurrentFrame().height;
 
         let spriteFrame = this.item.spriteFrame.getCurrentFrame();
-        let spriteMap = Game.SpriteManager.getSpriteMapById(this.item.spriteFrame.spriteMapId);
+        let spriteMap = SpriteManager.getSpriteMapById(this.item.spriteFrame.spriteMapId);
         if (spriteMap) {
             context.drawImage(spriteMap, 
                 spriteFrame.left, 

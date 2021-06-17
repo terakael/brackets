@@ -8,7 +8,7 @@
 	DuelRuleButton.prototype = {
 		constructor: DuelRuleButton,
         setRect: function(x, y, w, h) {
-            this.rect = new Game.Rectangle(x, y, w, h);
+            this.rect = new Rectangle(x, y, w, h);
         },
 		draw: function(context, selected, opponentSelected) {
             context.save();
@@ -324,11 +324,11 @@
         const uiHeight = worldRect.height / 2;
         const uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
         const uiy = ~~((worldRect.height / 2) - (uiHeight / 2)) + 0.5;
-        this.rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
-        this.playerRect = new Game.Rectangle(this.rect.left, this.rect.top, (this.rect.width/2) - (isDuel ? 100 : 0), this.rect.height);
-        this.otherRect = new Game.Rectangle(this.rect.left + (this.rect.width/2) + (isDuel?100:0), this.rect.top, (this.rect.width/2) - (isDuel?100:0), this.rect.height);
-        this.acceptButtonRect = new Game.Rectangle(this.rect.left + (this.rect.width/2) - 100, this.otherRect.top + this.otherRect.height - 50, 200, 40);
-        this.duelRulesRect = new Game.Rectangle(this.rect.left + (this.rect.width/2) - 100, this.rect.top, 200, this.acceptButtonRect.top - this.rect.top);
+        this.rect = new Rectangle(uix, uiy, uiWidth, uiHeight);
+        this.playerRect = new Rectangle(this.rect.left, this.rect.top, (this.rect.width/2) - (isDuel ? 100 : 0), this.rect.height);
+        this.otherRect = new Rectangle(this.rect.left + (this.rect.width/2) + (isDuel?100:0), this.rect.top, (this.rect.width/2) - (isDuel?100:0), this.rect.height);
+        this.acceptButtonRect = new Rectangle(this.rect.left + (this.rect.width/2) - 100, this.otherRect.top + this.otherRect.height - 50, 200, 40);
+        this.duelRulesRect = new Rectangle(this.rect.left + (this.rect.width/2) - 100, this.rect.top, 200, this.acceptButtonRect.top - this.rect.top);
 
         for (let i = 0; i < this.playerSlots.length; ++i) {
             

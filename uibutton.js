@@ -7,7 +7,7 @@
     }
 
     function UIButton(buttonInfo) {
-        this.rect = new Game.Rectangle(0, 0, 100, 75);
+        this.rect = new Rectangle(0, 0, 100, 75);
 
         if (Game.currentPlayer.stats.getLevelByStat("smith") < buttonInfo.level)
             this.state = ButtonStates.disabled;
@@ -50,13 +50,13 @@
         context.fillText("lvl: " + this.buttonInfo.level, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
 
         // draw the icon
-        var drawItem = Game.SpriteManager.getItemById(this.buttonInfo.itemId);
+        var drawItem = SpriteManager.getItemById(this.buttonInfo.itemId);
         var itemWidth = drawItem.spriteFrame.getCurrentFrame().width;
         var itemHeight = drawItem.spriteFrame.getCurrentFrame().height;
         //drawItem.draw(context, this.rect.left + (this.rect.width / 2) + buttonOffsetX, this.rect.top + itemHeight + buttonOffsetY);
 
         let spriteFrame = drawItem.spriteFrame.getCurrentFrame();
-        let spriteMap = Game.SpriteManager.getSpriteMapById(drawItem.spriteFrame.spriteMapId);
+        let spriteMap = SpriteManager.getSpriteMapById(drawItem.spriteFrame.spriteMapId);
         if (spriteMap) {
             context.drawImage(spriteMap, 
                 spriteFrame.left, 
@@ -84,7 +84,7 @@
             if (this.buttonInfo[material] === 0)
                 continue;
 
-            var materialItem = Game.SpriteManager.getItemById(this.buttonInfo[material]);
+            var materialItem = SpriteManager.getItemById(this.buttonInfo[material]);
             var posx = this.rect.left + ((i - 1) * 45) + materialItem.spriteFrame.getCurrentFrame().width / 2;
             var posy = this.rect.bottom - materialItem.spriteFrame.getCurrentFrame().height / 2;
             materialItem.draw(context, posx + buttonOffsetX, posy + buttonOffsetY);

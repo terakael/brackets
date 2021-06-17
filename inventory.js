@@ -1,6 +1,6 @@
 (function() {
 	function InventorySlot(x, y, w, h, id) {
-		this.rect = new Game.Rectangle(x, y, w, h);
+		this.rect = new Rectangle(x, y, w, h);
 		this.fillColor = "#222";
 		this.selectedColor = "#444";
 		this.selected = false;
@@ -56,7 +56,7 @@
 		this.slotCount = 20;
 		this.slotSize = 46;
 		this.columns = 5;
-		this.rect = new Game.Rectangle(Game.hudCameraRect.left + 9, 250, this.slotSize * this.columns + 2, ~~(this.slotCount / this.columns) * this.slotSize + 2);
+		this.rect = new Rectangle(Game.hudCameraRect.left + 9, 250, this.slotSize * this.columns + 2, ~~(this.slotCount / this.columns) * this.slotSize + 2);
 
 		this.mousePosOnClick = {x: 0, y: 0};
 		this.selectedSlot = null;// the slot held by the mouse when dragging
@@ -135,7 +135,7 @@
 				// onclick event
 				this.dragging = true;
 				this.slotInUse = null;
-				this.slots[this.selectedSlot.id].item = Game.SpriteManager.getItemById(0);
+				this.slots[this.selectedSlot.id].item = SpriteManager.getItemById(0);
 				this.slots[this.selectedSlot.id].equipped = false;
 			}
 		},
@@ -410,7 +410,7 @@
 		updateInventory: function(inv) {
 			for (let i in this.slots) {
 				let invItem = inv[i];
-				this.slots[i].item = Game.SpriteManager.getItemById(invItem.itemId);
+				this.slots[i].item = SpriteManager.getItemById(invItem.itemId);
 				this.slots[i].count = invItem.friendlyCount;
 				this.slots[i].charges = invItem.charges;
 			}

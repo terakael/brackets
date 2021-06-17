@@ -7,7 +7,7 @@
 		// its a square but basically from the player in the middle to the edge of the square
 		// the client sends us npcs/players within a 15 square radius, i.e. 480 pixels, so 500 away being the edge is a nice round number
 		this.radius = 500;
-		this.rect = new Game.Rectangle(0, 0, 0, 0);
+		this.rect = new Rectangle(0, 0, 0, 0);
 		this.playerDestTile = 0;
 		this.images = new Map(); // tileId, minimapSegmentImage
 		this.minimapIcons = new Map();
@@ -44,7 +44,7 @@
 			}
 
 			for (const [spriteFrameId, tileIds] of this.minimapIcons) {
-				let spriteFrame = Game.SpriteManager.getSpriteFrameById(spriteFrameId);
+				let spriteFrame = SpriteManager.getSpriteFrameById(spriteFrameId);
 				if (!spriteFrame)
 					continue;
 
@@ -164,7 +164,7 @@
 			
 		},
 		setRect: function(x, y, w, h) {
-			this.rect = new Game.Rectangle(x, y, w, h);
+			this.rect = new Rectangle(x, y, w, h);
 		},
 		setPlayerDestXY: function(x, y) {
 			this.playerDestX = ~~x - (~~x % 32) + 16;

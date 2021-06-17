@@ -8,7 +8,7 @@
 
     ContextMenu.prototype = {
     	constructor: ContextMenu,
-    	rect: new Game.Rectangle(0, 0, 0, 0),
+    	rect: new Rectangle(0, 0, 0, 0),
     	toleranceMargin: 10,
     	active: false,
     	menuOptions: [],
@@ -31,7 +31,7 @@
 
 					var label = this.leftclickMenuOption.label || "{0} {1}".format(this.leftclickMenuOption.action, this.leftclickMenuOption.objectName);
 
-					var rect = new Game.Rectangle(
+					var rect = new Rectangle(
 						this.leftclickPos.x, 
 						this.leftclickPos.y,
 						label.length * this.characterWidth + 10,
@@ -132,8 +132,10 @@
 			// this.menuOptions.sort((a,b) => a.action === "examine" ? 1 : 0);
 
 			const examineOptions = this.menuOptions.filter(e => e.action === "examine");
-			this.menuOptions.splice(this.menuOptions.findIndex(e => e.action === "examine"), 1);
-			this.menuOptions.push(...examineOptions);
+			if (examineOptions.length) {
+				this.menuOptions.splice(this.menuOptions.findIndex(e => e.action === "examine"), 1);
+				this.menuOptions.push(...examineOptions);
+			}
 
 			// this one always goes at the bottom; it's basically useless
 			this.menuOptions.push({label: "cancel", action: "cancel"});

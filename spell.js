@@ -1,7 +1,7 @@
 (function() {
     function Spell(source, target, type) {
         this.target = target;
-        this.spriteFrame = Game.SpriteManager.getSpriteFrameById(type);
+        this.spriteFrame = SpriteManager.getSpriteFrameById(type);
         this.sourcePos = {x: source.x, y: source.y};
         this.pos = {x: source.x, y: source.y};
         this.lifetime = 1;

@@ -3,7 +3,7 @@
         this.rect = rect;
 
         this.attackStyleButton = {
-            rect: new Game.Rectangle(~~(this.rect.left + this.rect.width - 20 - 8) + 0.5, 450-10 + 0.5, 16, 16),
+            rect: new Rectangle(~~(this.rect.left + this.rect.width - 20 - 8) + 0.5, 450-10 + 0.5, 16, 16),
             background: "black",
             backgroundHover: "gray",
             fillStyle: "black",
@@ -30,7 +30,7 @@
         const boxesAcross = 6;
         const boxWidth = 32;
         for (let i = 0; i < this.prayers.length; ++i) {
-            this.prayers[i].rect = new Game.Rectangle(~~(hudRect.left + 15 + ((i % boxesAcross) * boxWidth + (i % boxesAcross * 5))) + 0.5,
+            this.prayers[i].rect = new Rectangle(~~(hudRect.left + 15 + ((i % boxesAcross) * boxWidth + (i % boxesAcross * 5))) + 0.5,
                                             ~~(hudRect.bottom - 80 + (~~(i / boxesAcross) * boxWidth + (~~(i / boxesAcross) * 5))) + 0.5,
                                             boxWidth, boxWidth);
         }
@@ -53,20 +53,20 @@
         let spriteRect = null;
         switch (Game.currentPlayer.getCurrentAttackStyle()) {
             case "aggressive":
-                spriteRect = new Game.Rectangle(0, 0, 32, 32);
+                spriteRect = new Rectangle(0, 0, 32, 32);
                 break;
 
             case "defensive":
-                spriteRect = new Game.Rectangle(64, 0, 32, 32);
+                spriteRect = new Rectangle(64, 0, 32, 32);
                 break;
 
             case "shared":
-                spriteRect = new Game.Rectangle(0, 32, 32, 32);
+                spriteRect = new Rectangle(0, 32, 32, 32);
                 break;
         }
 
-        if (spriteRect && Game.SpriteManager.getSpriteMapById(10))
-            context.drawImage(Game.SpriteManager.getSpriteMapById(10), 
+        if (spriteRect && SpriteManager.getSpriteMapById(10))
+            context.drawImage(SpriteManager.getSpriteMapById(10), 
                             spriteRect.left, 
                             spriteRect.top, 
                             spriteRect.width, 
@@ -91,7 +91,7 @@
         for (let i = 0; i < this.prayers.length; ++i) {
             const rect = this.prayers[i].rect;
 
-            Game.SpriteManager.getSpriteFrameById(this.prayers[i].iconId).draw(ctx, rect.left+16, rect.top+16);
+            SpriteManager.getSpriteFrameById(this.prayers[i].iconId).draw(ctx, rect.left+16, rect.top+16);
 
             ctx.lineWidth = 1;
             if (rect.pointWithin(Game.mousePos)) {

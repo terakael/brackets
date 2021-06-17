@@ -1,13 +1,14 @@
 (function() {
-    function UIWindow(rect, background) {
+    function UIWindow(rect, smithingOptions, storedCoal) {
         this.rect = rect;
-        this.background = background;
-        this.uiButtons = null;
-        this.otherInfo = {};
-    }
 
-    UIWindow.prototype.setButtons = function(buttons) {
-        this.uiButtons = buttons;
+        let buttons = [];
+        for (let i = 0; i < smithingOptions.length; ++i) {
+            buttons.push(new Game.UIButton(smithingOptions[i]));
+        }
+        this.uiButtons = buttons.sort((a, b) => a.buttonInfo.level - b.buttonInfo.level);
+        this.storedCoal = storedCoal;
+        this.onResize(rect);
     }
     
     UIWindow.prototype.draw = function(context, xview, yview) {
@@ -30,7 +31,7 @@
         
         context.textAlign = "right";
         context.font = "12px customFont";
-        context.fillText("stored coal: " + this.otherInfo.storedCoal, this.rect.left + this.rect.width - 10, this.rect.top + this.rect.height - 8);
+        context.fillText("stored coal: " + this.storedCoal, this.rect.left + this.rect.width - 10, this.rect.top + this.rect.height - 8);
         context.restore();
     }
 
@@ -70,7 +71,7 @@
         let uiHeight = Math.max(Math.ceil(this.uiButtons.length / maxRows), 2) * (slotRectHeight + 10) + 50;
         let uiy = ~~((worldRect.height / 2) - (uiHeight / 2)) + 0.5;
 
-        this.rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+        this.rect = new Rectangle(uix, uiy, uiWidth, uiHeight);
         
         let margin = ((this.rect.width - (maxRows * (slotRectWidth + 10))) / 2);
         for (let i = 0; i < this.uiButtons.length; ++i) {

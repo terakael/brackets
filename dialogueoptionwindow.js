@@ -62,13 +62,13 @@
         let uiHeight = (this.options.length * (this.buttonHeight + this.buffer)) + this.buttonHeight; // 30 is button height + 10 buffer for each; 30 is top/bottom buffer
         let uix = ~~((worldRect.width / 2) - (uiWidth / 2)) + 0.5;
         let uiy = ~~((worldRect.height / 2) - (uiHeight / 2)) + 0.5;
-        this.rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+        this.rect = new Rectangle(uix, uiy, uiWidth, uiHeight);
 
         let totalButtonHeight = (this.buttonHeight * this.options.length) + (this.buffer * this.options.length);
         let topButtonY = (this.rect.top + (this.rect.height / 2)) - (totalButtonHeight / 2);
         
         for (let i = 0; i < this.options.length; ++i) {
-            this.options[i].rect = new Game.Rectangle(~~(this.rect.left + this.buffer) + 0.5, 
+            this.options[i].rect = new Rectangle(~~(this.rect.left + this.buffer) + 0.5, 
                                                       ~~(topButtonY + (i * (this.buttonHeight + this.buffer))) + 0.5, 
                                                       this.rect.width - (this.buffer * 2), 
                                                       this.buttonHeight);

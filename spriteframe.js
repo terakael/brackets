@@ -1,5 +1,5 @@
-(function() {
-	function SpriteFrame(obj) {
+class SpriteFrame {
+	constructor(obj) {
 		//{"id":1,"sprite_map_id":1,"x":0,"y":140,"w":32,"h":32,"anchorX":0.5,"anchorY":0.95,"margin":0,"frame_count":1,"animation_type_id":1}
 		this.frameData = obj;
 		this.id = obj.id;
@@ -16,44 +16,43 @@
 
 		this.frames = [];
 		for (var i = 0; i < this.frameCount; ++i) {
-			this.frames.push(new Game.Rectangle((obj.x + (this.margin * i) + (obj.w * i)), obj.y, obj.w, obj.h));
+			this.frames.push(new Rectangle((obj.x + (this.margin * i) + (obj.w * i)), obj.y, obj.w, obj.h));
 		}
 
 		this.customBoundingBoxes = new Map();
 		if (obj.customBoundingBoxes) {
 			for (const [frameId, frameData] of Object.entries(obj.customBoundingBoxes)) {
 				// framedata is x y w h in pct format (0-1)
-				this.customBoundingBoxes.set(Number(frameId), new Game.Rectangle(frameData.xPct * obj.w * this.scale.x, frameData.yPct * obj.h * this.scale.y, frameData.wPct * obj.w * this.scale.x, frameData.hPct * obj.h * this.scale.y));
+				this.customBoundingBoxes.set(Number(frameId), new Rectangle(frameData.xPct * obj.w * this.scale.x, frameData.yPct * obj.h * this.scale.y, frameData.wPct * obj.w * this.scale.x, frameData.hPct * obj.h * this.scale.y));
 			}
 		}
 
 		this.currentFrame = 0;
-	};
+	}
 
-	SpriteFrame.prototype.setScale = function(scale) {
+	setScale(scale) {
 		this.scale = {x: scale.x, y: scale.y};
 	}
 
-	SpriteFrame.prototype.getBoundingBox = function() {
+	getBoundingBox() {
 		const rect = this.customBoundingBoxes.has(this.currentFrame) 
 						? this.customBoundingBoxes.get(this.currentFrame) 
-						: new Game.Rectangle(0, 0, this.getCurrentFrame().width * this.scale.x, this.getCurrentFrame().height * this.scale.y);
+						: new Rectangle(0, 0, this.getCurrentFrame().width * this.scale.x, this.getCurrentFrame().height * this.scale.y);
 
-		return new Game.Rectangle(-(this.getCurrentFrame().width * this.scale.x * this.anchor.x) + rect.left,
+		return new Rectangle(-(this.getCurrentFrame().width * this.scale.x * this.anchor.x) + rect.left,
 								  -(this.getCurrentFrame().height * this.scale.y * this.anchor.y) + rect.top,
 								  rect.width,
 								  rect.height);
 	}
-
 	
-	SpriteFrame.prototype.draw = function(ctx, x, y, color) {
+	draw(ctx, x, y, color) {
 		color = color || this.color;
-		let spriteMap = Game.SpriteManager.getSpriteMapById(this.spriteMapId);
+		let spriteMap = SpriteManager.getSpriteMapById(this.spriteMapId);
 		if (!spriteMap)
 			return; // maybe sprite map hasn't finished loading yet
 
 		if (color) {
-			let spriteMapObj = Game.SpriteManager.getSpriteMapByIdAndColor(this.spriteMapId, color);
+			let spriteMapObj = SpriteManager.getSpriteMapByIdAndColor(this.spriteMapId, color);
 			if (spriteMapObj && spriteMapObj.ready) {
 				spriteMap = spriteMapObj.map;
 			} else if (!spriteMapObj) {
@@ -70,7 +69,7 @@
 				// adjust "lightness"
 				c.globalCompositeOperation =  "color-dodge";
 				// for common slider, to produce a valid value for both directions
-				l = hsl.l >= 100 ? hsl.l - 100 : 100 - (100 - hsl.l);
+				const l = hsl.l >= 100 ? hsl.l - 100 : 100 - (100 - hsl.l);
 				c.fillStyle = "hsl(0, 50%, " + hsl.l + "%)";
 				c.fillRect(0, 0, spriteMap.width, spriteMap.height);
 				
@@ -98,7 +97,7 @@
 					color: color,
 					ready: false
 				};
-				Game.SpriteManager.spriteMapsWithColor.push(spriteMapWithColor);
+				SpriteManager.spriteMapsWithColor.push(spriteMapWithColor);
 				map.onload = function() {
 					spriteMapWithColor.ready = true;
 					console.log("created new colored spritemap: id=" + spriteMapId + "; color=" + color);
@@ -109,10 +108,9 @@
 		if (spriteMap) {
 			this.drawImage(ctx, x, y, spriteMap);
 		}
-	};
+	}
 
-	SpriteFrame.prototype.drawImage = function(ctx, x, y, spriteMap) {
-
+	drawImage(ctx, x, y, spriteMap) {
 		ctx.mozImageSmoothingEnabled = Game.enableSmoothing;
 		ctx.webkitImageSmoothingEnabled = Game.enableSmoothing;
 		ctx.msImageSmoothingEnabled = Game.enableSmoothing;
@@ -129,17 +127,17 @@
 			this.frames[this.currentFrame].height * this.scale.y);
 	}
 
-	SpriteFrame.prototype.drawDetailed = function(ctx, sx, sy, sw, sh, dx, dy, dw, dh) {
-		let spriteMap = Game.SpriteManager.getSpriteMapById(this.spriteMapId);
+	drawDetailed(ctx, sx, sy, sw, sh, dx, dy, dw, dh) {
+		let spriteMap = SpriteManager.getSpriteMapById(this.spriteMapId);
 		if (spriteMap)
 			ctx.drawImage(spriteMap, sx, sy, sw, sh, dx, dy, dw, dh);
 	}
 
-	SpriteFrame.prototype.getCurrentFrame = function() {
+	getCurrentFrame() {
 		return this.frames[this.currentFrame];
 	}
 
-	SpriteFrame.prototype.process = function(dt) {
+	process(dt) {
 		this.frameTimer -= dt;
         if (this.frameTimer < 0 && this.frameSpeed > 0) {
             // time to switch frames        
@@ -148,7 +146,7 @@
         }
 	};
 
-	SpriteFrame.prototype.nextFrame = function() {
+	nextFrame() {
 		switch (this.animationTypeId) {
 			case 4:// fall through, this is ping pong but always animate
 			case 2: {// ping pong
@@ -180,9 +178,7 @@
 		}
 	}
 
-	SpriteFrame.prototype.alwaysAnimate = function() {
+	alwaysAnimate() {
 		return this.animationTypeId === 4;
 	}
-	
-	Game.SpriteFrame = SpriteFrame;
-})();
+}

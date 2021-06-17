@@ -8,16 +8,16 @@
         for (let i = 0; i < this.rows.length; ++i) {
             this.icons.push({
                 result: {
-                    item: Game.SpriteManager.getItemById(this.rows[i].itemId),
-                    rect: new Game.Rectangle(0, 0, 32, 32)
+                    item: SpriteManager.getItemById(this.rows[i].itemId),
+                    rect: new Rectangle(0, 0, 32, 32)
                 },
                 mix: {
-                    item: Game.SpriteManager.getItemById(this.rows[i].itemId2),
-                    rect: new Game.Rectangle(0, 0, 32, 32)
+                    item: SpriteManager.getItemById(this.rows[i].itemId2),
+                    rect: new Rectangle(0, 0, 32, 32)
                 },
                 secondary: {
-                    item: Game.SpriteManager.getItemById(this.rows[i].itemId3),
-                    rect: new Game.Rectangle(0, 0, 32, 32)
+                    item: SpriteManager.getItemById(this.rows[i].itemId3),
+                    rect: new Rectangle(0, 0, 32, 32)
                 }
             });
         }
@@ -135,7 +135,7 @@
 
         let uix = ~~((worldRect.width / 2) - (uiWidth / 2)) + 0.5;
         let uiy = ~~((worldRect.height / 2) - (uiHeight / 2)) + 0.5;
-        this.rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
+        this.rect = new Rectangle(uix, uiy, uiWidth, uiHeight);
 
         for (let i = 0; i < this.icons.length; ++i) {
             this.icons[i].result.rect.setPos(this.rect.left + (uiWidth * (2/7)) - 16, this.rect.top + 5 + ((i + 1) * 40) - 16);

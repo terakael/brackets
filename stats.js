@@ -32,7 +32,7 @@
         ];
 
         this.expDrops = [];
-        this.statIconSpriteMap = Game.SpriteManager.getSpriteMapById(10);
+        this.statIconSpriteMap = SpriteManager.getSpriteMapById(10);
 
         this.bonuses = null;
         
@@ -41,7 +41,7 @@
         this.healthBarTimer = 0;
         this.hoverStatId = null;
 
-        this.rect = new Game.Rectangle(Game.hudCameraRect.left, 450, Game.hudCameraRect.width, 150);
+        this.rect = new Rectangle(Game.hudCameraRect.left, 450, Game.hudCameraRect.width, 150);
     }
     Stats.prototype.exp2lvl = function(exp) {
         let lvl = 99;
@@ -96,7 +96,7 @@
         for (let i = 0; i < this.stats.length; ++i) {
             let xOffset = (i % 3) * 80; 
 
-            let clickbox = new Game.Rectangle(this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 80, 16);
+            let clickbox = new Rectangle(this.x + xview + xOffset, this.y + yview + (this.y * ~~(i/3)) - 8, 80, 16);
             if (clickbox.pointWithin(Game.mousePos)) {
                 ctx.fillStyle = "rgba(100, 100, 100, 0.6)";
                 ctx.fillRect(clickbox.left, clickbox.top, clickbox.width, clickbox.height);

@@ -32,7 +32,7 @@
         this.followed = null;
 
         // rectangle that represents the viewport
-        this.viewportRect = new window.Game.Rectangle(this.xView, this.yView, this.wView, this.hView);
+        this.viewportRect = new Rectangle(this.xView, this.yView, this.wView, this.hView);
     }
 
     // gameObject needs to have "x" and "y" properties (as world(or room) position)

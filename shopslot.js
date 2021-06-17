@@ -7,8 +7,8 @@
     }
 
     function ShopSlot(itemId, currentStock) {
-        this.rect = new Game.Rectangle(0, 0, 100, 75);
-        this.item = Game.SpriteManager.getItemById(itemId);
+        this.rect = new Rectangle(0, 0, 100, 75);
+        this.item = SpriteManager.getItemById(itemId);
         this.currentStock = currentStock;
 
         this.leftclickOption = {
@@ -57,7 +57,7 @@
         var itemHeight = this.item.spriteFrame.getCurrentFrame().height;
 
         let spriteFrame = this.item.spriteFrame.getCurrentFrame();
-        let spriteMap = Game.SpriteManager.getSpriteMapById(this.item.spriteFrame.spriteMapId);
+        let spriteMap = SpriteManager.getSpriteMapById(this.item.spriteFrame.spriteMapId);
         if (spriteMap) {
             context.drawImage(spriteMap, 
                 spriteFrame.left, 
