@@ -11,7 +11,6 @@
         this.speed = 0;
         this.currentHp = obj.currentHp;
         this.healthBarTimer = 0;
-        // this.hitsplat = null;
         this.hitsplats = [];
         this.inCombat = false;
         this.chatMessage = "";
@@ -36,13 +35,15 @@
 
         this.combatOffset = (this.spriteframes["attack"].getCurrentFrame().width * npc.scaleX) / 4;
 
+        // just to avoid all the npcs facing the same direction at the start
         const potentialStartAnimations = ["up", "down", "left", "right"];
         this.currentAnimation = potentialStartAnimations[Math.floor(Math.random() * potentialStartAnimations.length)];
     }
 
     NPC.prototype.getLeftclickLabel = function() {
-        if (this.get("leftclickOption") === 4096) // attack
-            return "attack {0} (lvl {1})".format(this.get("name"), this.get("cmb"));
+        if (this.get("leftclickOption") === 1) {// attack
+            return `attack ${this.get("name")} (lvl ${this.get("cmb")})`;
+        }
         return "";
     }
     

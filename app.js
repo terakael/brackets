@@ -1,4 +1,6 @@
 $(function () {
+    // import ResponseController from 'responses/ResponseController.js'
+
     // prepare our game canvas
     const canvas = document.getElementById("game");
     const context = canvas.getContext("2d");
@@ -14,6 +16,8 @@ $(function () {
     otherCanvas.width = canvas.width;
     otherCanvas.height = canvas.height
     Game.otherContext = otherCanvas.getContext("2d");
+
+    Game.responseQueue = [];
     
     Game.resourceWs = new Game.WebSocket("ws://{0}:{1}/ws/resources".format(ip, resourcePort), function (obj) {
         if (obj["success"] == 0) {
@@ -25,15 +29,9 @@ $(function () {
                 Game.SpriteManager.loadSpriteMaps(obj["spriteMaps"]).done(function() {
                     Game.SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
                     Game.SpriteManager.loadItems(obj["items"]);
-                    // Game.SpriteManager.loadGroundTextures(obj["groundTextures"]);
                     room.loadTextureMaps(obj.spriteMaps.map(e => e.id));
                     Game.ContextMenu.loadContextOptions(obj.contextOptions);
-                    // room.loadNpcs(obj.npcs);
                     Game.statMap = new Map(Object.entries(obj["statMap"]));
-
-                    // for (let i = 0; i < obj.scenery.length; ++i)
-                    //     Game.sceneryMap.set(obj.scenery[i].id, obj.scenery[i]);
-
                     Game.expMap = new Map();
                     for (let [key, value] of Object.entries(obj["expMap"]).sort((a, b) => b < a)) {
                         Game.expMap.set(Number(key), Number(value));
@@ -92,6 +90,7 @@ $(function () {
         }
     };
     Game.processResponse = function(arr) {
+        Game.responseQueue.push(...arr);
         for (var ele = 0; ele < arr.length; ++ele) {
             var obj = arr[ele];
             if (obj.success === 0) {
@@ -110,34 +109,24 @@ $(function () {
                 switch (obj.action) {
                     case "logon": {
                         document.title = obj.playerDto.name;
-                        room.player = new Game.Player(obj.playerDto.tileId);
-                        room.player.id = obj.playerDto.id;
-                        room.player.name = obj.playerDto.name;
-                        room.player.currentHp = obj.playerDto.currentHp;
-                        room.player.maxHp = obj.playerDto.maxHp;
-                        room.player.combatLevel = obj.playerDto.combatLevel;
-                        room.player.currentPrayer = obj.playerDto.currentPrayer;
 
-                        camera.follow(room.player, (canvas.width - 250 - (room.player.width / 2)) / 2, (canvas.height) / 2);
+                        let player = new Game.Player(obj.playerDto);
+                        player.loadStats(obj.stats, obj.boosts);
+                        player.setBonuses(obj.bonuses);
+                        player.loadAttackStyles(obj.attackStyles);
+                        player.setAttackStyle(obj.playerDto.attackStyleId);
 
-                        var playerXY = tileIdToXY(obj.playerDto.tileId);
-                        camera.xView = playerXY.x - (camera.xDeadZone * (1 / Game.scale));
-                        camera.yView = playerXY.y - (camera.yDeadZone * (1 / Game.scale));
+                        Game.cam.follow(player, (canvas.width - 250 - (player.width / 2)) / 2, (canvas.height) / 2);
+
+                        const playerXY = tileIdToXY(obj.playerDto.tileId);
+                        Game.cam.xView = playerXY.x - (Game.cam.xDeadZone * (1 / Game.scale));
+                        Game.cam.yView = playerXY.y - (Game.cam.yDeadZone * (1 / Game.scale));
                         
-                        room.player.loadStats(obj.stats, obj.boosts);
-                        room.player.setBonuses(obj.bonuses);
-                        // room.player.updateInventory(obj.inventory);
-                        room.player.setAnimations(obj.playerDto.baseAnimations);
-                        room.player.setEquipAnimations(obj.playerDto.equipAnimations);
-                        // room.player.setEquippedSlots(obj.equippedSlots);
-                        room.player.loadAttackStyles(obj.attackStyles);
-                        room.player.setAttackStyle(obj.playerDto.attackStyleId);
-                        
-                        room.init();
+                        room.init(player);
 
-                        Game.ChatBox.add("Welcome to the game, {0}.".format(room.player.name));
+                        Game.ChatBox.add("Welcome to the game, {0}.".format(player.name));
                         Game.state = 'game';
-                        Game.currentPlayer = room.player;
+                        Game.currentPlayer = player;
                         break;
                     }
                     
@@ -150,28 +139,26 @@ $(function () {
                     }
 
                     case "add_resources": {
-                        let resource = obj;
-                        console.log(resource);
-                        if (obj.spriteFrames)
-                            Game.SpriteManager.loadSpriteFrames(obj.spriteFrames);
+                        const resource = obj;
+                        if (resource.spriteFrames)
+                            Game.SpriteManager.loadSpriteFrames(resource.spriteFrames);
 
-                        if (obj.items)
-                            Game.SpriteManager.loadItems(obj.items);
+                        if (resource.items)
+                            Game.SpriteManager.loadItems(resource.items);
 
-                        if (obj.groundTextures)
-                            Game.SpriteManager.loadGroundTextures(obj.groundTextures);
+                        if (resource.groundTextures)
+                            Game.SpriteManager.loadGroundTextures(resource.groundTextures);
 
-                        if (obj.scenery)
-                            for (let i = 0; i < obj.scenery.length; ++i)
-                                Game.sceneryMap.set(obj.scenery[i].id, obj.scenery[i]);
+                        if (resource.scenery)
+                            for (let i = 0; i < resource.scenery.length; ++i)
+                                Game.sceneryMap.set(resource.scenery[i].id, resource.scenery[i]);
                         
-                        if (obj.npcs)
-                            room.loadNpcs(obj.npcs);
+                        if (resource.npcs)
+                            room.loadNpcs(resource.npcs);
 
                         Game.SpriteManager.loadSpriteMaps(resource.spriteMaps).done(function() {
                             if (resource.groundTextureSpriteMaps) {
                                 room.loadTextureMaps(resource.groundTextureSpriteMaps).done(function() {
-                                    console.log("reloading ground textures to canvas");
                                     room.saveGroundTexturesToCanvas();
                                 });
                             }
@@ -180,54 +167,37 @@ $(function () {
                     }
 
                     case "message": {
-                        if (obj["message"]) {
-                            Game.ChatBox.add("{0}: {1}".format(obj.name, obj.message), obj.colour == null ? 'yellow' : obj.colour);
-                            if (obj.id == room.player.id) {
-                                room.player.setChatMessage(obj.message);
-                            }
-                            else {
-                                for (var i in room.otherPlayers) {
-                                    if (obj.id == room.otherPlayers[i].id) {
-                                        room.otherPlayers[i].setChatMessage(obj.message);
-                                    }
-                                }
-                            }
+                        const {id, name, message, colour} = obj;
+                        if (message) {
+                            Game.ChatBox.add(`${name}: ${message}`, colour || 'yellow');
+                            room.playerById(id, p => p.setChatMessage(message));
                         }
                         break;
                     }
                     
                     case "examine": {
-                        Game.ChatBox.add(obj["examineText"], "#fff");
+                        Game.ChatBox.add(obj.examineText, "#fff");
                         break;
                     }
 
                     case "playerEnter": {
-                        Game.ChatBox.add(obj.name + " has logged in.", "#0ff");
+                        Game.ChatBox.add(`${obj.name} has logged in.`, "#0ff");
                         break;
                     }
 
                     case "playerLeave": {
-                        Game.ChatBox.add(obj["name"] + " has logged out.", "#0ff");
+                        Game.ChatBox.add(`${obj.name} has logged out.`, "#0ff");
                         break;
                     }
 
                     case "addexp": {
-                        for (var key in obj["stats"])
+                        for (let key in obj["stats"])
                             room.player.stats.gainExp(Game.statMap.get(key), obj.stats[key]);
                         break;
                     }
 
                     case "dead": {
-                        if (obj.id === room.player.id) {
-                            room.player.setDeathSequence();
-                        } else {
-                            for (let i in room.otherPlayers) {
-                                if (obj.id === room.otherPlayers[i].id) {
-                                    room.otherPlayers[i].setDeathSequence();
-                                    break;
-                                }
-                            }
-                        }
+                        room.playerById(obj.id, p => p.setDeathSequence());
                         break;
                     }
 
@@ -246,40 +216,21 @@ $(function () {
                     }
 
                     case "duel": {
-                        var fighter1, fighter2;
-                        if (obj["fighter1id"] === room.player.id) {
-                            fighter1 = room.player;
-                        }
-                        else {
-                            for (var i in room.otherPlayers) {
-                                if (room.otherPlayers[i].id === obj["fighter1id"])
-                                    fighter1 = room.otherPlayers[i];
-                                else if (room.otherPlayers[i].id === obj["fighter2id"])
-                                    fighter2 = room.otherPlayers[i];
-                            }
-                        }
+                        const fighter1 = room.getPlayerById(obj.fighter1id);
+                        const fighter2 = room.getPlayerById(obj.fighter2id);
+
                         if (fighter1 && fighter2)
                             Game.FightManager.addFight(fighter1, fighter2);
                         break;
                     }
 
                     case "accept_trade": {// both players have agreed to trade with eachother
-                        // let gameWindowWidth = Game.canvas.width - 250;
-                        // let uiWidth = gameWindowWidth / 1.25;
-                        // let uiHeight = Game.canvas.height / 2;
-                        // let uix = ~~((gameWindowWidth / 2) - (uiWidth / 2)) + 0.5;
-                        // let uiy = ~~((Game.canvas.height / 2) - (uiHeight / 2)) + 0.5;
-                        // let rect = new Game.Rectangle(uix, uiy, uiWidth, uiHeight);
-
-                        let otherPlayerName = null;
-                        for (let i in room.otherPlayers) {
-                            if (room.otherPlayers[i].id === obj.otherPlayerId) {
-                                otherPlayerName = room.otherPlayers[i].name;
-                                break;
-                            }
+                        const {otherPlayerId, duelRules} = obj;
+                        
+                        const player = room.getPlayerById(otherPlayerId);
+                        if (player) {
+                            Game.activeUiWindow = new Game.TradeWindow(Game.worldCameraRect, player.name, duelRules); // duelRules is null if it's not a duel
                         }
-
-                        Game.activeUiWindow = new Game.TradeWindow(Game.worldCameraRect, otherPlayerName, obj.duelRules); // duelRules is null if it's not a duel
                         break;
                     }
 
@@ -304,7 +255,6 @@ $(function () {
                         }
 
                         Game.activeUiWindow.update(obj);
-                        
                         break;
                     }
 
@@ -314,15 +264,7 @@ $(function () {
                     }
 
                     case "player_update": {
-                        if (obj.id === room.player.id) {
-                            room.player.handlePlayerUpdate(obj);
-                        } else {
-                            for (var i in room.otherPlayers) {
-                                if (obj.id === room.otherPlayers[i].id) {
-                                    room.otherPlayers[i].handlePlayerUpdate(obj);
-                                }
-                            }
-                        }
+                        room.playerById(obj.id, p => p.handlePlayerUpdate(obj));
                         break;
                     }
 
@@ -335,7 +277,7 @@ $(function () {
                         // keep mining automatically
                         Game.ws.send({
                             action: "fish",
-                            tileId: obj["tileId"]
+                            tileId: obj.tileId
                         });
                         break;
                     }
@@ -375,17 +317,16 @@ $(function () {
                     }
 
                     case "show_smithing_table": {
+                        const {smithingOptions, storedCoal, furnaceTile} = obj;
+                        
                         Game.activeUiWindow = uiWindow;
 
                         var buttons = [];
-                        for (var i = 0; i < obj["smithingOptions"].length; ++i) {
-                            buttons.push(new Game.UIButton(obj["smithingOptions"][i]));
+                        for (let i = 0; i < smithingOptions.length; ++i) {
+                            buttons.push(new Game.UIButton(smithingOptions[i]));
                         }
                         uiWindow.setButtons(buttons.sort((a, b) => a.buttonInfo.level - b.buttonInfo.level));
-                        uiWindow.otherInfo = {
-                            storedCoal: obj["storedCoal"],
-                            furnaceTile: obj["furnaceTile"]
-                        };
+                        uiWindow.otherInfo = {storedCoal, furnaceTile};
 
                         uiWindow.onResize(Game.worldCameraRect);
                         break;
@@ -398,149 +339,72 @@ $(function () {
                         // success: 1
                         // responseText: ""
                         // action: "npc_update"
-                        for (var i = 0; i < room.npcs.length; ++i) {
-                            if (room.npcs[i].instanceId === obj["instanceId"]) {
-                                room.npcs[i].handleNpcUpdate(obj)
-                                break;
-                            }
-                        }
+                        room.npcById(obj.instanceId, npc => npc.handleNpcUpdate(obj));
                         break;
                     }
 
                     case "pvm_start": {
-                        let player = null, monster = null;
-                        if (obj.playerId == Game.currentPlayer.id) {
-                            player = Game.currentPlayer;
-                        } else {
-                            for (let i in room.otherPlayers) {
-                                if (room.otherPlayers[i].id == obj.playerId) {
-                                    player = room.otherPlayers[i];
-                                    break;
-                                }
-                            }
-                        }
+                        const {playerId, monsterId, tileId} = obj;
 
-                        for (let i = 0; i < room.npcs.length; ++i) {
-                            if (room.npcs[i].instanceId === obj.monsterId) {
-                                monster = room.npcs[i];
-                                break;
-                            }
-                        }
+                        const player = room.getPlayerById(playerId);
+                        const monster = room.getNpcById(monsterId);
 
                         if (player !== null && monster !== null) {
                             // handle fight
                             player.inCombat = true;
-                            player.setDestPosAndSpeedByTileId(obj.tileId, -8);
+                            player.setDestPosAndSpeedByTileId(tileId, -8);
                             
                             monster.inCombat = true;
-                            monster.setDestPosAndSpeedByTileId(obj.tileId);
+                            monster.setDestPosAndSpeedByTileId(tileId);
                         }
                         break;
                     }
 
                     case "pvp_start": {
-                        let player1 = null, player2 = null;
-                        if (obj.player1Id == Game.currentPlayer.id) {
-                            player1 = Game.currentPlayer;
-                        } else {
-                            for (let i in room.otherPlayers) {
-                                if (room.otherPlayers[i].id == obj.player1Id) {
-                                    player1 = room.otherPlayers[i];
-                                    break;
-                                }
-                            }
-                        }
+                        const {player1Id, player2Id, tileId} = obj;
 
-                        if (obj.player2Id == Game.currentPlayer.id) {
-                            player2 = Game.currentPlayer;
-                        } else {
-                            for (let i in room.otherPlayers) {
-                                if (room.otherPlayers[i].id == obj.player2Id) {
-                                    player2 = room.otherPlayers[i];
-                                    break;
-                                }
-                            }
-                        }
-
+                        const player1 = room.getPlayerById(player1Id);
+                        const player2 = room.getPlayerById(player2Id);
+                        
                         if (player1 !== null && player2 !== null) {
                             // handle fight
                             player1.inCombat = true;
-                            player1.setDestPosAndSpeedByTileId(obj.tileId, -8);
+                            player1.setDestPosAndSpeedByTileId(tileId, -8);
                             
                             player2.inCombat = true;
-                            player2.setDestPosAndSpeedByTileId(obj.tileId, 8);
+                            player2.setDestPosAndSpeedByTileId(tileId, 8);
                         }
 
                         break;
                     }
 
                     case "pvm_end": {
-                        let player = null;
-                        if (obj.playerId == Game.currentPlayer.id) {
-                            player = Game.currentPlayer;
-                        } else {
-                            for (var i in room.otherPlayers) {
-                                if (room.otherPlayers[i].id == obj.playerId) {
-                                    player = room.otherPlayers[i];
-                                    break;
-                                }
-                            }
-                        }
-                        if (player != null) {
-                            player.inCombat = false;
-                            player.currentAnimation = player.attackingFromRight ? "left" : "right";
-                            if (obj.playerTileId)
-                                player.setDestPosAndSpeedByTileId(obj.playerTileId);
-                        }
+                        const {playerId, monsterId, playerTileId, monsterTileId} = obj;
 
-                        for (var i = 0; i < room.npcs.length; ++i) {
-                            if (room.npcs[i].instanceId === obj.monsterId) {
-                                room.npcs[i].inCombat = false;
-                                room.npcs[i].setDestPosAndSpeedByTileId(obj.monsterTileId);
-                                break;
-                            }
-                        }
+                        room.playerById(playerId, p => {
+                            p.setInCombat(false);
+                            p.setDestPosAndSpeedByTileId(playerTileId);
+                        });
+                        
+                        room.npcById(monsterId, m => {
+                            m.inCombat = false;
+                            m.setDestPosAndSpeedByTileId(monsterTileId);
+                        });
                         break;
                     }
 
                     case "pvp_end": {
-                        let player1 = null;
-                        if (obj.player1Id == Game.currentPlayer.id) {
-                            player1 = Game.currentPlayer;
-                        } else {
-                            for (var i in room.otherPlayers) {
-                                if (room.otherPlayers[i].id == obj.player1Id) {
-                                    player1 = room.otherPlayers[i];
-                                    break;
-                                }
-                            }
-                        }
-                        if (player1 != null) {
-                            player1.inCombat = false;
-                            player1.currentAnimation = player1.attackingFromRight ? "left" : "right";
+                        const {player1Id, player1TileId, player2Id, player2TileId} = obj;
 
-                            if (obj.player1TileId)
-                                player1.setDestPosAndSpeedByTileId(obj.player1TileId);
-                        }
+                        room.playerById(player1Id, p => {
+                            p.setInCombat(false);
+                            p.setDestPosAndSpeedByTileId(player1TileId);
+                        });
 
-                        let player2 = null;
-                        if (obj.player2Id == Game.currentPlayer.id) {
-                            player2 = Game.currentPlayer;
-                        } else {
-                            for (var i in room.otherPlayers) {
-                                if (room.otherPlayers[i].id == obj.player2Id) {
-                                    player2 = room.otherPlayers[i];
-                                    break;
-                                }
-                            }
-                        }
-                        if (player2 != null) {
-                            player2.inCombat = false;
-                            player2.currentAnimation = player2.attackingFromRight ? "left" : "right";
-
-                            if (obj.player2TileId)
-                                player2.setDestPosAndSpeedByTileId(obj.player2TileId);
-                        }
+                        room.playerById(player2Id, p => {
+                            p.setInCombat(false);
+                            p.setDestPosAndSpeedByTileId(player2TileId);
+                        });
 
                         break;
                     }
@@ -552,12 +416,8 @@ $(function () {
                     }
 
                     case "talk to": {
-                        for (let i = 0; i < room.npcs.length; ++i) {
-                            if (room.npcs[i].instanceId === obj.objectId && obj.message) {
-                                room.npcs[i].setChatMessage(obj.message);
-                                break;
-                            }
-                        }
+                        const {objectId, message} = obj;
+                        room.npcById(objectId, npc => npc.setChatMessage(message));
                         break;
                     }
 
@@ -722,64 +582,24 @@ $(function () {
                     }
 
                     case "action_bubble": {
-                        let player = null;
-                        if (obj.playerId == Game.currentPlayer.id) {
-                            player = Game.currentPlayer;
-                        } else {
-                            for (var i in room.otherPlayers) {
-                                if (room.otherPlayers[i].id == obj.playerId) {
-                                    player = room.otherPlayers[i];
-                                    break;
-                                }
-                            }
-                        }
-                        if (player != null) {
-                            player.setActionBubble(obj.iconId);
-                        }
-
+                        room.playerById(obj.playerId, p => p.setActionBubble(obj.iconId));
                         break;
                     }
 
                     case "cast_spell": {
-                        let target = null;
-                        if (obj.targetType === "npc") {
-                            for (let i = 0; i < room.npcs.length; ++i) {
-                                if (room.npcs[i].instanceId === obj.targetId) {
-                                    target = room.npcs[i];
-                                    break;
-                                }
-                            }
-                        } else if (obj.targetType === "player") {
-                            if (obj.targetId === room.player.id) {
-                                target = Game.currentPlayer;
-                            } else {
-                                for (let i = 0; i < room.otherPlayers.length; ++i) {
-                                    if (obj.targetId === room.otherPlayers[i].id) {
-                                        target = room.otherPlayers[i];
-                                        break;
-                                    }
-                                }
-                            }
-                        }
+                        const {targetId, targetType, playerId, spriteFrameId} = obj;
 
-                        let player = null;
-                        if (obj.playerId == Game.currentPlayer.id) {
-                            player = Game.currentPlayer;
-                        } else {
-                            for (var i in room.otherPlayers) {
-                                if (room.otherPlayers[i].id == obj.playerId) {
-                                    player = room.otherPlayers[i];
-                                    break;
-                                }
-                            }
-                        }
+                        const caster = room.getPlayerById(playerId);
+                        const target = (targetType === "npc") 
+                            ? room.getNpcById(targetId) 
+                            : room.getPlayerById(targetId);
                         
-                        if (target && player) {
-                            let spell = new Game.Spell(player, target, obj.spriteFrameId);
+                        if (target && caster) {
+                            let spell = new Game.Spell(caster, target, spriteFrameId);
                             room.spells.push(spell);
 
                             if (target === Game.currentPlayer)
-                                Game.ChatBox.add(player.name + " is casting magic on you!", "#fff");
+                                Game.ChatBox.add(`${caster.name} is casting magic on you!`, "#fff");
                         }
                         
                         break;
@@ -901,7 +721,9 @@ $(function () {
             image.src = `data:image/png;base64,${minimapBase64}`;
             image.onload = () => Game.Minimap.load(image, segmentId);
         },
-        init: function () {
+        init: function (player) {
+            this.player = player;
+
             this.show = 1.0;
             let groundTextureCanvas = document.createElement("canvas");
             groundTextureCanvas.width = 32 * 24; // 24 tiles across, 32 pixels each
@@ -912,6 +734,26 @@ $(function () {
             sceneryCanvas.width = groundTextureCanvas.width;
             sceneryCanvas.height = groundTextureCanvas.height;
             this.sceneryCtx = sceneryCanvas.getContext("2d");
+        },
+        getPlayerById: function(id) {
+            if (this.player.id === id)
+                return this.player;
+            return this.otherPlayers.find(p => p.id === id);
+        },
+        playerById: function(id, fn) {
+            const player = this.getPlayerById(id);
+            if (player) {
+                fn.call(this, player);
+            }
+        },
+        getNpcById: function(id) {
+            return this.npcs.find(npc => npc.instanceId === id);
+        },
+        npcById: function(id, fn) {
+            const npc = this.getNpcById(id);
+            if (npc) {
+                fn.call(this, npc);
+            }
         },
         loadSceneryInstances: function(depletedScenery, openDoors) {   
             this.sceneryInstances = new Map();
@@ -1049,18 +891,7 @@ $(function () {
             }
         },
         addPlayer: function (obj) {
-            let player = new Game.Player(obj.tileId);
-            player.id = obj.id;
-            player.name = obj.name;
-
-            player.currentHp = obj.currentHp;
-            player.maxHp = obj.maxHp;
-            player.combatLevel = obj.combatLevel;
-            
-            player.setAnimations(obj.baseAnimations);
-            player.setEquipAnimations(obj.equipAnimations);
-
-            this.otherPlayers.push(player);
+            this.otherPlayers.push(new Game.Player(obj));
         },
         draw: function (ctx, xview, yview) {
             if (room.currentShow === 0)
@@ -1356,12 +1187,10 @@ $(function () {
                 }
             }
             
-            for (let i = 0; i < this.spells.length; ++i)
-                this.spells[i].process(dt);
+            this.spells.forEach(e => e.process(dt));
             this.spells = this.spells.filter(spell => spell.lifetime > 0);
 
-            for (let i = 0; i < this.teleportExplosions.length; ++i)
-                this.teleportExplosions[i].lifetime -= dt;
+            this.teleportExplosions.forEach(e => e.lifetime -= dt);
             this.teleportExplosions = this.teleportExplosions.filter(e => e.lifetime > 0);
 
             Game.Minimap.setOtherPlayers(this.otherPlayers);
@@ -2011,8 +1840,15 @@ $(function () {
             Game.LogonScreen.draw(Game.context, Game.context.canvas.width, Game.context.canvas.height);
         }
     };
+
+    var processResponses = function() {
+        // ResponseController.process([...Game.responseQueue]);
+        Game.responseQueue = [];
+    }
+    
     // Game Loop
     var gameLoop = function (dt) {
+        processResponses();
         update(dt);
         draw();
     };
@@ -2047,11 +1883,23 @@ $(function () {
     Game.play();
     // -->
 });
-Game.getMousePos = function (e) {
-    if (Game.boundingRect)
-        return { x: e.clientX - Game.boundingRect.left, y: e.clientY - Game.boundingRect.top };
-    return {x: 0, y: 0};
-};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 window.addEventListener("mousemove", function (e) {
     Game.mousePos = Game.getMousePos(e);
 });

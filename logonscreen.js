@@ -15,6 +15,7 @@
 	}
 
     LogonScreen.prototype.process = function(dt) {
+		this.timer += dt;
 		if (this.logonErrorTimer > 0) {
 			this.logonErrorTimer -= dt;
 			if (this.logonErrorTimer < 0)
@@ -24,8 +25,8 @@
 
 	LogonScreen.prototype.draw = function(ctx, w, h) {
 		if (!this.bkg)
-			this.generate(w, h);
-		ctx.drawImage(this.bkg, 0, 0, this.bkg.width, this.bkg.height);
+			this.generate(1920, 1080);
+		ctx.drawImage(this.bkg, 0, 0, w, h, 0, 0, w, h);
 
 		ctx.fillStyle = "white";
 		ctx.font = "30px customFont";

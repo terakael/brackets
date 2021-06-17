@@ -15,10 +15,12 @@
 			context.fillStyle = this.selected ? this.selectedColor : this.fillColor;
 			context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
 
-			let slotsToProtect = 3;
+			const skulled = false; // TODO
+
+			let slotsToProtect = skulled ? 0 : 3;
 			if (Game.HUD.activePrayers.includes(6))
 				++slotsToProtect;
-			if (Game.HUD.activePrayers.includes(18))
+			else if (Game.HUD.activePrayers.includes(18))
 				slotsToProtect += 2;
 			// first three slots are protected on death, so they get a special outline
 			if (this.id < slotsToProtect) {

@@ -1,13 +1,15 @@
 (function(){
-		function Player(tileId){
+		function Player(obj){
+            this.id = obj.id;
+            this.name = obj.name;
+
 			// (x, y) = center of object
 			// ATTENTION:
             // it represents the player position on the world(room), not the canvas position
-            var posXY = tileIdToXY(tileId);
+            const posXY = tileIdToXY(obj.tileId);
 			this.x = posXY.x;
 			this.y = posXY.y;				
             this.destPos = posXY;
-            this.name = "null";
             this.inCombat = false;
 			
 			// move speed in pixels per second
@@ -17,16 +19,16 @@
 			this.width = 32;
 			this.height = 32;
             this.stats = new Game.Stats();
-            this.combatLevel = 0;
+            this.combatLevel = obj.combatLevel;
             this.inventory = new Game.Inventory();
             this.chatMessage = "";// the text over the player's head
             this.chatMessageTimer = 0;// counter until the chat message is cleared
             this.clickBox = new Game.Rectangle(0, 0, this.width, this.height);
             this.contextActions = ["follow", "trade", "duel"];
             this.hitsplats = [];
-            this.currentHp = 1;
-            this.maxHp = 1;
-            this.currentPrayer = 0;
+            this.currentHp = obj.currentHp;
+            this.maxHp = obj.maxHp;
+            this.currentPrayer = obj.currentPrayer || 0;
             this.respawnPos = {x: 0, y: 0};
             this.deathsCurtain = 1;
             this.deathSequence = false;
@@ -54,6 +56,9 @@
             this.drawOrders.set("attack_left", ["ONHAND","LEGS","TORSO","HEAD", "NECKLACE","OFFHAND", "CAPE"]);
             this.drawOrders.set("right", ["OFFHAND","LEGS","TORSO","HEAD", "NECKLACE","ONHAND", "CAPE"]);
             this.drawOrders.set("attack_right", ["OFFHAND","LEGS","TORSO","HEAD", "NECKLACE","ONHAND", "CAPE"]);
+
+            this.setAnimations(obj.baseAnimations);
+            this.setEquipAnimations(obj.equipAnimations);
 		}
 		
 		Player.prototype.process = function(step) {
@@ -465,6 +470,13 @@
         Player.prototype.setActionBubble = function(sprite) {
             this.actionBubbleSprite = Game.SpriteManager.getSpriteFrameById(sprite);
             this.actionBubbleTimer = 3;
+        }
+
+        Player.prototype.setInCombat = function(inCombat) {
+            this.inCombat = inCombat;
+            if (!this.inCombat) {
+                this.currentAnimation = this.attackingFromRight ? "left" : "right";
+            }
         }
 
 		// add "class" Player to our Game object

@@ -80,43 +80,20 @@
 			}
 		},
 		getItemById: function(id) {
-			for (var i in this.items) {
-				if (this.items[i].id === id) {
-					return this.items[i];
-				}
-			}
-			return null;
+			return this.items.find(item => item.id === id);
 		},
 		getSpriteMapById: function(id) {
-			for (var i in this.spriteMaps) {
-				if (this.spriteMaps[i].id === id) {
-					return this.spriteMaps[i].map;
-				}
-			}
-			return null;
+			const spriteMap = this.spriteMaps.find(e => e.id === id);
+			return spriteMap ? spriteMap.map : null;
 		},
 		getSpriteMapByIdAndColor: function(id, color) {
-			for (let i in this.spriteMapsWithColor) {
-				if (this.spriteMapsWithColor[i].id === id && this.spriteMapsWithColor[i].color === color) {
-					return this.spriteMapsWithColor[i];
-				}
-			}
-			return null;
+			return this.spriteMapsWithColor.find(e => e.id === id && e.color === color);
 		},
 		getSpriteFrameById: function(id) {
-			for (var i in this.spriteFrames) {
-				if (this.spriteFrames[i].id === id) {
-					return this.spriteFrames[i];
-				}
-			}
-			return null;
+			return this.spriteFrames.find(e => e.id === id);
 		},
 		getGroundTextureById: function(id) {
-			for (let i in this.groundTextures) {
-				if (this.groundTextures[i].id === id)
-					return this.groundTextures[i];
-			}
-			return null;
+			return this.groundTextures.find(e => e.id === id);
 		}
 	}
 	
