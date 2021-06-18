@@ -6,7 +6,7 @@ class MessageResponse {
     process(obj) {
         const {id, name, message, colour} = obj;
         if (message) {
-            Game.ChatBox.add(`${name}: ${message}`, colour || 'yellow');
+            ChatBox.add(`${name}: ${message}`, colour || 'yellow');
             Game.Room.playerById(id, p => p.setChatMessage(message));
         }
     }

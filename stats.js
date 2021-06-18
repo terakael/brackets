@@ -218,7 +218,7 @@
                 this.stats[i].exp += exp;
                 this.stats[i].lvl = this.exp2lvl(this.stats[i].exp);                
 				if (this.stats[i].lvl > oldLevel) {
-					Game.ChatBox.add("Your {0} level is now {1}!".format(this.stats[i].name, this.stats[i].lvl), '#0f0');
+					ChatBox.add("Your {0} level is now {1}!".format(this.stats[i].name, this.stats[i].lvl), '#0f0');
                 }
                 this.expDrops.push({statId: i, exp: ~~exp, lifetime: 1});
                 return;

@@ -4,7 +4,7 @@ class ExamineResponse {
     }
 
     process(obj) {
-        Game.ChatBox.add(obj.examineText, "#fff");
+        ChatBox.add(obj.examineText, "#fff");
     }
 }
 

@@ -134,7 +134,7 @@
                         this.deathsCurtainMaxTimer = 0;
                         // TODO move the client-player-only code elsewhere
                         if (this.id === Game.currentPlayer.id) {
-                            Game.ChatBox.add("You've been granted another life; use it wisely.", "white");
+                            ChatBox.add("You've been granted another life; use it wisely.", "white");
                         }
                     }
                 } else {

@@ -3,13 +3,14 @@ class ResponseController {
     
     static process(objArray) {
         objArray.forEach(obj => {
-            const {action, responseText, colour} = obj;
-            if (responseText.length > 0 && Game.state === "game") {
-                Game.ChatBox.add(responseText, colour);
-            }
+            const {action, success, responseText, colour} = obj;
 
-            if (this.messageMap.has(action))
+            if (success && this.messageMap.has(action))
                 this.messageMap.get(action).process(obj);
+
+            if (responseText.length && Game.state === "game") {
+                ChatBox.add(responseText, colour);
+            }
         });
     }
 

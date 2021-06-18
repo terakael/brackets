@@ -4,10 +4,7 @@ class FinishSmithingResponse {
     }
 
     process(obj) {
-        Game.ws.send({
-            action: "smith",
-            itemId: obj.itemId
-        });
+
     }
 }
 

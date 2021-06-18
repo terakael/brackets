@@ -4,10 +4,6 @@ class FinishFishingResponse {
     }
 
     process(obj) {
-        Game.ws.send({
-            action: "fish",
-            tileId: obj.tileId
-        });
     }
 }
 

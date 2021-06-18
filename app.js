@@ -463,7 +463,7 @@ $(function () {
             Game.Room.process(dt);
             Game.cursor.process(dt);
             Game.cam.update(dt);
-            Game.ChatBox.process(dt);
+            ChatBox.process(dt);
             Game.HUD.process(dt);
 
             if (Game.activeUiWindow)
@@ -497,6 +497,7 @@ $(function () {
             Game.currentPlayer.stats.draw(ctx, Game.hudcam.xView, Game.currentPlayer.stats.rect.top);
             Game.HUD.draw(ctx);
             
+            ChatBox.draw(ctx, 0, ctx.canvas.height);
             if (Game.Room.currentShow <= 0.98) {
                 // fade out the logon screen background
                 ctx.save();
@@ -505,7 +506,6 @@ $(function () {
                                                     0, 0, ctx.canvas.width, ctx.canvas.height);
                 ctx.restore();
             }
-            Game.ChatBox.draw(ctx, 0, ctx.canvas.height);
 
             if (Game.displayFps) {
                 ctx.save();
@@ -588,8 +588,8 @@ window.addEventListener("keypress", function (e) {
     var inp = String.fromCharCode(event.keyCode);
     if (Game.state === 'game') {
         if (/[a-zA-Z0-9 @#$-/:-?{-~!"^_`\[\]]/.test(inp)) {
-            if (Game.ChatBox.userMessage.length < 100)
-                Game.ChatBox.userMessage += inp;
+            if (ChatBox.userMessage.length < 100)
+                ChatBox.userMessage += inp;
             return;
         }
     }
@@ -627,12 +627,12 @@ window.addEventListener("keydown", function (e) {
                     Game.targetScale = 1;
                 break;
             case 13: //enter
-                if (Game.ChatBox.userMessage.length > 0) {
+                if (ChatBox.userMessage.length > 0) {
                     // todo list of client-side debug commands
-                    switch (Game.ChatBox.userMessage) {
+                    switch (ChatBox.userMessage) {
                         case "::boundingBoxes":
                             Game.drawBoundingBoxes = !Game.drawBoundingBoxes;
-                            Game.ChatBox.add("turned bounding boxes " + (Game.drawBoundingBoxes ? "on." : "off."));
+                            ChatBox.add("turned bounding boxes " + (Game.drawBoundingBoxes ? "on." : "off."));
                             break;
 
                         case "::cursor": {
@@ -667,18 +667,18 @@ window.addEventListener("keydown", function (e) {
                             Game.ws.send({
                                 action: "message",
                                 id: Game.currentPlayer.id,
-                                message: Game.ChatBox.userMessage
+                                message: ChatBox.userMessage
                             });
                             break;
                         }
                     }
                     
-                    Game.ChatBox.userMessage = '';
+                    ChatBox.userMessage = '';
                 }
                 break;
             case 8: // backspace
-                if (Game.ChatBox.userMessage.length > 0)
-                    Game.ChatBox.userMessage = Game.ChatBox.userMessage.substring(0, Game.ChatBox.userMessage.length - 1);
+                if (ChatBox.userMessage.length > 0)
+                    ChatBox.userMessage = ChatBox.userMessage.substring(0, ChatBox.userMessage.length - 1);
                 break;
         }
     }

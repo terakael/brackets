@@ -4,14 +4,7 @@ class FinishUseResponse {
     }
 
     process(obj) {
-        const {src, dest, type} = obj;
-        
-        Game.ws.send({
-            action: "use",
-            src,
-            dest,
-            type
-        });
+
     }
 }
 

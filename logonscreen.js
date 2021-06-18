@@ -143,15 +143,10 @@
 		let that = this;
                     
         Game.ws = new GameWebSocket(Game.ip, Game.port, "game", responses => {
-            Game.responseQueue.push(...responses.filter(e => e.success));
-            responses.filter(e => !e.success).forEach(e => {
-                if (Game.state === 'logonscreen') {
-                    that.setError(e.responseText);
-                }
-                else {
-                    Game.ChatBox.add(e.responseText);
-                }
-            });
+            Game.responseQueue.push(...responses);
+			if (Game.state === 'logonscreen') {
+				responses.filter(e => !e.success).forEach(e => that.setError(e.responseText));
+			}
         });
 
         Game.ws.ws.onopen = function() {

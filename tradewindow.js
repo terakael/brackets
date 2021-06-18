@@ -101,9 +101,6 @@
             otherSlot.setLocalPosition(this.otherRect.left + margin + (currentColumn * otherSlot.rect.width), this.otherRect.top + 30 + (currentRow * otherSlot.rect.height));
             this.otherSlots.push(otherSlot);
         }
-
-        // this.playerAccepted = obj.playerAccepted;
-        // this.otherPlayerAccepted = obj.otherPlayerAccepted;
     }
 
     TradeWindow.prototype.draw = function(context, xview, yview) {
@@ -127,13 +124,8 @@
         if (this.duelRuleButtons)
             this.drawDuelRules(context);
 
-        for (let i = 0; i < this.playerSlots.length; ++i) {
-            this.playerSlots[i].draw(context);
-        }
-
-        for (let i = 0; i < this.otherSlots.length; ++i) {
-            this.otherSlots[i].draw(context);
-        }
+        this.playerSlots.forEach(e => e.draw(context));
+        this.otherSlots.forEach(e => e.draw(context));
 
         if (this.playerAccepted) {
             context.textAlign = "center";

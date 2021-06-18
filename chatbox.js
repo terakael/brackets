@@ -1,39 +1,34 @@
-(function() {
-	function ChatBox() {
-	};
-	ChatBox.prototype = {
-		constructor: ChatBox,
-		numLines: 10,
-		timeout: 30,
-		userMessage: '',
-		messages: [],
-		add: function(t, c) {
-			this.messages.push({text: t, colour: c, lifetime: this.timeout});
-			
-			if (this.messages.length >= this.numLines) {
-				this.messages = this.messages.slice(this.messages.length - this.numLines, this.messages.length);
-			}
-		},
-		draw: function(context, xview, yview) {
-			context.save();
-			context.textAlign = "left";
-			context.font = "15px customFont";
-			for (var i = this.messages.length-1; i >= 0; --i) {
-				context.fillStyle = this.messages[i].colour || "white";
-				context.fillText(this.messages[i].text, xview + 10, yview - (20 * (this.messages.length - i)) - 20);
-			}
-			context.fillStyle = 'yellow';
-			context.fillText(Game.currentPlayer.name + ": " + this.userMessage + '*', xview + 10, yview - 20);
-			context.restore();
-		},
-		process: function(dt) {
-			for (var i = 0; i < this.messages.length; ++i) {
-				this.messages[i].lifetime -= dt;
-				if (this.messages[i].lifetime < 0)
-					this.messages.splice(i, 1);
-			}
+class ChatBox {
+	static numLines = 10;
+	static timeout = 30;
+	static userMessage = "";
+	static messages = [];
+
+	static add(text, colour) {
+		this.messages.push({text, colour, lifetime: this.timeout});
+		
+		if (this.messages.length > this.numLines) {
+			this.messages.shift();
 		}
-	};
-	
-	Game.ChatBox = new ChatBox();
-})();
+	}
+
+	static draw(context, xview, yview) {
+		context.save();
+		context.textAlign = "left";
+		context.font = "15px customFont";
+
+		for (let i = this.messages.length - 1; i >= 0; --i) {
+			context.fillStyle = this.messages[i].colour || "white";
+			context.fillText(this.messages[i].text, xview + 10, yview - (20 * (this.messages.length - i)) - 20);
+		}
+
+		context.fillStyle = 'yellow';
+		context.fillText(`${Game.currentPlayer.name}: ${this.userMessage}*`, xview + 10, yview - 20);
+		context.restore();
+	}
+
+	static process(dt) {
+		this.messages.forEach(message => message.lifetime -= dt);
+		this.messages = this.messages.filter(message => message.lifetime > 0);
+	}
+}

@@ -5,7 +5,7 @@ class ToggleAttackStyleResponse {
 
     process(obj) {
         Game.currentPlayer.setAttackStyle(obj.attackStyleId);
-        Game.ChatBox.add(`attack style switched to ${Game.currentPlayer.getCurrentAttackStyle()}.`);
+        ChatBox.add(`attack style switched to ${Game.currentPlayer.getCurrentAttackStyle()}.`);
     }
 }
 

@@ -4,7 +4,7 @@ class PlayerEnterResponse {
     }
 
     process(obj) {
-        Game.ChatBox.add(`${obj.name} has logged in.`, "#0ff");
+        ChatBox.add(`${obj.name} has logged in.`, "#0ff");
     }
 }
 

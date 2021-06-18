@@ -16,7 +16,7 @@ class CastSpellResponse {
             Game.Room.spells.push(spell);
 
             if (target === Game.currentPlayer)
-                Game.ChatBox.add(`${caster.name} is casting magic on you!`, "#fff");
+                ChatBox.add(`${caster.name} is casting magic on you!`, "#fff");
         }
     }
 }

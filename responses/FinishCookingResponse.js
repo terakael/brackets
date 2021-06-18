@@ -4,13 +4,7 @@ class FinishCookingResponse {
     }
 
     process(obj) {
-        const {itemId, tileId, type} = obj;
-        Game.ws.send({
-            action: "use",
-            src: itemId,
-            dest: tileId,
-            type
-        });
+
     }
 }
 

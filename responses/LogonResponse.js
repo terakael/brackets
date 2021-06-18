@@ -35,7 +35,7 @@ class LogonResponse {
         
         Game.Room.init(player);
 
-        Game.ChatBox.add("Welcome to the game, {0}.".format(player.name));
+        ChatBox.add("Welcome to the game, {0}.".format(player.name));
         Game.state = 'game';
         Game.currentPlayer = player;
     }

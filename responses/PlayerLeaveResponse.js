@@ -4,7 +4,7 @@ class PlayerLeaveResponse {
     }
 
     process(obj) {
-        Game.ChatBox.add(`${obj.name} has logged out.`, "#0ff");
+        ChatBox.add(`${obj.name} has logged out.`, "#0ff");
     }
 }
 
