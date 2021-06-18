@@ -4,8 +4,9 @@ class AddExpResponse {
     }
 
     process(obj) {
-        for (let key in obj["stats"]) {
-            Game.Room.player.stats.gainExp(Game.statMap.get(key), obj.stats[key]);
+        const {stats} = obj;
+        for (let key in stats) {
+            Game.currentPlayer.stats.gainExp(Game.statMap.get(key), stats[key]);
         }
     }
 }

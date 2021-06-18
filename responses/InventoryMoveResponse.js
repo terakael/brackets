@@ -4,8 +4,8 @@ class InventoryMoveResponse {
     }
 
     process(obj) {
-        Game.Room.player.updateInventory(obj.inventory);
-        Game.Room.player.setEquippedSlots(obj.equippedSlots);
+        Game.currentPlayer.updateInventory(obj.inventory);
+        Game.currentPlayer.setEquippedSlots(obj.equippedSlots);
     }
 }
 

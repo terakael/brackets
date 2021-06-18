@@ -5,7 +5,7 @@ class LogoffResponse {
 
     process(obj) {
         // clean up and change state to logon screen
-        Game.Room.player = null;
+        Game.currentPlayer = null;
         Game.Room.otherPlayers = [];
         Game.state = 'logonscreen';
     }

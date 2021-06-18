@@ -1,5 +1,5 @@
 (function() {
-    function Stats() {
+    function Stats(rect) {
         this.stats = [
             { name: "str", exp: 0 },
             { name: "acc", exp: 0 },
@@ -41,7 +41,7 @@
         this.healthBarTimer = 0;
         this.hoverStatId = null;
 
-        this.rect = new Rectangle(Game.hudCameraRect.left, 450, Game.hudCameraRect.width, 150);
+        this.rect = rect;
     }
     Stats.prototype.exp2lvl = function(exp) {
         let lvl = 99;
@@ -56,25 +56,16 @@
         if (Game.expMap.has(lvl))
             return Game.expMap.get(lvl);
 
-        if (lvl < 1)
-            return 1;
-
         if (lvl > 99)
             return 99;
+
+        return 1;
     }
 	Stats.prototype.totalExp = function() {
-		var exp = 0;
-		for (var i = 0; i < this.stats.length; ++i) {
-			exp += this.stats[i].exp;
-		}
-		return exp;
+        return this.stats.map(e => e.exp).reduce((a, b) => a + b);
 	}
 	Stats.prototype.totalLvl = function() {
-		var total = 0;
-		for (var i = 0; i < this.stats.length; ++i) {
-			total += this.exp2lvl(this.stats[i].exp);
-		}
-		return total;
+        return this.stats.map(e => this.exp2lvl(e.exp)).reduce((a, b) => a + b);
     }
     Stats.prototype.draw = function(ctx, xview, yview) {
         ctx.save();
@@ -221,7 +212,6 @@
         return true;
     }
     Stats.prototype.gainExp = function(stat, exp) {
-        exp = exp || 0;
         for (var i = 0; i < this.stats.length; ++i) {
             if (this.stats[i].name === stat) {
 				var oldLevel = this.stats[i].lvl;
@@ -282,7 +272,7 @@
         if (this.stats[this.hoverStatId].name === "herb") {
             Game.ws.send({
                 action: "show_stat_window",
-                id: Game.getPlayer().id,
+                id: Game.currentPlayer.id,
                 statId: this.hoverStatId
             });
         }

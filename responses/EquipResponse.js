@@ -1,12 +1,12 @@
 class EquipResponse {    
     constructor() {
-        this.action = "invupdate";
+        this.action = "equip";
     }
 
     process(obj) {
-        Game.Room.player.setEquippedSlots(obj.equippedSlots);
-        Game.Room.player.setBonuses(obj.bonuses);
-        Game.Room.player.setEquipAnimations(obj.equipAnimations);
+        Game.currentPlayer.setEquippedSlots(obj.equippedSlots);
+        Game.currentPlayer.setBonuses(obj.bonuses);
+        Game.currentPlayer.setEquipAnimations(obj.equipAnimations);
     }
 }
 

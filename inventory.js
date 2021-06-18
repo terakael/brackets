@@ -52,11 +52,11 @@
 		}
 	};
 
-	function Inventory() {
+	function Inventory(rect) {
 		this.slotCount = 20;
 		this.slotSize = 46;
 		this.columns = 5;
-		this.rect = new Rectangle(Game.hudCameraRect.left + 9, 250, this.slotSize * this.columns + 2, ~~(this.slotCount / this.columns) * this.slotSize + 2);
+		this.rect = new Rectangle(rect.left + 9, 250, this.slotSize * this.columns + 2, ~~(this.slotCount / this.columns) * this.slotSize + 2);
 
 		this.mousePosOnClick = {x: 0, y: 0};
 		this.selectedSlot = null;// the slot held by the mouse when dragging
@@ -66,7 +66,7 @@
 
 		this.slots = [];
 		for (var i = 0; i < this.slotCount; ++i) {
-			this.slots.push(new InventorySlot(Game.hudCameraRect.left + 11 + (i % this.columns) * this.slotSize, this.rect.top + 2 + (~~(i/this.columns) * this.slotSize), this.slotSize - 2, this.slotSize - 2, i));
+			this.slots.push(new InventorySlot(rect.left + 11 + (i % this.columns) * this.slotSize, this.rect.top + 2 + (~~(i/this.columns) * this.slotSize), this.slotSize - 2, this.slotSize - 2, i));
 		}
 	};
 	Inventory.prototype = {
@@ -395,7 +395,7 @@
 			if (slot) {// if the mouse isnt' over a slot then the item won't move, so don't send a move request.
 				Game.ws.send({
 					action: "invmove",
-					id: Game.getPlayer().id,
+					id: Game.currentPlayer.id,
 					src: this.selectedSlot.id,
 					dest: slot.id
 				});
@@ -441,7 +441,7 @@
 			this.rect.set(newLeft + 9, this.rect.top, this.rect.width, this.rect.height);
 
 			for (var i = 0; i < this.slotCount; ++i) {
-				this.slots[i].rect.set(Game.hudCameraRect.left + 11 + (i % this.columns) * this.slotSize, this.rect.top + 2 + (~~(i/this.columns) * this.slotSize), this.slotSize - 2, this.slotSize - 2, i);
+				this.slots[i].rect.set(newLeft + 11 + (i % this.columns) * this.slotSize, this.rect.top + 2 + (~~(i/this.columns) * this.slotSize), this.slotSize - 2, this.slotSize - 2, i);
 			}
 		}
 	};

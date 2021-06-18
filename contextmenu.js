@@ -125,7 +125,7 @@
 			this.originalPos = Game.mousePos;
 				
             if (Game.worldCameraRect.pointWithin(Game.mousePos) && !Game.activeUiWindow) {
-    	       this.menuOptions.push({label: "walk here", id: Game.getPlayer().id, action: "move", x: x, y: y});
+    	       this.menuOptions.push({label: "walk here", id: Game.currentPlayer.id, action: "move", x: x, y: y});
 			}
 
 			// push the "examine" option to the bottom
@@ -187,7 +187,7 @@
     			if (!obj[i].label) 
 	    			obj[i].label = "{0} {1}".format(obj[i].action, obj[i].objectName || "");
 
-				obj[i].id = Game.getPlayer().id;
+				obj[i].id = Game.currentPlayer.id;
 				// if (!obj[i].priority)
 				// 	obj[i].priority = this.getPriorityByAction(obj[i].action);
 	    		this.menuOptions.push(obj[i]);

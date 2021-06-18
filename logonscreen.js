@@ -82,13 +82,13 @@
 
 		switch (keyCode) {
 			case 32://space
-				Game.connectAndLogin("god", "hi");
+				this.connectAndLogin("god", "hi");
 				break;
 			case 13:// enter
 				if (this.logonState === 'username') {
 					this.logonState = 'password';
 				} else if (this.logonState === 'password') {
-					Game.connectAndLogin(this.username, this.password);
+					this.connectAndLogin(this.username, this.password);
 				}
 				break;
 			case 8: // backspace
@@ -136,6 +136,49 @@
         // clear context
         ctx = null;
     }
+
+	LogonScreen.prototype.connectAndLogin = function(username, password) {
+        this.loading = true;
+        this.loadingText = "logging in...";
+		let that = this;
+                    
+        Game.ws = new GameWebSocket(Game.ip, Game.port, "game", responses => {
+            Game.responseQueue.push(...responses.filter(e => e.success));
+            responses.filter(e => !e.success).forEach(e => {
+                if (Game.state === 'logonscreen') {
+                    that.setError(e.responseText);
+                }
+                else {
+                    Game.ChatBox.add(e.responseText);
+                }
+            });
+        });
+
+        Game.ws.ws.onopen = function() {
+            Game.ws.send({
+                action: "logon",
+                name: username,
+                password: password
+            });
+        };
+
+        Game.ws.ws.onclose = function() {
+            Game.Room.otherPlayers = [];
+            Game.currentPlayer = null;
+            document.title = 'danscape';
+            if (Game.state !== 'logonscreen') {
+                Game.state = 'logonscreen';
+                that.reset();
+            }
+            console.log("server closed connection");
+        }
+
+        Game.ws.ws.onerror = function() {
+            if (Game.state === 'logonscreen') {
+                that.setError("Error connecting to server.")
+            }
+        }
+    };
 
     Game.LogonScreen = new LogonScreen();
 })();

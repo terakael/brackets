@@ -1,6 +1,6 @@
 class BankResponse {    
     constructor() {
-        this.action = "show_stat_window";
+        this.action = "bank";
     }
 
     process(obj) {

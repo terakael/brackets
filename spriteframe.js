@@ -87,20 +87,18 @@ class SpriteFrame {
 				c.drawImage(spriteMap, 0, 0, spriteMap.width, spriteMap.height);
 
 				let spriteMapId = this.spriteMapId;
-				console.log("creating new colored spritemap: id=" + spriteMapId + "; color=" + color);
 				let map = new Image();
 				map.src = c.canvas.toDataURL();
 				let spriteMapWithColor = {
 					id: spriteMapId,
 					name: "",
-					map: map,
-					color: color,
+					map,
+					color,
 					ready: false
 				};
 				SpriteManager.spriteMapsWithColor.push(spriteMapWithColor);
 				map.onload = function() {
 					spriteMapWithColor.ready = true;
-					console.log("created new colored spritemap: id=" + spriteMapId + "; color=" + color);
 				}
 			}
 		}

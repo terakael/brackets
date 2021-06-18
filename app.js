@@ -1,119 +1,65 @@
 $(function () {
-    // import ResponseController from 'responses/ResponseController.js'
-
     // prepare our game canvas
     const canvas = document.getElementById("game");
     const context = canvas.getContext("2d");
-    Game.context = context;
-    const ip = "192.168.1.5", port = "45555", resourcePort = "45556";
-
-    Game.enableSmoothing = true;
-
+    
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
+
+    Game.boundingRect = canvas.getBoundingClientRect();
 
     const otherCanvas = document.createElement("canvas");
     otherCanvas.width = canvas.width;
     otherCanvas.height = canvas.height
     Game.otherContext = otherCanvas.getContext("2d");
-
-    Game.responseQueue = [];
     
-    Game.resourceWs = new Game.WebSocket("ws://{0}:{1}/ws/resources".format(ip, resourcePort), function (obj) {
-        if (obj["success"] == 0) {
+    const resourceWs = new GameWebSocket(Game.ip, Game.resourcePort, "resources", response => {
+        const {
+            success, 
+            action, 
+            spriteMaps, 
+            spriteFrames, 
+            items, 
+            contextOptions, 
+            statMap, 
+            expMap
+        } = response;
+        
+        if (success && action === "cached_resources") {
+            Game.LogonScreen.loadingText = "loading resources...";
+            Game.LogonScreen.draw(context, canvas.width, canvas.height);
 
-        } else {
-            if (obj["action"] === "cached_resources") {
-                Game.LogonScreen.loadingText = "loading resources...";
-                Game.LogonScreen.draw(context, canvas.width, canvas.height);
-                SpriteManager.loadSpriteMaps(obj["spriteMaps"]).done(function() {
-                    SpriteManager.loadSpriteFrames(obj["spriteFrames"]);
-                    SpriteManager.loadItems(obj["items"]);
-                    Game.Room.loadTextureMaps(obj.spriteMaps.map(e => e.id));
-                    Game.ContextMenu.loadContextOptions(obj.contextOptions);
-                    Game.statMap = new Map(Object.entries(obj["statMap"]));
-                    Game.expMap = new Map();
-                    for (let [key, value] of Object.entries(obj["expMap"]).sort((a, b) => b < a)) {
-                        Game.expMap.set(Number(key), Number(value));
-                    }
-                    Game.LogonScreen.loading = false;
-                    Game.LogonScreen.loadingText = null;
-                });
-            }
+            SpriteManager.loadSpriteMaps(spriteMaps).done(function() {
+                SpriteManager.loadSpriteFrames(spriteFrames);
+                SpriteManager.loadItems(items);
+                Game.Room.loadTextureMaps(spriteMaps.map(e => e.id));
+                Game.ContextMenu.loadContextOptions(contextOptions);
+                Game.statMap = new Map(Object.entries(statMap));
+                Game.expMap = new Map();
+                for (let [key, value] of Object.entries(expMap).sort((a, b) => b < a)) {
+                    Game.expMap.set(Number(key), Number(value));
+                }
+                Game.LogonScreen.loading = false;
+                Game.LogonScreen.loadingText = null;
+            });
         }
     });
 
-    Game.resourceWs.ws.onopen = function() {
-        let f = new FontFace('customFont', 'url(./font.ttf)');
-        f.load().then(function() {
-            console.log("font loaded");
-            document.fonts.add(f);
+    resourceWs.ws.onopen = function() {
+        const font = new FontFace('customFont', 'url(./font.ttf)');
+        font.load().then(function() {
+            document.fonts.add(font);
             // get the initial resources for the game (sprite maps, scenery etc)
-            Game.resourceWs.send({
+            resourceWs.send({
                 action: "resources",
                 id: 0
             });
         });
     };
-    Game.resourceWs.ws.onclose = function() {
+
+    resourceWs.ws.onclose = function() {
         console.log("loaded resources");
     };
-    Game.connectAndLogin = function(username, password) {
-        Game.LogonScreen.loading = true;
-        Game.LogonScreen.loadingText = "logging in...";
-                    
-        Game.ws = new Game.WebSocket("ws://{0}:{1}/ws/game".format(ip, port), Game.processResponse);
-
-        Game.ws.ws.onopen = function() {
-            Game.ws.send({
-                action: "logon",
-                name: username,
-                password: password
-            });
-        };
-
-        Game.ws.ws.onclose = function() {
-            Game.Room.otherPlayers = [];
-            Game.Room.player = null;
-            document.title = 'danscape';
-            if (Game.state !== 'logonscreen') {
-                Game.state = 'logonscreen';
-                Game.LogonScreen.reset();
-            }
-            console.log("server closed connection");
-        }
-
-        Game.ws.ws.onerror = function() {
-            if (Game.state === 'logonscreen') {
-                Game.LogonScreen.setError("Error connecting to server.")
-            }
-        }
-    };
-    Game.processResponse = function(arr) {
-        Game.responseQueue.push(...arr);
-        for (var ele = 0; ele < arr.length; ++ele) {
-            var obj = arr[ele];
-            if (obj.success === 0) {
-                if (Game.state === 'logonscreen') {
-                    Game.LogonScreen.setError(obj.responseText);
-                }
-                else {
-                    Game.ChatBox.add(obj.responseText);
-                }
-            }
-            else {
-                if (obj.responseText.length > 0 && Game.state === "game") {
-                    Game.ChatBox.add(obj.responseText, obj.colour);
-                }
-
-                ResponseController.process(obj);
-            }
-        }
-    }
-
-    Game.boundingRect = canvas.getBoundingClientRect();
-    
-    // setup an object that represents the room
     
     canvas.addEventListener("mousedown", function (e) {
         if (Game.state === 'game') {
@@ -126,48 +72,48 @@ $(function () {
             if (Game.activeUiWindow) {
                 Game.activeUiWindow.onMouseDown(e);
             }
-            else if (Game.getPlayer().inventory.rect.pointWithin(Game.mousePos) || 
-                    (Game.ContextMenu.active && Game.getPlayer().inventory.rect.pointWithin({x: Game.ContextMenu.rect.left, y: Game.ContextMenu.rect.top}))) {
+            else if (Game.currentPlayer.inventory.rect.pointWithin(Game.mousePos) || 
+                    (Game.ContextMenu.active && Game.currentPlayer.inventory.rect.pointWithin({x: Game.ContextMenu.rect.left, y: Game.ContextMenu.rect.top}))) {
                 // if the player right-clicks on an item near the bottom of the inventory and the context option is off the inventory rect
                 // then we still want to handle the mouse click right
-                Game.getPlayer().inventory.onMouseDown(e.button);
+                Game.currentPlayer.inventory.onMouseDown(e.button);
             } 
             else if (Game.ContextMenu.active && e.button == 0) {// left
                 // selecting a context option within the game world
                 Game.ContextMenu.handleMenuSelect();
-                Game.Room.player.inventory.slotInUse = null;
+                Game.currentPlayer.inventory.slotInUse = null;
             }
             else if (Game.Minimap.rect.pointWithin(Game.mousePos)) {
                 Game.Minimap.onMouseDown(e.button);
             } 
-            else if (Game.Room.player.stats.rect.pointWithin(Game.mousePos)) {
-                Game.Room.player.stats.onMouseDown(e.button);
+            else if (Game.currentPlayer.stats.rect.pointWithin(Game.mousePos)) {
+                Game.currentPlayer.stats.onMouseDown(e.button);
             }
             else if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
                 switch (e.button) {
                     case 0: // left
-                        if (!Game.ContextMenu.active && Game.Room.player.inventory.slotInUse == null) {
+                        if (!Game.ContextMenu.active && Game.currentPlayer.inventory.slotInUse == null) {
                             if (Game.ContextMenu.leftclickMenuOption == null) {
                                 // no stored leftclick option, so just move to the position
-                                cursor.handleClick(false);
+                                Game.cursor.handleClick(false);
 
-                                if (Game.ctrlPressed && Game.getPlayer().id === 3) { // special case for god
-                                    let tileId = xyToTileId(~~cursor.mousePos.x, ~~cursor.mousePos.y);
+                                if (Game.ctrlPressed && Game.currentPlayer.id === 3) { // special case for god
+                                    let tileId = xyToTileId(~~Game.cursor.mousePos.x, ~~Game.cursor.mousePos.y);
                                     Game.ws.send({
                                         action: "message",
-                                        id: Game.getPlayer().id,
+                                        id: Game.currentPlayer.id,
                                         message: `::tele ${tileId}`
                                     });
                                 } else {
-                                    Game.ws.send({ action: "move", id: Game.Room.player.id, x: ~~cursor.mousePos.x, y: ~~cursor.mousePos.y });
-                                    Game.Minimap.setPlayerDestXY(~~cursor.mousePos.x, ~~cursor.mousePos.y);
+                                    Game.ws.send({ action: "move", id: Game.currentPlayer.id, x: ~~Game.cursor.mousePos.x, y: ~~Game.cursor.mousePos.y });
+                                    Game.Minimap.setPlayerDestXY(~~Game.cursor.mousePos.x, ~~Game.cursor.mousePos.y);
                                 }
                             } else {
                                 // there's a stored leftclick option so perform the leftclick option
-                                cursor.handleClick(true);
+                                Game.cursor.handleClick(true);
                                 Game.ws.send(Game.ContextMenu.leftclickMenuOption);
                             }
-                        } else if (Game.Room.player.inventory.slotInUse != null) {
+                        } else if (Game.currentPlayer.inventory.slotInUse != null) {
                             // are we hovering over a player/scenery/npc?
                             let handled = false;
                             Game.Room.drawableSceneryMap.forEach(function(value, key, map) {
@@ -180,18 +126,18 @@ $(function () {
                                         boundingBox.height);
     
                                     const unusable = (value[i].attributes & 1) == 1;
-                                    if (rect.pointWithin(cursor.mousePos) && !unusable) {// don't use with walls, fences etc
-                                        cursor.handleClick(true);
+                                    if (rect.pointWithin(Game.cursor.mousePos) && !unusable) {// don't use with walls, fences etc
+                                        Game.cursor.handleClick(true);
                                         const tileId = value[i].tileId;
                                         Game.ws.send({
                                             action: "use",
-                                            id: Game.Room.player.id,
-                                            src: Game.Room.player.inventory.slotInUse.item.id,
+                                            id: Game.currentPlayer.id,
+                                            src: Game.currentPlayer.inventory.slotInUse.item.id,
                                             dest: tileId,
                                             type: "scenery",
-                                            slot: Game.Room.player.inventory.slotInUse.id
+                                            slot: Game.currentPlayer.inventory.slotInUse.id
                                         });
-                                        Game.Room.player.inventory.slotInUse = null;
+                                        Game.currentPlayer.inventory.slotInUse = null;
                                         handled = true;
                                         return;
                                     }
@@ -208,17 +154,17 @@ $(function () {
                                         boundingBox.width, 
                                         boundingBox.height);
 
-                                    if (rect.pointWithin(cursor.mousePos)) {
-                                        cursor.handleClick(true);
+                                    if (rect.pointWithin(Game.cursor.mousePos)) {
+                                        Game.cursor.handleClick(true);
                                         Game.ws.send({
                                             action: "use",
                                             type: "npc",
-                                            id: Game.Room.player.id,
-                                            src: Game.Room.player.inventory.slotInUse.item.id,
-                                            slot: Game.Room.player.inventory.slotInUse.id,
+                                            id: Game.currentPlayer.id,
+                                            src: Game.currentPlayer.inventory.slotInUse.item.id,
+                                            slot: Game.currentPlayer.inventory.slotInUse.id,
                                             dest: Game.Room.npcs[i].instanceId
                                         });
-                                        Game.Room.player.inventory.slotInUse = null;
+                                        Game.currentPlayer.inventory.slotInUse = null;
                                         handled = true;
                                         return;
                                     }
@@ -235,17 +181,17 @@ $(function () {
                                         boundingBox.width, 
                                         boundingBox.height);
         
-                                    if (rect.pointWithin(cursor.mousePos)) {
-                                        cursor.handleClick(true);
+                                    if (rect.pointWithin(Game.cursor.mousePos)) {
+                                        Game.cursor.handleClick(true);
                                         Game.ws.send({
                                             action: "use",
                                             type: "player",
-                                            id: Game.Room.player.id,
-                                            src: Game.Room.player.inventory.slotInUse.item.id,
-                                            slot: Game.Room.player.inventory.slotInUse.id,
+                                            id: Game.currentPlayer.id,
+                                            src: Game.currentPlayer.inventory.slotInUse.item.id,
+                                            slot: Game.currentPlayer.inventory.slotInUse.id,
                                             dest: player.id
                                         });
-                                        Game.Room.player.inventory.slotInUse = null;
+                                        Game.currentPlayer.inventory.slotInUse = null;
                                         handled = true;
                                         return;
                                     }
@@ -253,30 +199,30 @@ $(function () {
                             }
 
                             if (!handled) {
-                                const boundingBox = Game.Room.player.getCurrentSpriteFrame().getBoundingBox();
+                                const boundingBox = Game.currentPlayer.getCurrentSpriteFrame().getBoundingBox();
                                 const rect = new Rectangle(
-                                    Game.Room.player.x + boundingBox.left, 
-                                    Game.Room.player.y + boundingBox.top, 
+                                    Game.currentPlayer.x + boundingBox.left, 
+                                    Game.currentPlayer.y + boundingBox.top, 
                                     boundingBox.width, 
                                     boundingBox.height);
 
-                                if (rect.pointWithin(cursor.mousePos)) {
-                                    cursor.handleClick(true);
+                                if (rect.pointWithin(Game.cursor.mousePos)) {
+                                    Game.cursor.handleClick(true);
                                     Game.ws.send({
                                         action: "use",
                                         type: "player",
-                                        id: Game.Room.player.id,
-                                        src: Game.Room.player.inventory.slotInUse.item.id,
-                                        slot: Game.Room.player.inventory.slotInUse.id,
-                                        dest: Game.Room.player.id
+                                        id: Game.currentPlayer.id,
+                                        src: Game.currentPlayer.inventory.slotInUse.item.id,
+                                        slot: Game.currentPlayer.inventory.slotInUse.id,
+                                        dest: Game.currentPlayer.id
                                     });
-                                    Game.Room.player.inventory.slotInUse = null;
+                                    Game.currentPlayer.inventory.slotInUse = null;
                                     handled = true;
                                     return;
                                 }
                             }
                             
-                            Game.Room.player.inventory.slotInUse = null;
+                            Game.currentPlayer.inventory.slotInUse = null;
                         }
 
                         break;
@@ -287,15 +233,15 @@ $(function () {
                         // only check for the other players and ground items if the click was within the world rect
                         for (let i in Game.Room.otherPlayers) {
                             const p = Game.Room.otherPlayers[i];
-                            if (p.clickBox.pointWithin(cursor.mousePos)) {
-                                if (Game.Room.player.inventory.slotInUse) {
+                            if (p.clickBox.pointWithin(Game.cursor.mousePos)) {
+                                if (Game.currentPlayer.inventory.slotInUse) {
                                     Game.ContextMenu.push([{
-                                        id: Game.Room.player.id,
+                                        id: Game.currentPlayer.id,
                                         action: "use",
-                                        src: Game.Room.player.inventory.slotInUse.item.id,
+                                        src: Game.currentPlayer.inventory.slotInUse.item.id,
                                         dest: p.id,
                                         type: "player",
-                                        label: "use {0} -> {1} (lvl {2})".format(Game.Room.player.inventory.slotInUse.item.name, p.name, p.combatLevel)
+                                        label: "use {0} -> {1} (lvl {2})".format(Game.currentPlayer.inventory.slotInUse.item.name, p.name, p.combatLevel)
                                     }]);
                                 } else {
                                     Game.ContextMenu.push(p.contextMenuOptions());
@@ -304,7 +250,7 @@ $(function () {
                         }
                         for (let i in Game.Room.groundItems) {
                             const groundItem = Game.Room.groundItems[i];
-                            if (groundItem.clickBox.pointWithin(cursor.mousePos)) {
+                            if (groundItem.clickBox.pointWithin(Game.cursor.mousePos)) {
                                 Game.ContextMenu.push([
                                     { action: "take", objectName: groundItem.item.name, itemId: groundItem.item.id, tileId: groundItem.tileId },
                                     { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, type: "item", source: "ground" }
@@ -320,19 +266,19 @@ $(function () {
                                     boundingBox.width, 
                                     boundingBox.height);
 
-                                if (rect.pointWithin(cursor.mousePos)) {
+                                if (rect.pointWithin(Game.cursor.mousePos)) {
                                     const tileId = value[i].tileId;
                                     const scenery = Game.sceneryMap.get(value[i].id);
                                     
                                     const unusable = ((value[i].attributes || 0) & 1) == 1;
-                                    if (Game.Room.player.inventory.slotInUse && scenery.name && !unusable) {
+                                    if (Game.currentPlayer.inventory.slotInUse && scenery.name && !unusable) {
                                         Game.ContextMenu.push([{
-                                            id: Game.Room.player.id,
+                                            id: Game.currentPlayer.id,
                                             action: "use",
-                                            src: Game.Room.player.inventory.slotInUse.item.id,
+                                            src: Game.currentPlayer.inventory.slotInUse.item.id,
                                             dest: tileId,
                                             type: "scenery",
-                                            label: "use {0} -> {1}".format(Game.Room.player.inventory.slotInUse.item.name, scenery.name)
+                                            label: "use {0} -> {1}".format(Game.currentPlayer.inventory.slotInUse.item.name, scenery.name)
                                         }]);
                                     } else {
                                         // add the leftclick option first (if there is one)
@@ -359,13 +305,18 @@ $(function () {
                                                 }]);
                                             }
                                         }
-                                        Game.ContextMenu.push([{ 
-                                                action: "examine", 
-                                                objectName: scenery.name, 
-                                                objectId: scenery.id, 
-                                                type: "scenery"
-                                            }
-                                        ]);
+
+                                        // i guess if it's unusable you shouldn't be able to examine it either.
+                                        // shit like walls
+                                        if (!unusable) {
+                                            Game.ContextMenu.push([{ 
+                                                    action: "examine", 
+                                                    objectName: scenery.name, 
+                                                    objectId: scenery.id, 
+                                                    type: "scenery"
+                                                }
+                                            ]);
+                                        }
                                     }
                                 }
                             }
@@ -381,15 +332,15 @@ $(function () {
                                 boundingBox.width, 
                                 boundingBox.height);
 
-                            if (rect.pointWithin(cursor.mousePos)) {
-                                if (Game.Room.player.inventory.slotInUse) {
+                            if (rect.pointWithin(Game.cursor.mousePos)) {
+                                if (Game.currentPlayer.inventory.slotInUse) {
                                     Game.ContextMenu.push([{
-                                        id: Game.Room.player.id,
+                                        id: Game.currentPlayer.id,
                                         action: "use",
-                                        src: Game.Room.player.inventory.slotInUse.item.id,
+                                        src: Game.currentPlayer.inventory.slotInUse.item.id,
                                         dest: npc.instanceId,
                                         type: "npc",
-                                        label: "use {0} -> {1}".format(Game.Room.player.inventory.slotInUse.item.name, npc.get("name"))
+                                        label: "use {0} -> {1}".format(Game.currentPlayer.inventory.slotInUse.item.name, npc.get("name"))
                                                     + (npc.get("leftclickOption") === 1 ? ` (lvl ${npc.get("cmb")})` : "")
                                     }]);
                                 } else {
@@ -427,22 +378,22 @@ $(function () {
                             }
                         }
 
-                        const boundingBox = Game.Room.player.getCurrentSpriteFrame().getBoundingBox();
+                        const boundingBox = Game.currentPlayer.getCurrentSpriteFrame().getBoundingBox();
                         const rect = new Rectangle(
-                            Game.Room.player.x + boundingBox.left, 
-                            Game.Room.player.y + boundingBox.top, 
+                            Game.currentPlayer.x + boundingBox.left, 
+                            Game.currentPlayer.y + boundingBox.top, 
                             boundingBox.width, 
                             boundingBox.height);
 
-                        if (rect.pointWithin(cursor.mousePos)) {
-                            if (Game.Room.player.inventory.slotInUse) {
+                        if (rect.pointWithin(Game.cursor.mousePos)) {
+                            if (Game.currentPlayer.inventory.slotInUse) {
                                 Game.ContextMenu.push([{
-                                    id: Game.Room.player.id,
+                                    id: Game.currentPlayer.id,
                                     action: "use",
-                                    src: Game.Room.player.inventory.slotInUse.item.id,
-                                    dest: Game.Room.player.id,
+                                    src: Game.currentPlayer.inventory.slotInUse.item.id,
+                                    dest: Game.currentPlayer.id,
                                     type: "player",
-                                    label: "use {0} -> {1} (lvl {2})".format(Game.Room.player.inventory.slotInUse.item.name, Game.Room.player.name, Game.Room.player.combatLevel)
+                                    label: "use {0} -> {1} (lvl {2})".format(Game.currentPlayer.inventory.slotInUse.item.name, Game.currentPlayer.name, Game.currentPlayer.combatLevel)
                                 }]);
                             }
                         }
@@ -455,7 +406,7 @@ $(function () {
                     break;
                 case 2: // right
                     if (!Game.ContextMenu.active)
-                        Game.ContextMenu.show(~~cursor.mousePos.x, ~~cursor.mousePos.y, ~~Game.cam.xView, ~~Game.cam.yView);
+                        Game.ContextMenu.show(~~Game.cursor.mousePos.x, ~~Game.cursor.mousePos.y, ~~Game.cam.xView, ~~Game.cam.yView);
                     break;
             }
         }
@@ -478,7 +429,7 @@ $(function () {
                         Game.ContextMenu.hide();
                     }
                     else {
-                        Game.getPlayer().inventory.onMouseUp(e.button);
+                        Game.currentPlayer.inventory.onMouseUp(e.button);
                     }
                     break;
             }
@@ -496,17 +447,8 @@ $(function () {
     }, false);
 
     // setup the magic camera !!!
-    Game.cam = new Game.Camera(Game.Room.player.x, Game.Room.player.y, canvas.width - 250, canvas.height);
-    Game.worldCameraRect = new Rectangle(0, 0, canvas.width - 250, canvas.height);
-
-    var hudcamera = new Game.Camera(Game.cam.viewportRect.width, 0, canvas.width - Game.cam.viewportRect.width, canvas.height);
-    Game.hudCameraRect = new Rectangle(Game.cam.viewportRect.width, 0, canvas.width - Game.cam.viewportRect.width, canvas.height);
-    Game.HUD = new Game.HeadsUpDisplay(Game.hudCameraRect);
-    Game.hudcam = hudcamera;
-
-    Game.Minimap.setRect(hudcamera.viewportRect.left + 10, hudcamera.viewportRect.top + 10, 230, 230);
-    var cursor = new Game.Cursor((hudcamera.xView + hudcamera.wView) - 10, hudcamera.yView + 20);
-    Game.cursor = cursor;
+    
+    
 
     const FPS = 50;
     const INTERVAL = 1000 / FPS; // milliseconds
@@ -519,7 +461,7 @@ $(function () {
 
             Game.scale += (Game.targetScale - Game.scale) * dt * 10;
             Game.Room.process(dt);
-            cursor.process(dt);
+            Game.cursor.process(dt);
             Game.cam.update(dt);
             Game.ChatBox.process(dt);
             Game.HUD.process(dt);
@@ -535,56 +477,57 @@ $(function () {
     };
 
     // Game draw function
-    var draw = function () {
-        Game.context.canvas.width = Game.context.canvas.width;
-        Game.context.clearRect(0, 0, Game.context.canvas.width, Game.context.canvas.height);
-        Game.context.beginPath();
+    var draw = function (ctx) {
+        ctx.canvas.width = ctx.canvas.width;
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.beginPath();
 
         if (Game.state === 'game') {
             
             // redraw all room objects
-            Game.context.fillStyle = "#000";
-            Game.context.fillRect(0, 0, Game.cam.viewportRect.width * Game.scale, Game.cam.viewportRect.height * Game.scale);
-            Game.Room.draw(Game.context, Game.cam.xView, Game.cam.yView);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, Game.cam.viewportRect.width * Game.scale, Game.cam.viewportRect.height * Game.scale);
+            Game.Room.draw(ctx, Game.cam.xView, Game.cam.yView);
+
             // redraw all hud objects
-            Game.context.fillStyle = Game.hudcam.pat || "black";
-            Game.context.fillRect(Game.hudcam.xView, Game.hudcam.yView, Game.hudcam.viewportRect.width, Game.hudcam.viewportRect.height);
-            Game.Minimap.draw(Game.context, Game.cam.xView, Game.cam.yView);
-            Game.Room.player.inventory.draw(Game.context, Game.hudcam.xView, Game.hudcam.yView + Game.Minimap.height + 20);
-            Game.Room.player.stats.draw(Game.context, Game.hudcam.xView, Game.Room.player.stats.rect.top);
-            Game.HUD.draw(Game.context);
+            ctx.fillStyle = Game.hudcam.pat || "black";
+            ctx.fillRect(Game.hudcam.xView, Game.hudcam.yView, Game.hudcam.viewportRect.width, Game.hudcam.viewportRect.height);
+            Game.Minimap.draw(ctx, Game.cam.xView, Game.cam.yView);
+            Game.currentPlayer.inventory.draw(ctx, Game.hudcam.xView, Game.hudcam.yView + Game.Minimap.height + 20);
+            Game.currentPlayer.stats.draw(ctx, Game.hudcam.xView, Game.currentPlayer.stats.rect.top);
+            Game.HUD.draw(ctx);
             
             if (Game.Room.currentShow <= 0.98) {
                 // fade out the logon screen background
-                Game.context.save();
-                Game.context.globalAlpha = 1 - Game.Room.currentShow;
-                Game.context.drawImage(Game.LogonScreen.bkg, 0, 0, Game.context.canvas.width, Game.context.canvas.height, 
-                                                            0, 0, Game.context.canvas.width, Game.context.canvas.height);
-                Game.context.restore();
+                ctx.save();
+                ctx.globalAlpha = 1 - Game.Room.currentShow;
+                ctx.drawImage(Game.LogonScreen.bkg, 0, 0, ctx.canvas.width, ctx.canvas.height, 
+                                                    0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.restore();
             }
-            Game.ChatBox.draw(Game.context, 0, Game.context.canvas.height);
+            Game.ChatBox.draw(ctx, 0, ctx.canvas.height);
 
             if (Game.displayFps) {
-                Game.context.save();
+                ctx.save();
                 context.textAlign = "right";
                 context.font = "15px customFont";
                 context.fillStyle = "yellow";
                 context.fillText(Game.fps, Game.worldCameraRect.width - 5, 10);
-                Game.context.restore();
+                ctx.restore();
             }
 
             if (Game.activeUiWindow)
-                Game.activeUiWindow.draw(Game.context);
+                Game.activeUiWindow.draw(ctx);
             
-            Game.ContextMenu.draw(Game.context);
+            Game.ContextMenu.draw(ctx);
         }
         else if (Game.state === 'logonscreen') {
-            Game.LogonScreen.draw(Game.context, Game.context.canvas.width, Game.context.canvas.height);
+            Game.LogonScreen.draw(ctx, ctx.canvas.width, ctx.canvas.height);
         }
     };
 
     var processResponses = function() {
-        // ResponseController.process([...Game.responseQueue]);
+        ResponseController.process([...Game.responseQueue]);
         Game.responseQueue = [];
     }
     
@@ -592,7 +535,7 @@ $(function () {
     var gameLoop = function (dt) {
         processResponses();
         update(dt);
-        draw();
+        draw(context);
     };
 
     var start = Date.now();
@@ -618,12 +561,8 @@ $(function () {
             Game.play();
         }, remainingInterval);
     };
-    Game.getPlayer = function () {
-        return Game.Room.player;
-    };
 
     Game.play();
-    // -->
 });
 
 
@@ -666,6 +605,7 @@ window.addEventListener("keydown", function (e) {
         Game.shiftPressed = true;
     if (event.keyCode === 17) // ctrl
         Game.ctrlPressed = true;
+
     if (Game.state === 'logonscreen') {
         Game.LogonScreen.onKeyDown(event.keyCode);
         return;
@@ -713,7 +653,7 @@ window.addEventListener("keydown", function (e) {
                         case "::bank": {
                             Game.ws.send({
                                 action: "bank",
-                                id: Game.getPlayer().id
+                                id: Game.currentPlayer.id
                             });
                             break;
                         }
@@ -726,7 +666,7 @@ window.addEventListener("keydown", function (e) {
                         default: {
                             Game.ws.send({
                                 action: "message",
-                                id: Game.getPlayer().id,
+                                id: Game.currentPlayer.id,
                                 message: Game.ChatBox.userMessage
                             });
                             break;
@@ -751,26 +691,27 @@ window.addEventListener("keyup", function (e) {
         Game.ctrlPressed = false;
 });
 window.addEventListener("resize", function(e) {
-    Game.context.canvas.width  = window.innerWidth;
-    Game.context.canvas.height = window.innerHeight;
-    Game.boundingRect = Game.context.canvas.getBoundingClientRect();
+    const canvas = document.getElementById("game");
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    Game.boundingRect = canvas.getBoundingClientRect();
 
-    Game.otherContext.canvas.width  = Game.context.canvas.width;
-    Game.otherContext.canvas.height = Game.context.canvas.height;
+    Game.otherContext.canvas.width  = canvas.width;
+    Game.otherContext.canvas.height = canvas.height;
 
 
-    Game.cam.updateCanvasSize(0, 0, Game.context.canvas.width - 250, Game.context.canvas.height);
-    Game.worldCameraRect.set(0, 0, Game.context.canvas.width - 250, Game.context.canvas.height);
-    Game.cam.follow(Game.getPlayer(), (Game.context.canvas.width - 250 - (Game.getPlayer().width / 2)) / 2, (Game.context.canvas.height) / 2);
+    Game.cam.updateCanvasSize(0, 0, canvas.width - 250, canvas.height);
+    Game.worldCameraRect.set(0, 0, canvas.width - 250, canvas.height);
+    Game.cam.follow(Game.currentPlayer, (canvas.width - 250 - (Game.currentPlayer.width / 2)) / 2, (canvas.height) / 2);
 
-    Game.hudCameraRect.set(Game.cam.viewportRect.width, 0, Game.context.canvas.width - Game.cam.viewportRect.width, Game.context.canvas.height);
-    Game.hudcam.updateCanvasSize(Game.cam.viewportRect.width, 0, Game.context.canvas.width - Game.cam.viewportRect.width, Game.context.canvas.height);
+    Game.hudCameraRect.set(Game.cam.viewportRect.width, 0, canvas.width - Game.cam.viewportRect.width, canvas.height);
+    Game.hudcam.updateCanvasSize(Game.cam.viewportRect.width, 0, canvas.width - Game.cam.viewportRect.width, canvas.height);
 
     Game.Minimap.setRect(Game.hudcam.viewportRect.left + 10, Game.hudcam.viewportRect.top + 10, 230, 230);
 
-    if (Game.getPlayer()) {
-        Game.getPlayer().inventory.onResize(Game.hudcam.viewportRect.left);
-        Game.getPlayer().stats.onResize(Game.hudcam.viewportRect.left);
+    if (Game.currentPlayer) {
+        Game.currentPlayer.inventory.onResize(Game.hudcam.viewportRect.left);
+        Game.currentPlayer.stats.onResize(Game.hudcam.viewportRect.left);
     }
     Game.HUD.onResize(Game.hudcam.viewportRect.left);
 

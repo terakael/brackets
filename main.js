@@ -22,6 +22,10 @@
 
 
 window.Game = {
+    ip: "192.168.1.5", 
+    port: "45555", 
+    resourcePort: "45556",
+
     worldTileWidth: 46325,
     segmentWidth: 25,
     state: 'logonscreen',
@@ -35,6 +39,9 @@ window.Game = {
     drawGroundTextureOutline: false,
     mousePos: { x: 0, y: 0 },
     activeUiWindow: null,
+    enableSmoothing: false,
+    responseQueue: [],
+
     worldSegmentWidth: function() {
         return this.worldTileWidth / this.segmentWidth;
     },

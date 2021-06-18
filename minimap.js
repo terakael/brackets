@@ -17,8 +17,8 @@
 		draw: function(context, xview, yview) {
 			for (const [tileId, image] of this.images) {
 				let xy = tileIdToXY(tileId);
-				let diffx = xy.x - Game.getPlayer().x;
-				let diffy = xy.y - Game.getPlayer().y;
+				let diffx = xy.x - Game.currentPlayer.x;
+				let diffy = xy.y - Game.currentPlayer.y;
 
 				let dx = ((this.rect.left + (this.rect.width/2)) + (diffx/this.radius*(this.rect.width/2))) - 2.5;
 				let sx = 0;
@@ -51,8 +51,8 @@
 				const orderedTileIds = tileIds.sort((a, b) => a - b);
 				for (let i = 0; i < orderedTileIds.length; ++i) {
 					let xy = tileIdToXY(orderedTileIds[i]);
-					let diffx = xy.x - Game.getPlayer().x;
-					let diffy = xy.y - Game.getPlayer().y;
+					let diffx = xy.x - Game.currentPlayer.x;
+					let diffy = xy.y - Game.currentPlayer.y;
 
 					let frame = spriteFrame.getCurrentFrame();
 
@@ -118,14 +118,14 @@
 				this.drawOnMap(context, this.groundItems[i].pos.x, this.groundItems[i].pos.y, 15);
 			}
 			
-			if (Math.abs(Game.getPlayer().x - this.playerDestX) > 32 || Math.abs(Game.getPlayer().y - this.playerDestY) > 32) {
+			if (Math.abs(Game.currentPlayer.x - this.playerDestX) > 32 || Math.abs(Game.currentPlayer.y - this.playerDestY) > 32) {
 				context.fillStyle = "red";
 				this.drawOnMap(context, this.playerDestX, this.playerDestY, 15, "x");
 			}
 		},
 		drawOnMap: function(context, x, y, size, icon) {
-			var diffx = x - Game.getPlayer().x;
-			var diffy = y - Game.getPlayer().y;
+			var diffx = x - Game.currentPlayer.x;
+			var diffy = y - Game.currentPlayer.y;
 			context.font = "bold {0}px customFont".format(size || 12);
 			context.textAlign = "center";
 			context.textBaseline = "middle";
@@ -151,16 +151,16 @@
 			var y = ((Game.mousePos.y - (this.rect.top + (this.rect.height/2))) / (this.rect.height/2)) * this.radius;
 
 			if (Game.ctrlPressed) {
-				let tileId = xyToTileId(~~(Game.getPlayer().x + x), ~~(Game.getPlayer().y + y));
+				let tileId = xyToTileId(~~(Game.currentPlayer.x + x), ~~(Game.currentPlayer.y + y));
 				Game.ws.send({
 					action: "message",
-					id: Game.getPlayer().id,
+					id: Game.currentPlayer.id,
 					message: `::tele ${tileId}`
 				});
 			} else {
-				Game.ws.send({action: "move", id: Game.getPlayer().id, x: ~~(Game.getPlayer().x + x), y: ~~(Game.getPlayer().y + y)});
+				Game.ws.send({action: "move", id: Game.currentPlayer.id, x: ~~(Game.currentPlayer.x + x), y: ~~(Game.currentPlayer.y + y)});
 			}
-			this.setPlayerDestXY(~~(Game.getPlayer().x + x), ~~(Game.getPlayer().y + y));
+			this.setPlayerDestXY(~~(Game.currentPlayer.x + x), ~~(Game.currentPlayer.y + y));
 			
 		},
 		setRect: function(x, y, w, h) {

@@ -18,9 +18,9 @@
 			// render properties
 			this.width = 32;
 			this.height = 32;
-            this.stats = new Game.Stats();
+            // this.stats = new Game.Stats();
             this.combatLevel = obj.combatLevel;
-            this.inventory = new Game.Inventory();
+            // this.inventory = new Game.Inventory();
             this.chatMessage = "";// the text over the player's head
             this.chatMessageTimer = 0;// counter until the chat message is cleared
             this.clickBox = new Rectangle(0, 0, this.width, this.height);
