@@ -203,7 +203,9 @@
     };
 
     Room.prototype.addPlayer = function (obj) {
-        this.otherPlayers.push(new Game.Player(obj));
+        const player = new Game.Player(obj);
+        player.stats = new Game.Stats(new Rectangle(0, 0, 0, 0));
+        this.otherPlayers.push(player);
     };
 
     Room.prototype.draw = function (ctx, xview, yview) {

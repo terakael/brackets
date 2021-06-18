@@ -16,12 +16,10 @@
             this.leftclickOption = {
                 id: Game.currentPlayer.id,
                 action: "rescind", 
-                objectName: this.item.name,
                 objectId: this.item.id,
                 amount: 1,
                 slot: this.slot,
-                label: `rescind 1 ${this.item.name}`,
-                priority: 10
+                label: `rescind 1 ${this.item.name}`
             }
         }
 
@@ -55,17 +53,11 @@
         context.textAlign = "right";
         context.textBaseline = "top";
         context.font = "10pt customFont";
-        context.fillStyle = "yellow";
-
-        let friendlyCount = countToFriendly(this.currentStock);
-        if (friendlyCount.includes('k'))
-            context.fillStyle = "white";
-        else if (friendlyCount.includes('M'))
-            context.fillStyle = "#8f8";
+        context.fillStyle = countToFriendlyColor(this.currentStock);
 
         // current stock
         if (this.currentStock > 1)
-            context.fillText(friendlyCount, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
+            context.fillText(countToFriendly(this.currentStock), this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
 
         // draw the icon
         var itemWidth = this.item.spriteFrame.getCurrentFrame().width;
@@ -138,16 +130,34 @@
                         // context options
                         Game.ContextMenu.push([this.leftclickOption]);
 
-                        let amounts = [5, 10, -1];
+                        let amounts = [5, 10, "X", -1];
                         for (let i = 0; i < amounts.length; ++i) {
+                            if (amounts[i] === "X") {
+                                Game.ContextMenu.push([{
+                                    label: `rescind X ${this.item.name}`,
+                                    callback: () => {
+                                        ChatBox.requireInput("rescind amount", /[0-9km]/).then(amount => {
+                                            const intAmount = friendlyToCount(amount);
+                                            if (intAmount > 0) {
+                                                Game.ws.send({
+                                                    action: "rescind",
+                                                    objectId: this.item.id,
+                                                    slot: this.slot,
+                                                    amount: intAmount
+                                                });
+                                            }
+                                        });
+                                    }
+                                }]);
+                                continue;
+                            }
+                            
                             Game.ContextMenu.push([{
                                 action: "rescind",
                                 objectId: this.item.id,
-                                objectName: this.item.name,
                                 amount: amounts[i],
                                 slot: this.slot,
-                                label: `rescind ${amounts[i] == -1 ? "all" : amounts[i]} ${this.item.name}`,
-                                priority: 10
+                                label: `rescind ${amounts[i] == -1 ? "all" : amounts[i]} ${this.item.name}`
                             }]);
                         }
                     }

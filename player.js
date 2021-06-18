@@ -165,8 +165,11 @@
                 value[this.currentAnimation].currentFrame = currentFrame;
             });
 
-            this.stats.process(step);
-            this.inventory.process(step);
+            if (this.stats)
+                this.stats.process(step);
+
+            if (this.inventory)
+                this.inventory.process(step);
 
             let cumulativeHitsplatLifetime = 0;
             for (let i = 0; i < this.hitsplats.length; ++i) {

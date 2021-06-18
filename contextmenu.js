@@ -201,6 +201,8 @@
 				// do nothing
             } else if (menuItem.action === "use" && !Game.currentPlayer.inventory.slotInUse) {
 				menuItem.originalPos = this.originalPos;
+			} else if (menuItem.callback) {
+				menuItem.callback();
 			} else {
                 Game.ws.send(menuItem);
 			}

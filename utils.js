@@ -57,7 +57,7 @@
             found = false;
             // Inserts new line at first whitespace of the line
             for (i = maxWidth - 1; i >= 0; i--) {
-                if (this.testWhite(str.charAt(i))) {
+                if (this.testWhitespace(str.charAt(i))) {
                     res = res + [str.slice(0, i), newLineStr].join('');
                     str = str.slice(i + 1);
                     found = true;
@@ -77,7 +77,7 @@
         return res + str;
     }
     
-    testWhite = function(x) {
+    testWhitespace = function(x) {
         var white = new RegExp(/^\s$/);
         return white.test(x.charAt(0));
     };
@@ -88,8 +88,32 @@
         else if (count >= 100000 && count < 10000000) {
             return ~~(count / 1000) + "k";
         } else {
-            return ~~(count / 1000000) + 'M';
+            return ~~(count / 1000000) + 'm';
         }
+    }
+
+    countToFriendlyColor = function(count) {
+        if (count < 100000)
+            return "yellow";
+        else if (count >= 100000 && count < 10000000) {
+            return "white";
+        } else {
+            return "#8f8";
+        }
+    }
+
+    friendlyToCount = function(str) {
+        let intValue = parseInt(str);
+        if (isNaN(intValue))
+            return 0;
+
+        if (str.includes("k")) {
+            intValue *= 1000;
+        } else if (str.includes("m")) {
+            intValue *= 1000000;
+        }
+
+        return intValue;
     }
 
     decToHexColor = function(dec) {

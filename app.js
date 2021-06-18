@@ -63,6 +63,7 @@ $(function () {
     
     canvas.addEventListener("mousedown", function (e) {
         if (Game.state === 'game') {
+            ChatBox.clearInput(); // e.g. "enter deposit amount: " thing
 
             // TODO inventory, minimap, stats etc should all be contained within this
             if (Game.HUD.mouseWithin(Game.mousePos)) {
@@ -253,7 +254,7 @@ $(function () {
                             if (groundItem.clickBox.pointWithin(Game.cursor.mousePos)) {
                                 Game.ContextMenu.push([
                                     { action: "take", objectName: groundItem.item.name, itemId: groundItem.item.id, tileId: groundItem.tileId },
-                                    { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, type: "item", source: "ground" }
+                                    { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, type: "grounditem"}
                                 ]);
                             }
                         }
@@ -587,11 +588,7 @@ window.addEventListener("mousemove", function (e) {
 window.addEventListener("keypress", function (e) {
     var inp = String.fromCharCode(event.keyCode);
     if (Game.state === 'game') {
-        if (/[a-zA-Z0-9 @#$-/:-?{-~!"^_`\[\]]/.test(inp)) {
-            if (ChatBox.userMessage.length < 100)
-                ChatBox.userMessage += inp;
-            return;
-        }
+        ChatBox.onKeyPress(inp);
     }
     else if (Game.state === 'logonscreen') {
         Game.LogonScreen.onKeyPress(inp);
@@ -613,8 +610,12 @@ window.addEventListener("keydown", function (e) {
     else if (Game.state === 'game') {
         switch (event.keyCode) {
             case 27: // escape
-                if (Game.activeUiWindow)
+                if (ChatBox.input) {
+                    ChatBox.clearInput();
+                } else if (Game.activeUiWindow) {
                     Game.activeUiWindow = null;
+                }
+
                 break;
             case 38: // up
                 Game.targetScale += 0.1;
@@ -626,60 +627,8 @@ window.addEventListener("keydown", function (e) {
                 if (Game.targetScale < 1)
                     Game.targetScale = 1;
                 break;
-            case 13: //enter
-                if (ChatBox.userMessage.length > 0) {
-                    // todo list of client-side debug commands
-                    switch (ChatBox.userMessage) {
-                        case "::boundingBoxes":
-                            Game.drawBoundingBoxes = !Game.drawBoundingBoxes;
-                            ChatBox.add("turned bounding boxes " + (Game.drawBoundingBoxes ? "on." : "off."));
-                            break;
-
-                        case "::cursor": {
-                            Game.cursor.drawCursor = !Game.cursor.drawCursor;
-                            break;
-                        }
-
-                        case "::groundTextureOutline": {
-                            Game.drawGroundTextureOutline = !Game.drawGroundTextureOutline;
-                            break;
-                        }
-
-                        case "::fps": {
-                            Game.displayFps = !Game.displayFps;
-                            break;
-                        }
-
-                        case "::bank": {
-                            Game.ws.send({
-                                action: "bank",
-                                id: Game.currentPlayer.id
-                            });
-                            break;
-                        }
-
-                        case "::smoothing": {
-                            Game.enableSmoothing = !Game.enableSmoothing;
-                            break;
-                        }
-
-                        default: {
-                            Game.ws.send({
-                                action: "message",
-                                id: Game.currentPlayer.id,
-                                message: ChatBox.userMessage
-                            });
-                            break;
-                        }
-                    }
-                    
-                    ChatBox.userMessage = '';
-                }
-                break;
-            case 8: // backspace
-                if (ChatBox.userMessage.length > 0)
-                    ChatBox.userMessage = ChatBox.userMessage.substring(0, ChatBox.userMessage.length - 1);
-                break;
+            default:
+                ChatBox.onKeyDown(event.keyCode);
         }
     }
 });

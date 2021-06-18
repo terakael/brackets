@@ -41,8 +41,8 @@
 				context.font = "10pt customFont";
 				if (this.item.isStackable()) {
 					context.textBaseline = "top";
-					context.fillStyle = this.count.includes("M") ? "#8f8" : "yellow";
-					context.fillText(this.count, this.rect.left + this.rect.width - 5, this.rect.top + 5);
+					context.fillStyle = countToFriendlyColor(this.count);
+					context.fillText(countToFriendly(this.count), this.rect.left + this.rect.width - 5, this.rect.top + 5);
 				} else if (this.item.isCharged()) {
 					context.textBaseline = "bottom";
 					context.fillStyle = "red";
@@ -198,7 +198,7 @@
 
 			switch (state) {
 				case "shop": {
-					let sellAmounts = [1, 5, 10];
+					let sellAmounts = [1, 5, 10, 50];
 					for (let i = 0; i < sellAmounts.length; ++i) {
 						options.push({
 							action: "sell",
@@ -206,37 +206,73 @@
 							objectName: slot.item.name,
 							amount: sellAmounts[i],
 							label: `sell ${sellAmounts[i]} ${slot.item.name}`,
-							priority: 10
 						});
 					}
 					break;
 				}
 				case "trade": {
-					let offerAmounts = [5, 10, -1];
+					let offerAmounts = [5, 10, "X", -1];
 					for (let i = 0; i < offerAmounts.length; ++i) {
+						if (offerAmounts[i] === "X") {
+							// offer x
+							options.push({
+								label: `offer X ${slot.item.name}`,
+								callback: () => {
+									ChatBox.requireInput("offer amount", /[0-9km]/).then(amount => {
+										const intAmount = friendlyToCount(amount);
+										if (intAmount > 0) {
+											Game.ws.send({
+												action: "offer",
+												objectId: slot.item.id,
+												amount: intAmount,
+											});
+										}
+									});
+								}
+							});
+							continue;
+						}
+
 						options.push({
 							action: "offer",
 							objectId: slot.item.id,
-							objectName: slot.item.name,
 							amount: offerAmounts[i],
 							label: `offer ${offerAmounts[i] == -1 ? "all" : offerAmounts[i]} ${slot.item.name}`,
-							slot: slot.id,
-							priority: 10
 						});
 					}
+
+					
+
 					break;
 				}
 				case "bank": {
-					let offerAmounts = [5, 10, -1];
+					let offerAmounts = [5, 10, "X", -1];
 					for (let i = 0; i < offerAmounts.length; ++i) {
+						if (offerAmounts[i] === "X") {
+							// deposit x
+							options.push({
+								label: `deposit X ${slot.item.name}`,
+								callback: () => {
+									ChatBox.requireInput("deposit amount", /[0-9km]/).then(amount => {
+										const intAmount = friendlyToCount(amount);
+										if (intAmount > 0) {
+											Game.ws.send({
+												action: "deposit",
+												amount: intAmount,
+												slot: slot.id,
+											});
+										}
+									});
+								}
+							});
+							continue;
+						}
+
 						options.push({
 							action: "deposit",
-							objectId: slot.item.id,
-							objectName: slot.item.name,
 							amount: offerAmounts[i],
 							label: `deposit ${offerAmounts[i] == -1 ? "all" : offerAmounts[i]} ${slot.item.name}`,
 							slot: slot.id,
-							priority: 10
 						});
 					}
 					break;
@@ -411,7 +447,7 @@
 			for (let i in this.slots) {
 				let invItem = inv[i];
 				this.slots[i].item = SpriteManager.getItemById(invItem.itemId);
-				this.slots[i].count = invItem.friendlyCount;
+				this.slots[i].count = invItem.count;
 				this.slots[i].charges = invItem.charges;
 			}
 		},

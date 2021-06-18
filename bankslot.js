@@ -69,10 +69,10 @@
         context.textAlign = "right";
         context.textBaseline = "top";
         context.font = "12px customFont";
-        context.fillStyle = "yellow";
+        context.fillStyle = countToFriendlyColor(this.currentStock);
 
         // current stock
-        context.fillText(this.currentStock, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
+        context.fillText(countToFriendly(this.currentStock), this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
 
         if (this.item.isCharged()) {
             context.fillStyle = "red";
@@ -131,18 +131,37 @@
                     // context options
                     Game.ContextMenu.push([this.leftclickOption]);
 
-                    let withdrawAmounts = [5, 10, -1];
+                    let withdrawAmounts = [5, 10, "X", -1];
                     for (let i = 0; i < withdrawAmounts.length; ++i) {
+                        if (withdrawAmounts[i] === "X") {
+                            // deposit x
+                            Game.ContextMenu.push([{
+                                label: `withdraw X ${this.item.name}`,
+                                callback: () => {
+                                    ChatBox.requireInput("withdraw amount", /[0-9km]/).then(amount => {
+                                        const intAmount = friendlyToCount(amount);
+                                        if (intAmount > 0) {
+                                            Game.ws.send({
+                                                action: "withdraw",
+                                                slot: this.slot,
+                                                amount: intAmount
+                                            });
+                                        }
+                                    });
+                                }
+                            }]);
+                            continue;
+                        }
+                        
                         Game.ContextMenu.push([{
                             action: "withdraw",
-                            objectId: this.item.id,
-                            objectName: this.item.name,
                             slot: this.slot,
                             amount: withdrawAmounts[i],
                             label: `withdraw ${withdrawAmounts[i] == -1 ? "all" : withdrawAmounts[i]} ${this.item.name}`,
-                            priority: 10
                         }]);
                     }
+
+                    
                 }
             break;
         }
