@@ -50,19 +50,19 @@
         context.fillText("lvl: " + this.buttonInfo.level, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
 
         // draw the icon
-        var drawItem = SpriteManager.getItemById(this.buttonInfo.itemId);
-        var itemWidth = drawItem.spriteFrame.getCurrentFrame().width;
-        var itemHeight = drawItem.spriteFrame.getCurrentFrame().height;
-        //drawItem.draw(context, this.rect.left + (this.rect.width / 2) + buttonOffsetX, this.rect.top + itemHeight + buttonOffsetY);
+        const drawItem = SpriteManager.getItemById(this.buttonInfo.itemId);
+        const itemWidth = drawItem.spriteFrame.getCurrentFrame().width;
+        const itemHeight = drawItem.spriteFrame.getCurrentFrame().height;
 
-        let spriteFrame = drawItem.spriteFrame.getCurrentFrame();
-        let spriteMap = SpriteManager.getSpriteMapById(drawItem.spriteFrame.spriteMapId);
+        const currentFrame = drawItem.spriteFrame.getCurrentFrame();
+        const {spriteMapId, color} = drawItem.spriteFrame;
+        const spriteMap = SpriteManager.getSpriteMapById(spriteMapId, color);
         if (spriteMap) {
             context.drawImage(spriteMap, 
-                spriteFrame.left, 
-                spriteFrame.top, 
-                spriteFrame.width, 
-                spriteFrame.height, 
+                currentFrame.left, 
+                currentFrame.top, 
+                currentFrame.width, 
+                currentFrame.height, 
                 this.rect.left + (this.rect.width / 2) + buttonOffsetX - (itemWidth * 1.5), 
                 this.rect.top + buttonOffsetY, 
                 itemWidth * 1.5, 

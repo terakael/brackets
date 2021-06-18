@@ -81,13 +81,68 @@ class SpriteManager {
 		return SpriteManager.items.find(item => item.id === id);
 	}
 
-	static getSpriteMapById(id) {
+	static getSpriteMapById(id, color) {
+		if (color)
+			return this.getSpriteMapByIdAndColor(id, color);
+
 		const spriteMap = SpriteManager.spriteMaps.find(e => e.id === id);
 		return spriteMap ? spriteMap.map : null;
 	}
 
 	static getSpriteMapByIdAndColor(id, color) {
-		return SpriteManager.spriteMapsWithColor.find(e => e.id === id && e.color === color);
+		let spriteMapObj = SpriteManager.spriteMapsWithColor.find(e => e.id === id && e.color === color);
+
+		if (spriteMapObj && spriteMapObj.ready) {
+			return spriteMapObj.map;
+		} else if (!spriteMapObj) {
+			const spriteMap = SpriteManager.getSpriteMapById(id);
+			if (!spriteMap) return null;
+
+			const c = Game.otherContext;
+			c.canvas.width = spriteMap.width;
+			c.canvas.height = spriteMap.height;
+			c.clearRect(0, 0, c.canvas.width, c.canvas.height);
+			
+			c.globalCompositeOperation = "source-over";
+			c.drawImage(spriteMap, 0, 0, spriteMap.width, spriteMap.height);
+
+			const hsl = decToHsl(color);
+
+			// adjust "lightness"
+			c.globalCompositeOperation =  "color-dodge";
+			// for common slider, to produce a valid value for both directions
+			const l = hsl.l >= 100 ? hsl.l - 100 : 100 - (100 - hsl.l);
+			c.fillStyle = "hsl(0, 50%, " + hsl.l + "%)";
+			c.fillRect(0, 0, spriteMap.width, spriteMap.height);
+			
+			// adjust saturation
+			c.globalCompositeOperation = "saturation";
+			c.fillStyle = "hsl(0," + hsl.s + "%, 50%)";
+			c.fillRect(0, 0, spriteMap.width, spriteMap.height);
+		
+			// adjust hue
+			c.globalCompositeOperation = "hue";
+			c.fillStyle = "hsl(" + hsl.h + ",1%, 50%)";
+			c.fillRect(0, 0, spriteMap.width, spriteMap.height);
+
+			c.globalCompositeOperation = "destination-in";
+			c.drawImage(spriteMap, 0, 0, spriteMap.width, spriteMap.height);
+
+			const map = new Image();
+			map.src = c.canvas.toDataURL();
+			const spriteMapWithColor = {
+				id,
+				name: "",
+				map,
+				color,
+				ready: false
+			};
+			SpriteManager.spriteMapsWithColor.push(spriteMapWithColor);
+			map.onload = function() {
+				spriteMapWithColor.ready = true;
+			}
+		}
+		return null;
 	}
 
 	static getSpriteFrameById(id) {

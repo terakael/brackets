@@ -52,55 +52,9 @@ class SpriteFrame {
 			return; // maybe sprite map hasn't finished loading yet
 
 		if (color) {
-			let spriteMapObj = SpriteManager.getSpriteMapByIdAndColor(this.spriteMapId, color);
-			if (spriteMapObj && spriteMapObj.ready) {
-				spriteMap = spriteMapObj.map;
-			} else if (!spriteMapObj) {
-				let c = Game.otherContext;
-				c.canvas.width = spriteMap.width;
-				c.canvas.height = spriteMap.height;
-				c.clearRect(0, 0, c.canvas.width, c.canvas.height);
-				
-				c.globalCompositeOperation = "source-over";
-				c.drawImage(spriteMap, 0, 0, spriteMap.width, spriteMap.height);
-
-				let hsl = decToHsl(color);
-
-				// adjust "lightness"
-				c.globalCompositeOperation =  "color-dodge";
-				// for common slider, to produce a valid value for both directions
-				const l = hsl.l >= 100 ? hsl.l - 100 : 100 - (100 - hsl.l);
-				c.fillStyle = "hsl(0, 50%, " + hsl.l + "%)";
-				c.fillRect(0, 0, spriteMap.width, spriteMap.height);
-				
-				// adjust saturation
-				c.globalCompositeOperation = "saturation";
-				c.fillStyle = "hsl(0," + hsl.s + "%, 50%)";
-				c.fillRect(0, 0, spriteMap.width, spriteMap.height);
-			
-				// adjust hue
-				c.globalCompositeOperation = "hue";
-				c.fillStyle = "hsl(" + hsl.h + ",1%, 50%)";
-				c.fillRect(0, 0, spriteMap.width, spriteMap.height);
-
-				c.globalCompositeOperation = "destination-in";
-				c.drawImage(spriteMap, 0, 0, spriteMap.width, spriteMap.height);
-
-				let spriteMapId = this.spriteMapId;
-				let map = new Image();
-				map.src = c.canvas.toDataURL();
-				let spriteMapWithColor = {
-					id: spriteMapId,
-					name: "",
-					map,
-					color,
-					ready: false
-				};
-				SpriteManager.spriteMapsWithColor.push(spriteMapWithColor);
-				map.onload = function() {
-					spriteMapWithColor.ready = true;
-				}
-			}
+			let spriteMapObj = SpriteManager.getSpriteMapById(this.spriteMapId, color);
+			if (spriteMapObj)
+				spriteMap = spriteMapObj;
 		}
 
 		if (spriteMap) {

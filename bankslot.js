@@ -43,23 +43,24 @@
         this.setFillStrokeStyle(context);
         context.lineWidth = 1;
 
-        var buttonOffsetX = this.state === ButtonStates.click ? 2 : 0;
-        var buttonOffsetY = this.state === ButtonStates.click ? 2 : 0;
+        const buttonOffsetX = this.state === ButtonStates.click ? 2 : 0;
+        const buttonOffsetY = this.state === ButtonStates.click ? 2 : 0;
 
         context.fillRect(this.rect.left + buttonOffsetX, this.rect.top + buttonOffsetY, this.rect.width, this.rect.height);
 
         // draw the icon
-        var itemWidth = this.item.spriteFrame.getCurrentFrame().width;
-        var itemHeight = this.item.spriteFrame.getCurrentFrame().height;
+        const itemWidth = this.item.spriteFrame.getCurrentFrame().width;
+        const itemHeight = this.item.spriteFrame.getCurrentFrame().height;
 
-        let spriteFrame = this.item.spriteFrame.getCurrentFrame();
-        let spriteMap = SpriteManager.getSpriteMapById(this.item.spriteFrame.spriteMapId);
+        const currentFrame = this.item.spriteFrame.getCurrentFrame();
+        const {spriteMapId, color} = this.item.spriteFrame;
+        const spriteMap = SpriteManager.getSpriteMapById(spriteMapId, color);
         if (spriteMap) {
             context.drawImage(spriteMap, 
-                spriteFrame.left, 
-                spriteFrame.top, 
-                spriteFrame.width, 
-                spriteFrame.height, 
+                currentFrame.left, 
+                currentFrame.top, 
+                currentFrame.width, 
+                currentFrame.height, 
                 this.rect.left + (this.rect.width / 2) + buttonOffsetX - (itemWidth / 2), 
                 this.rect.top + (this.rect.height / 2) + buttonOffsetY - (itemHeight / 2), 
                 itemWidth, 

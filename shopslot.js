@@ -57,7 +57,7 @@
         var itemHeight = this.item.spriteFrame.getCurrentFrame().height;
 
         let spriteFrame = this.item.spriteFrame.getCurrentFrame();
-        let spriteMap = SpriteManager.getSpriteMapById(this.item.spriteFrame.spriteMapId);
+        let spriteMap = SpriteManager.getSpriteMapById(this.item.spriteFrame.spriteMapId, this.item.spriteFrame.color);
         if (spriteMap) {
             context.drawImage(spriteMap, 
                 spriteFrame.left, 
