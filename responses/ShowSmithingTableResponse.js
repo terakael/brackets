@@ -4,8 +4,7 @@ class ShowSmithingTableResponse {
     }
 
     process(obj) {
-        const {smithingOptions, storedCoal} = obj;
-        Game.activeUiWindow = new Game.UIWindow(Game.worldCameraRect, smithingOptions, storedCoal);
+        Game.activeUiWindow = new Game.UIWindow(Game.worldCameraRect, obj.smithingOptions);
     }
 }
 

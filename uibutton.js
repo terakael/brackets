@@ -6,15 +6,22 @@
         disabled: 3
     }
 
-    function UIButton(buttonInfo) {
+    function UIButton(smithingDto) {
         this.rect = new Rectangle(0, 0, 100, 75);
 
-        if (Game.currentPlayer.stats.getLevelByStat("smith") < buttonInfo.level)
+        if (Game.currentPlayer.stats.getLevelByStat("smith") < smithingDto.level)
             this.state = ButtonStates.disabled;
         else
             this.state = ButtonStates.off;
             
-        this.buttonInfo = buttonInfo;
+        this.smithingDto = smithingDto;
+
+        this.leftclickOption = {
+            action: "smith", 
+            itemId: this.smithingDto.itemId,
+            amount: 1,
+            label: `smith 1 ${SpriteManager.getItemById(this.smithingDto.itemId).name}`
+        }
 
         this.fillStyle = "#000";
         this.hoverFillStyle = "#222";
@@ -44,13 +51,13 @@
         context.textAlign = "right";
         context.textBaseline = "top";
         context.font = "12px customFont";
-        context.fillStyle = Game.currentPlayer.stats.getLevelByStat("smith") < this.buttonInfo.level ? "red" : "white";
+        context.fillStyle = Game.currentPlayer.stats.getLevelByStat("smith") < this.smithingDto.level ? "red" : "white";
 
         // required smithing level
-        context.fillText("lvl: " + this.buttonInfo.level, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
+        context.fillText("lvl: " + this.smithingDto.level, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
 
         // draw the icon
-        const drawItem = SpriteManager.getItemById(this.buttonInfo.itemId);
+        const drawItem = SpriteManager.getItemById(this.smithingDto.itemId);
         const itemWidth = drawItem.spriteFrame.getCurrentFrame().width;
         const itemHeight = drawItem.spriteFrame.getCurrentFrame().height;
 
@@ -76,20 +83,12 @@
         // TODO check if player has required materials; change fillstyle based on this
         context.fillStyle = "white";
         // draw the materials
-        for (var i = 1; i < 5; ++i) {
-            var material = "material" + i;
-            if (!this.buttonInfo.hasOwnProperty(material))
-                break;
 
-            if (this.buttonInfo[material] === 0)
-                continue;
-
-            var materialItem = SpriteManager.getItemById(this.buttonInfo[material]);
-            var posx = this.rect.left + ((i - 1) * 45) + materialItem.spriteFrame.getCurrentFrame().width / 2;
-            var posy = this.rect.bottom - materialItem.spriteFrame.getCurrentFrame().height / 2;
-            materialItem.draw(context, posx + buttonOffsetX, posy + buttonOffsetY);
-            context.fillText("x" + this.buttonInfo["count" + i] || 0, posx + 10 + buttonOffsetX, posy + buttonOffsetY);
-        }
+        const bar = SpriteManager.getItemById(this.smithingDto.barId);
+        var posx = this.rect.left + 45 + bar.spriteFrame.getCurrentFrame().width / 2;
+        var posy = this.rect.bottom - bar.spriteFrame.getCurrentFrame().height / 2;
+        bar.draw(context, posx + buttonOffsetX, posy + buttonOffsetY);
+        context.fillText(` x${this.smithingDto.requiredBars}`, posx + 10 + buttonOffsetX, posy + buttonOffsetY);
 
         if (this.state === ButtonStates.disabled) {
             context.fillStyle = "rgba(50, 50, 50, 0.5)";
@@ -124,12 +123,7 @@
             if (this.state !== ButtonStates.click) 
                 this.state = ButtonStates.hover;
             
-            Game.ContextMenu.setLeftclick(Game.mousePos, {
-                id: Game.currentPlayer.id,
-                action: "smith", 
-                objectName: this.buttonInfo.itemName,
-                itemId: this.buttonInfo.itemId
-            });
+            Game.ContextMenu.setLeftclick(Game.mousePos, this.leftclickOption);
         } else {
             this.state = ButtonStates.off;
         }
@@ -140,8 +134,23 @@
             return;
     
         if (this.rect.pointWithin(Game.mousePos)) {
-            // todo send message
-            this.state = ButtonStates.click;
+            if (e.button === 0) { // left
+                this.state = ButtonStates.click;
+            } else if (e.button === 2) { // right
+                Game.ContextMenu.hide();// clear all the previous actions
+                // context options
+                Game.ContextMenu.push([this.leftclickOption]);
+
+                let smithAmounts = [5, 10, 25];
+                for (let i = 0; i < smithAmounts.length; ++i) {
+                    Game.ContextMenu.push([{
+                        action: "smith",
+                        itemId: this.smithingDto.itemId,
+                        amount: smithAmounts[i],
+                        label: `smith ${smithAmounts[i] == 25 ? "all" : smithAmounts[i]} ${SpriteManager.getItemById(this.smithingDto.itemId).name}`
+                    }]);
+                }
+            }
         }
     }
 
@@ -149,14 +158,10 @@
         if (this.state === ButtonStates.disabled)
             return;
 
-        if (this.state === ButtonStates.click) {
+        if (e.button === 0 && this.state === ButtonStates.click) {
             this.state = ButtonStates.off;
 
-            Game.ws.send({
-                id: Game.currentPlayer.id,
-                action: "smith",
-                itemId: this.buttonInfo.itemId
-            });
+            Game.ws.send(this.leftclickOption);
 
             // close the window
             Game.activeUiWindow = null;

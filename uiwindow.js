@@ -1,13 +1,12 @@
 (function() {
-    function UIWindow(rect, smithingOptions, storedCoal) {
+    function UIWindow(rect, smithingDtoList) {
         this.rect = rect;
 
         let buttons = [];
-        for (let i = 0; i < smithingOptions.length; ++i) {
-            buttons.push(new Game.UIButton(smithingOptions[i]));
+        for (let i = 0; i < smithingDtoList.length; ++i) {
+            buttons.push(new Game.UIButton(smithingDtoList[i]));
         }
-        this.uiButtons = buttons.sort((a, b) => a.buttonInfo.level - b.buttonInfo.level);
-        this.storedCoal = storedCoal;
+        this.uiButtons = buttons.sort((a, b) => a.smithingDto.level - b.smithingDto.level);
         this.onResize(rect);
     }
     
@@ -25,35 +24,35 @@
         var y = this.rect.top + 20;
         context.fillText("- select which item you want to forge -", this.rect.left + (this.rect.width / 2), y);
         
-        for (var i = 0; i < this.uiButtons.length; ++i) {
-            this.uiButtons[i].draw(context);
-        }
-        
-        context.textAlign = "right";
-        context.font = "12px customFont";
-        context.fillText("stored coal: " + this.storedCoal, this.rect.left + this.rect.width - 10, this.rect.top + this.rect.height - 8);
+        this.uiButtons.forEach(e => e.draw(context));
         context.restore();
     }
 
     UIWindow.prototype.process = function(dt) {
-        for (var i = 0; i < this.uiButtons.length; ++i) 
-            this.uiButtons[i].process(dt);
+        if (Game.ContextMenu.active)
+            return;
+        this.uiButtons.forEach(e => e.process(dt));
     }
 
     UIWindow.prototype.onMouseDown = function(e) {
-        if (!this.rect.pointWithin(Game.mousePos)) {
-            Game.activeUiWindow = null;
-        } else {
-            for (var i = 0; i < this.uiButtons.length; ++i) {
-                this.uiButtons[i].onMouseDown(e);
+        if (e.button == 0) {// leftclick
+            if (Game.ContextMenu.active) {
+                Game.ContextMenu.handleMenuSelect();
+                Game.ContextMenu.hide();
+                Game.activeUiWindow = null;
+                return;
             }
+        }
+
+        if (this.rect.pointWithin(Game.mousePos)) {
+            this.uiButtons.forEach(button => button.onMouseDown(e));
+        } else {
+            Game.activeUiWindow = null;
         }
     }
 
     UIWindow.prototype.onMouseUp = function(e) {
-        for (var i = 0; i < this.uiButtons.length; ++i) {
-            this.uiButtons[i].onMouseUp(e);
-        }
+        this.uiButtons.forEach(button => button.onMouseUp(e));
     }
 
     UIWindow.prototype.onMouseScroll = function(e) {
