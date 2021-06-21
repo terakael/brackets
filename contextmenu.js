@@ -133,7 +133,7 @@
 
 			const examineOptions = this.menuOptions.filter(e => e.action === "examine");
 			if (examineOptions.length) {
-				this.menuOptions.splice(this.menuOptions.findIndex(e => e.action === "examine"), 1);
+				this.menuOptions = this.menuOptions.filter(e => e.action !== "examine");
 				this.menuOptions.push(...examineOptions);
 			}
 

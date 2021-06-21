@@ -12,6 +12,10 @@
             { name: "herb", exp: 0 },
             { name: "fish", exp: 0 },
             { name: "cook", exp: 0 },
+            { name: "wc", exp: 0 },
+            { name: "fletch", exp: 0 },
+            { name: "con", exp: 0 },
+            { name: "ranged", exp: 0 },
         ];
         for (var i = 0; i < this.stats.length; ++i) {
             this.stats[i].lvl = this.exp2lvl(this.stats[i].exp);
@@ -29,6 +33,10 @@
             { name: "herb", amount: 0 },
             { name: "fish", amount: 0 },
             { name: "cook", amount: 0 },
+            { name: "wc", amount: 0 },
+            { name: "fletch", amount: 0 },
+            { name: "con", amount: 0 },
+            { name: "ranged", amount: 0 },
         ];
 
         this.expDrops = [];

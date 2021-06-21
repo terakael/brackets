@@ -5,6 +5,7 @@
         this.currentShow = 0;
         this.otherPlayers = [];
         this.npcs = [];
+        this.constructableInstancesById = new Map();
         this.sceneryInstances = new Map();
         this.sceneryInstancesBySceneryId = new Map();
         this.groundTextureInstances = new Map();
@@ -65,7 +66,8 @@
 
     Room.prototype.loadSceneryInstances = function(depletedScenery, openDoors) {   
         this.sceneryInstances = new Map();
-        for (const [sceneryId, tileIdList] of this.sceneryInstancesBySceneryId.entries()) {
+
+        let fn = (sceneryId, tileIdList) => {
             const scenery = Game.sceneryMap.get(Number(sceneryId));
             for (let i = 0; i < tileIdList.length; ++i) {
                 sceneryLabel = null; // for the doors basically, we want to override the "open" if the door is already open
@@ -98,6 +100,50 @@
                 });
             }
         }
+
+        for (const [sceneryId, tileIdList] of this.sceneryInstancesBySceneryId.entries()) {
+            fn(sceneryId, tileIdList);
+        }
+
+        for (const [sceneryId, tileIdList] of this.constructableInstancesById.entries()) {
+            fn(sceneryId, tileIdList);
+        }
+
+        
+        
+        // for (const [sceneryId, tileIdList] of this.sceneryInstancesBySceneryId.entries()) {
+        //     const scenery = Game.sceneryMap.get(Number(sceneryId));
+        //     for (let i = 0; i < tileIdList.length; ++i) {
+        //         sceneryLabel = null; // for the doors basically, we want to override the "open" if the door is already open
+        //         let newSprite = new SpriteFrame(SpriteManager.getSpriteFrameById(scenery.spriteFrameId).frameData);
+        //         if (depletedScenery.includes(tileIdList[i]) || openDoors.includes(tileIdList[i])) {
+        //             newSprite.nextFrame(); // depleted scenery and open doors use frame[1] instead of frame[0], which sometimes contains different bounding boxes
+        //         }
+
+        //         if (openDoors.includes(tileIdList[i])) {
+        //             sceneryLabel = "close " + scenery.name;
+        //         }
+
+        //         const xy = tileIdToXY(tileIdList[i]);
+        //         const mapKey = xy.y + newSprite.getBoundingBox().bottom;
+
+        //         if (!this.sceneryInstances.has(mapKey))
+        //             this.sceneryInstances.set(mapKey, []);
+
+        //         this.sceneryInstances.get(mapKey).push({
+        //             id: scenery.id,
+        //             name: scenery.name,
+        //             x: xy.x, 
+        //             y: xy.y,
+        //             tileId: tileIdList[i], 
+        //             leftclickOption: scenery.leftclickOption,
+        //             label: sceneryLabel,
+        //             sprite: [newSprite],
+        //             type: "scenery",
+        //             attributes: scenery.attributes
+        //         });
+        //     }
+        // }
     };
 
     Room.prototype.addSceneryToCanvas = function(instances) {

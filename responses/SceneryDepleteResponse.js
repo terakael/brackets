@@ -1,6 +1,6 @@
-class FlowerDepleteResponse {    
+class SceneryDepleteResponse {    
     constructor() {
-        this.action = "flower_deplete";
+        this.action = "scenery_deplete";
     }
 
     process(obj) {
@@ -15,4 +15,4 @@ class FlowerDepleteResponse {
     }
 }
 
-ResponseController.register(new FlowerDepleteResponse());
+ResponseController.register(new SceneryDepleteResponse());
