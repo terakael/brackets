@@ -7,7 +7,7 @@ class AddSceneryInstancesResponse {
         for (const [sceneryId, tileIds] of Object.entries(obj.instances)) {
             Game.Room.sceneryInstancesBySceneryId.set(sceneryId, tileIds.concat(Game.Room.sceneryInstancesBySceneryId.get(sceneryId) || []));
         }
-        Game.Room.loadSceneryInstances(obj.depletedScenery, obj.openDoors);
+        Game.Room.loadSceneryInstances(obj.depletedScenery || [], obj.openDoors || []);
         Game.Room.addSceneryToCanvas(Game.Room.sceneryInstancesBySceneryId);
     }
 }

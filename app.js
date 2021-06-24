@@ -254,7 +254,7 @@ $(function () {
                             if (groundItem.clickBox.pointWithin(Game.cursor.mousePos)) {
                                 Game.ContextMenu.push([
                                     { action: "take", objectName: groundItem.item.name, itemId: groundItem.item.id, tileId: groundItem.tileId },
-                                    { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, type: "grounditem"}
+                                    { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, tileId: groundItem.tileId, type: "grounditem"}
                                 ]);
                             }
                         }
@@ -314,6 +314,7 @@ $(function () {
                                                     action: "examine", 
                                                     objectName: scenery.name, 
                                                     objectId: scenery.id, 
+                                                    tileId,
                                                     type: "scenery"
                                                 }
                                             ]);
@@ -372,6 +373,7 @@ $(function () {
                                         action: "examine", 
                                         objectName: npc.get("name"), 
                                         objectId: npc.instanceId, 
+                                        tileId: npc.instanceId,
                                         type: "npc"
                                     }
                                 ]);

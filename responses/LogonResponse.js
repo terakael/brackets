@@ -22,7 +22,7 @@ class LogonResponse {
         Game.HUD = new Game.HeadsUpDisplay(Game.hudCameraRect);
 
         player.stats = new Game.Stats(new Rectangle(Game.hudCameraRect.left, 450, Game.hudCameraRect.width, 150));
-        player.inventory = new Game.Inventory(Game.hudCameraRect);
+        player.inventory = new Inventory(Game.hudCameraRect);
         player.loadStats(obj.stats, obj.boosts);
         player.setBonuses(obj.bonuses);
 

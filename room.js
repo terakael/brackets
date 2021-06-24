@@ -30,8 +30,8 @@
 
         this.show = 1.0;
         let groundTextureCanvas = document.createElement("canvas");
-        groundTextureCanvas.width = 32 * 24; // 24 tiles across, 32 pixels each
-        groundTextureCanvas.height = 32 * 24; // 24 tiles across, 32 pixels each
+        groundTextureCanvas.width = 32 * 25; // 25 tiles across, 32 pixels each
+        groundTextureCanvas.height = 32 * 25; // 25 tiles across, 32 pixels each
         this.groundTextureCtx = groundTextureCanvas.getContext("2d");
 
         let sceneryCanvas = document.createElement("canvas");
@@ -150,13 +150,13 @@
         this.sceneryCtx.clearRect(0, 0, this.sceneryCtx.canvas.width, this.sceneryCtx.canvas.height);
 
         let playerTileId = xyToTileId(~~Game.currentPlayer.destPos.x, ~~Game.currentPlayer.destPos.y);
-        let localOriginTileX = (playerTileId % Game.worldTileWidth) - 12; // cos 24x24 tiles
-        let localOriginTileY = ~~(playerTileId / Game.worldTileWidth) - 12; // cos 24x24 tiles
+        let localOriginTileX = (playerTileId % Game.worldTileWidth) - 12; // cos 25x25 tiles (including centre tile)
+        let localOriginTileY = ~~(playerTileId / Game.worldTileWidth) - 12; // cos 25x25 tiles (including centre tile)
         for (const [sceneryId, tileIds] of instances.entries()) {
             let scenery = Game.sceneryMap.get(Number(sceneryId));
             let spriteFrame = SpriteManager.getSpriteFrameById(scenery.spriteFrameId);
             for (let i = 0; i < tileIds.length; ++i) {
-                // get the tileId local to the player (i.e. tileId 0 being the top-left corner, knowing the canvas is 24x24 tiles)
+                // get the tileId local to the player (i.e. tileId 0 being the top-left corner, knowing the canvas is 25x25 tiles)
                 let tileX = tileIds[i] % Game.worldTileWidth;
                 let tileY = ~~(tileIds[i] / Game.worldTileWidth);
                 let localTileId = (tileX - localOriginTileX) + ((tileY - localOriginTileY) * Game.worldTileWidth);
@@ -602,14 +602,14 @@
             Now repeat over and over with the first "unprocessed" tile until there's no more tiles.
 
         */
-        let gridW = 24;
-        let gridH = 24;
+        let gridW = 25;
+        let gridH = 25;
 
         let data = this.drawableTextureInstances.map(texId => ({id: texId, processed: false}));
         this.optimizedDrawableTextureInstance = new Map();
 
         let counter = 0;
-        while (++counter < 24*24) { 
+        while (++counter < 25*25) { 
             // run through the array until we find the first unprocessed element
             let firstEle = null;
             for (let i = 0; i < data.length; ++i) {

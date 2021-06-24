@@ -4,7 +4,7 @@ class ConstructableDespawnResponse {
     }
 
     process(obj) {
-        Game.Room.constructableInstancesById.forEach((value, key, map) => {
+        Game.Room.sceneryInstancesBySceneryId.forEach((value, key, map) => {
             const index = value.indexOf(obj.tileId);
             if (index != -1) {
                 value.splice(index, 1);
