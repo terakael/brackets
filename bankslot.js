@@ -6,12 +6,13 @@
         disabled: 3
     }
 
-    function BankSlot(slot, itemId, currentStock, currentCharges) {
+    function BankSlot(slot, itemId, currentStock, currentCharges, tileId) {
         this.slot = slot;
         this.rect = new Rectangle(0, 0, 50, 50);
         this.item = SpriteManager.getItemById(itemId);
         this.currentStock = currentStock;
         this.currentCharges = currentCharges;
+        this.tileId = tileId;
 
         this.leftclickOption = {
             id: Game.currentPlayer.id,
@@ -21,7 +22,7 @@
             amount: 1,
             slot: this.slot,
             label: `withdraw 1 ${this.item.name}`,
-            priority: 10
+            tileId: this.tileId
         }
 
         this.fillStyle = "#000";
@@ -144,7 +145,8 @@
                                             Game.ws.send({
                                                 action: "withdraw",
                                                 slot: this.slot,
-                                                amount: intAmount
+                                                amount: intAmount,
+                                                tileId: this.tileId
                                             });
                                         }
                                     });
@@ -158,6 +160,7 @@
                             slot: this.slot,
                             amount: withdrawAmounts[i],
                             label: `withdraw ${withdrawAmounts[i] == -1 ? "all" : withdrawAmounts[i]} ${this.item.name}`,
+                            tileId: this.tileId
                         }]);
                     }
 

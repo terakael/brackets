@@ -4,8 +4,12 @@ class DepositResponse {
     }
 
     process(obj) {
-        Game.activeUiWindow.updateStock(obj.items);
-        Game.activeUiWindow.onResize(Game.worldCameraRect);
+        if (Game.activeUiWindow) {
+            // if you deposit and then close the window too quickly then the window is null at this point
+            // no need to update
+            Game.activeUiWindow.updateStock(obj.items);
+            Game.activeUiWindow.onResize(Game.worldCameraRect);
+        }
     }
 }
 

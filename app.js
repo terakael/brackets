@@ -73,8 +73,7 @@ $(function () {
             if (Game.activeUiWindow) {
                 Game.activeUiWindow.onMouseDown(e);
             }
-            else if (Game.currentPlayer.inventory.rect.pointWithin(Game.mousePos) || 
-                    (Game.ContextMenu.active && Game.currentPlayer.inventory.rect.pointWithin({x: Game.ContextMenu.rect.left, y: Game.ContextMenu.rect.top}))) {
+            else if (Game.currentPlayer.inventory.mouseWithin()) {
                 // if the player right-clicks on an item near the bottom of the inventory and the context option is off the inventory rect
                 // then we still want to handle the mouse click right
                 Game.currentPlayer.inventory.onMouseDown(e.button);
@@ -417,6 +416,7 @@ $(function () {
     canvas.addEventListener("mouseup", function (e) {
         if (Game.activeUiWindow) {
             Game.activeUiWindow.onMouseUp(e);
+            return;
         }
 
         else if (Game.state === 'game') {

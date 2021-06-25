@@ -211,7 +211,7 @@ class ConstructionWindow {
         this.onResize(rect);
     }
     
-    draw(context, xview, yview) {
+    draw(context) {
         context.save();
         context.fillStyle = this.background || "black";
         context.strokeStyle = "red";

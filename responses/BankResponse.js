@@ -4,7 +4,7 @@ class BankResponse {
     }
 
     process(obj) {
-        Game.activeUiWindow = new Game.BankWindow(Game.worldCameraRect, obj.items, "the bank");
+        Game.activeUiWindow = new Game.BankWindow(Game.worldCameraRect, obj.items, obj.tileId, "the bank");
     }
 }
 

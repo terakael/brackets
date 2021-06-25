@@ -1,6 +1,7 @@
 (function() {
-    function BankWindow(worldRect, stock, name) {
+    function BankWindow(worldRect, stock, tileId, name) {
         this.type = "bank";// used to check which uiWindow is open (dialogue, smithing window etc)
+        this.tileId = tileId; // used for withdrawals and deposits, so the server can confirm the player is next to the correct thing
         this.name = name;
         this.slots = [];
         this.updateStock(stock);
@@ -10,7 +11,7 @@
     BankWindow.prototype.updateStock = function(stock) {
         this.slots = [];
         for (let slot in stock) {
-            let bankSlot = new Game.BankSlot(slot, stock[slot].itemId, stock[slot].count, stock[slot].charges);
+            let bankSlot = new Game.BankSlot(slot, stock[slot].itemId, stock[slot].count, stock[slot].charges, this.tileId);
             this.slots.push(bankSlot);
         }
     }
@@ -60,8 +61,7 @@
                 this.slots[i].onMouseDown(e);
         } 
         // inventory so we can deposit stuff
-        else if (Game.currentPlayer.inventory.rect.pointWithin(Game.mousePos) || 
-            (Game.ContextMenu.active && Game.currentPlayer.inventory.rect.pointWithin(Game.ContextMenu.originalPos))) {
+        else if (Game.currentPlayer.inventory.mouseWithin()) {
             Game.currentPlayer.inventory.onMouseDown(e.button);
         }
         else {

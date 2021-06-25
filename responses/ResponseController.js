@@ -9,7 +9,7 @@ class ResponseController {
                 this.messageMap.get(action).process(obj);
 
             if (responseText.length && Game.state === "game") {
-                ChatBox.add(responseText, colour);
+                ChatBox.add(responseText, colour || "white");
             }
         });
     }

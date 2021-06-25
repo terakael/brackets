@@ -164,8 +164,7 @@ class Inventory {
 					objectId: slot.item.id,
 					objectName: slot.item.name,
 					type: "item",
-					valueTypeId: 1,// sell-value
-					priority: 10
+					valueTypeId: 1 // sell-value
 				};
 
 			case "trade":
@@ -175,11 +174,11 @@ class Inventory {
 					objectName: slot.item.name,
 					amount: 1,
 					label: `offer 1 ${slot.item.name}`,
-					slot: slot.id,
-					priority: 10
+					slot: slot.id
 				}
 
 			case "bank":
+			case "storage":
 				return {
 					action: "deposit",
 					objectId: slot.item.id,
@@ -187,7 +186,7 @@ class Inventory {
 					amount: 1,
 					label: `deposit 1 ${slot.item.name}`,
 					slot: slot.id,
-					priority: 10
+					tileId: Game.activeUiWindow.tileId
 				}
 
 			default:
@@ -248,7 +247,8 @@ class Inventory {
 
 				break;
 			}
-			case "bank": {
+			case "bank": 
+			case "storage": {
 				let offerAmounts = [5, 10, "X", -1];
 				for (let i = 0; i < offerAmounts.length; ++i) {
 					if (offerAmounts[i] === "X") {
@@ -263,6 +263,7 @@ class Inventory {
 											action: "deposit",
 											amount: intAmount,
 											slot: slot.id,
+											tileId: Game.activeUiWindow.tileId
 										});
 									}
 								});
@@ -276,6 +277,7 @@ class Inventory {
 						amount: offerAmounts[i],
 						label: `deposit ${offerAmounts[i] == -1 ? "all" : offerAmounts[i]} ${slot.item.name}`,
 						slot: slot.id,
+						tileId: Game.activeUiWindow.tileId
 					});
 				}
 				break;
@@ -481,6 +483,10 @@ class Inventory {
 			}
 			this.slotInUse = null;
 		}
+	}
+
+	mouseWithin() {
+		return this.rect.pointWithin(Game.mousePos) || (Game.ContextMenu.active && this.rect.pointWithin(Game.ContextMenu.originalPos));
 	}
 
 	onResize(newLeft) {
