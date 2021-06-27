@@ -1,6 +1,6 @@
 class PlayerLeaveResponse {    
     constructor() {
-        this.action = "playerLeave";
+        this.action = "player_leave";
     }
 
     process(obj) {

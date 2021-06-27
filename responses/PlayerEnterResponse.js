@@ -1,6 +1,6 @@
 class PlayerEnterResponse {    
     constructor() {
-        this.action = "playerEnter";
+        this.action = "player_enter";
     }
 
     process(obj) {

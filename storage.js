@@ -40,10 +40,10 @@ class StorageSlot {
 }
 
 class Storage {
-	constructor(rect, slotCount, tileId, itemList) {
+	constructor(rect, name, tileId, itemList) {
 		this.type = "storage"; // used for other things to know what is open
+		this.name = name;
 		this.tileId = tileId;
-		this.slotCount = slotCount;
 		this.columns = 5;
 		this.rect = rect;
 
@@ -54,7 +54,7 @@ class Storage {
 		this.mouseDown = false;
 
 		this.slots = [];
-		for (let i = 0; i < this.slotCount; ++i) {
+		for (let i = 0; i < itemList.length; ++i) {
 			this.slots.push(new StorageSlot(i));
 		}
 
@@ -76,7 +76,7 @@ class Storage {
 		context.textAlign = "center";
 		context.fillStyle = "white";
 		context.font = "15px customFont";
-		context.fillText("- small storage -", this.rect.left + (this.rect.width / 2), this.rect.top + 15);
+		context.fillText(`- ${this.name} -`, this.rect.left + (this.rect.width / 2), this.rect.top + 15);
 
 		this.slots.forEach(slot => slot.draw(context));
 
@@ -292,7 +292,7 @@ class Storage {
 		const margin = 10;
 		const header = 20; // top area for title header
 		const uiWidth = (StorageSlot.size * maxRows) + (margin * 2);
-		const uiHeight = (StorageSlot.size * Math.ceil(this.slotCount / maxRows)) + (margin * 2) + header;
+		const uiHeight = (StorageSlot.size * Math.ceil(this.slots.length / maxRows)) + (margin * 2) + header;
 
 
         const uix = ~~((worldRect.width / 2) - (uiWidth / 2)) + 0.5;
@@ -300,7 +300,7 @@ class Storage {
 
         this.rect = new Rectangle(uix, uiy, uiWidth, uiHeight);
 
-		for (let i = 0; i < this.slotCount; ++i) {
+		for (let i = 0; i < this.slots.length; ++i) {
 			let currentRow = ~~(i / maxRows);
             let currentColumn = i % maxRows;
 
