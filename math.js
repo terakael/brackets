@@ -46,8 +46,13 @@ class Transform {
         this.reset();
     };
 
-    reset() {
-        this.m = [1,0,0,1,0,0];
+    reset(scaleX, skewY, skewX, scaleY, posX, posY) {
+        this.m = [scaleX || 1,
+                  skewY || 0,
+                  skewX || 0,
+                  scaleY || 1,
+                  posX || 0,
+                  posY || 0];
     }
 
     multiply(matrix) {

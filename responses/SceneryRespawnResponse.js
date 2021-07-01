@@ -4,11 +4,13 @@ class SceneryRespawnResponse {
     }
 
     process(obj) {
+        console.log("respawn");
+        console.log(obj);
         const xy = tileIdToXY(obj.tileId);
         const sceneryInstances = Game.Room.sceneryInstances.get(xy.y) || [];
         for (let i = 0; i < sceneryInstances.length; ++i) {
             if (sceneryInstances[i].tileId === obj.tileId) {
-                sceneryInstances[i].sprite[0].nextFrame();
+                sceneryInstances[i].sprite[0].currentFrame = 0;
                 break;
             }
         }

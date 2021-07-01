@@ -463,6 +463,7 @@ $(function () {
             Game.ContextMenu.setLeftclick(null, null);
 
             Game.scale += (Game.targetScale - Game.scale) * dt * 10;
+            Game.brightness += (Game.targetBrightness - Game.brightness) * dt;
             Game.Room.process(dt);
             Game.cursor.process(dt);
             Game.cam.update(dt);
@@ -512,10 +513,10 @@ $(function () {
 
             if (Game.displayFps) {
                 ctx.save();
-                context.textAlign = "right";
-                context.font = "15px customFont";
-                context.fillStyle = "yellow";
-                context.fillText(Game.fps, Game.worldCameraRect.width - 5, 10);
+                ctx.textAlign = "right";
+                ctx.font = "15px customFont";
+                ctx.fillStyle = "yellow";
+                ctx.fillText(Game.fps, Game.worldCameraRect.width - 5, 10);
                 ctx.restore();
             }
 

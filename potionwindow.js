@@ -53,8 +53,8 @@
             context.save()
             context.textAlign = "center";
             context.font = "25px customFont";
-            context.fillText("=", this.equalsXPos, this.rect.top + 5 + ((i + 1) * 40));
-            context.fillText("+", this.plusXPos, this.rect.top + 5 + ((i + 1) * 40));
+            context.fillText("+", this.equalsXPos, this.rect.top + 5 + ((i + 1) * 40));
+            context.fillText("=", this.plusXPos, this.rect.top + 5 + ((i + 1) * 40));
             context.restore();
         }
         

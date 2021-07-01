@@ -85,6 +85,16 @@ class ChatBox {
 							break;
 						}
 
+						// case "::night": {
+						// 	Game.targetBrightness = 0.4;
+						// 	break;
+						// }
+
+						// case "::day": {
+						// 	Game.targetBrightness = 1;
+						// 	break;
+						// }
+
 						default: {
 							if (this.input) {
 								this.input.callback(this.userMessage);

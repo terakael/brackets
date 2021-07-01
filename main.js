@@ -33,6 +33,8 @@ window.Game = {
     targetScale: 3,
     maxScale: 5,
     minScale: 1,
+    brightness: 1,
+    targetBrightness: 1,
     sceneryMap: new Map(),
     npcMap: new Map(),
     drawBoundingBoxes: false,

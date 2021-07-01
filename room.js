@@ -267,8 +267,61 @@
         // draw the ground textures
         let minx = this.player.destPos.x - this.player.combatOffsetX - xview - (12*32);
         let miny = (this.player.destPos.y - yview - (12*32));
+
+        const canvasWidth = this.groundTextureCtx.canvas.width;
+        const canvasHeight = this.groundTextureCtx.canvas.height;
+        
+        ctx.filter = `brightness(${Game.brightness})`;
         ctx.drawImage(this.groundTextureCtx.canvas, minx-16, miny-16);
-        // ctx.drawImage(this.sceneryCtx.canvas, minx-16, miny-16);
+        ctx.filter = "none";
+
+        ctx.save();
+
+        let lightsources = new Map();
+        this.sceneryInstancesBySceneryId
+            .forEach((tileIds, sceneryId) => {
+                const scenery = Game.sceneryMap.get(Number(sceneryId));
+                if (scenery && scenery.lightsourceRadius) {
+                    if (!lightsources.has(scenery.lightsourceRadius))
+                        lightsources.set(scenery.lightsourceRadius, []);
+                    lightsources.set(scenery.lightsourceRadius, lightsources.get(scenery.lightsourceRadius).concat(tileIds));
+                }
+            });
+
+        this.constructableInstancesById
+            .forEach((tileIds, sceneryId) => {
+                const scenery = Game.sceneryMap.get(Number(sceneryId));
+                if (scenery && scenery.lightsourceRadius) {
+                    if (!lightsources.has(scenery.lightsourceRadius))
+                        lightsources.set(scenery.lightsourceRadius, []);
+                    lightsources.set(scenery.lightsourceRadius, lightsources.get(scenery.lightsourceRadius).concat(tileIds));
+                }
+            });
+
+        ctx.beginPath();
+        lightsources.forEach((tileIds, radius) => {
+            tileIds.forEach(tileId => {
+                const offX = Math.random(-3, 3);
+                const offY = Math.random(-3, 3);
+                const offSize = Math.random(-3, 3);
+
+                const xy = tileIdToXY(tileId);
+                ctx.moveTo(xy.x - xview + offX, xy.y - yview + offY);
+                ctx.ellipse(xy.x - xview + offX, xy.y - yview + offY, (radius*1.25) + offSize, radius + offSize, 0, 0, 2 * Math.PI);
+            });
+        });
+        
+        ctx.clip(); //call the clip method so the next render is clipped in last path
+        // ctx.shadowColor = "white";
+        // ctx.shadowBlur = 30;
+        // ctx.globalCompositeOperation = "destination-out";
+        // ctx.shadowOffsetX = 500;
+        ctx.closePath();
+        
+        if (lightsources.size)
+            ctx.drawImage(this.groundTextureCtx.canvas, minx-16, miny-16);
+            
+        ctx.restore();
 
         ctx.save();// make the items on the ground smaller than in the inventory
         ctx.scale(0.5, 0.5);
