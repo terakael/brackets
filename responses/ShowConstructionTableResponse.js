@@ -4,7 +4,7 @@ class ShowConstructionTableResponse {
     }
 
     process(obj) {
-        Game.activeUiWindow = new ConstructionWindow(Game.worldCameraRect, obj.constructableOptions);
+        Game.activeUiWindow = new ConstructionWindow(Game.worldCameraRect, obj.constructableOptions, obj.flatpack);
     }
 }
 

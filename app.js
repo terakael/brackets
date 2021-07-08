@@ -227,6 +227,9 @@ $(function () {
 
                         break;
                     case 2: // right
+                        if (Game.shiftPressed)
+                            console.log(xyToTileId(~~Game.cursor.mousePos.x, ~~Game.cursor.mousePos.y));
+                    
                         // take all the things that are at this position and add them to the context menu
                         if (Game.ContextMenu.active)
                             break;
@@ -308,7 +311,7 @@ $(function () {
 
                                         // i guess if it's unusable you shouldn't be able to examine it either.
                                         // shit like walls
-                                        if (!unusable) {
+                                        // if (!unusable) {
                                             Game.ContextMenu.push([{ 
                                                     action: "examine", 
                                                     objectName: scenery.name, 
@@ -317,7 +320,7 @@ $(function () {
                                                     type: "scenery"
                                                 }
                                             ]);
-                                        }
+                                        // }
                                     }
                                 }
                             }

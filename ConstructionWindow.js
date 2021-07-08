@@ -7,7 +7,7 @@ const ButtonStates = {
 
 
 class ConstructionButton {
-    constructor(dto) {
+    constructor(dto, flatpack) {
         this.rect = new Rectangle(0, 0, 100, 75);
 
         if (Game.currentPlayer.stats.getLevelByStat("con") < dto.level)
@@ -21,7 +21,8 @@ class ConstructionButton {
             action: "construction", 
             sceneryId: this.constructableDto.resultingSceneryId,
             tileId: xyToTileId(~~Game.currentPlayer.x, ~~Game.currentPlayer.y),
-            label: `build ${Game.sceneryMap.get(this.constructableDto.resultingSceneryId).name}`
+            label: `build ${Game.sceneryMap.get(this.constructableDto.resultingSceneryId).name}`,
+            flatpack
         }
 
         this.fillStyle = "#000";
@@ -200,12 +201,12 @@ class ConstructionButton {
 }
 
 class ConstructionWindow {
-    constructor(rect, constructableDtoList) {
+    constructor(rect, constructableDtoList, isFlatpack) {
         this.rect = rect;
-
+        
         let buttons = [];
         for (let i = 0; i < constructableDtoList.length; ++i) {
-            buttons.push(new ConstructionButton(constructableDtoList[i]));
+            buttons.push(new ConstructionButton(constructableDtoList[i], isFlatpack));
         }
         this.uiButtons = buttons.sort((a, b) => a.constructableDto.level - b.constructableDto.level);
         this.onResize(rect);

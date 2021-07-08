@@ -98,7 +98,8 @@ class Inventory {
 						slot: this.slots[i].id,
 						objectId: this.slots[i].item.id,
 						objectName: this.slots[i].item.name,
-						type: "item"
+						type: "item",
+						tileId: xyToTileId(~~Game.currentPlayer.x, ~~Game.currentPlayer.y)
 					});
 				} else {
 					if (this.slotInUse !== this.slots[i]) {
@@ -307,7 +308,8 @@ class Inventory {
 					slot: slot.id, 
 					objectId: slot.item.id, 
 					objectName: slot.item.name, 
-					type: "item"
+					type: "item",
+					tileId: xyToTileId(~~Game.currentPlayer.x, ~~Game.currentPlayer.y)
 				});
 			}
 
@@ -320,7 +322,8 @@ class Inventory {
 						slot: slot.id, 
 						objectId: slot.item.id, 
 						objectName: slot.item.name, 
-						type: "item"
+						type: "item",
+						tileId: xyToTileId(~~Game.currentPlayer.x, ~~Game.currentPlayer.y)
 					});
 			}
 
