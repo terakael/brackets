@@ -5,7 +5,7 @@ class OpenStorageChestResponse {
 
     process(obj) {
         const {name, tileId, items} = obj;
-        Game.activeUiWindow = new Storage(Game.worldCameraRect, name, tileId, items);
+        Game.activeUiWindow = new Storage(Game.worldCameraRect, name, tileId, items, "storage");
     }
 }
 

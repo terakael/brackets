@@ -7,8 +7,10 @@ const ButtonStates = {
 
 
 class ConstructionButton {
-    constructor(dto, flatpack) {
+    constructor(dto, flatpack, tileId) {
         this.rect = new Rectangle(0, 0, 100, 75);
+        this.isFlatpack = flatpack;
+        this.tileId = tileId;
 
         if (Game.currentPlayer.stats.getLevelByStat("con") < dto.level)
             this.state = ButtonStates.disabled;
@@ -17,7 +19,13 @@ class ConstructionButton {
             
         this.constructableDto = dto;
 
-        this.leftclickOption = {
+        this.leftclickOption = this.isFlatpack ? {
+            action: "construction", 
+            sceneryId: this.constructableDto.resultingSceneryId,
+            tileId: this.tileId,
+            label: `build 1 ${Game.sceneryMap.get(this.constructableDto.resultingSceneryId).name}`,
+            flatpack
+        } : {
             action: "construction", 
             sceneryId: this.constructableDto.resultingSceneryId,
             tileId: xyToTileId(~~Game.currentPlayer.x, ~~Game.currentPlayer.y),
@@ -176,7 +184,24 @@ class ConstructionButton {
             } else if (e.button === 2) { // right
                 Game.ContextMenu.hide();// clear all the previous actions
                 // context options
-                Game.ContextMenu.push([this.leftclickOption, {
+
+                Game.ContextMenu.push([this.leftclickOption]);
+
+                if (this.isFlatpack) {
+                    let smithAmounts = [5, 10, 25];
+                    for (let i = 0; i < smithAmounts.length; ++i) {
+                        Game.ContextMenu.push([{
+                            action: "construction",
+                            sceneryId: this.constructableDto.resultingSceneryId,
+                            amount: smithAmounts[i],
+                            label: `build ${smithAmounts[i] == 25 ? "all" : smithAmounts[i]} ${Game.sceneryMap.get(this.constructableDto.resultingSceneryId).name}`,
+                            flatpack: this.isFlatpack,
+                            tileId: this.tileId
+                        }]);
+                    }
+                }
+                
+                Game.ContextMenu.push([{
                     action: "show_construction_materials", 
                     sceneryId: this.constructableDto.resultingSceneryId,
                     label: `materials for ${Game.sceneryMap.get(this.constructableDto.resultingSceneryId).name}`
@@ -201,12 +226,13 @@ class ConstructionButton {
 }
 
 class ConstructionWindow {
-    constructor(rect, constructableDtoList, isFlatpack) {
+    constructor(rect, constructableDtoList, isFlatpack, tileId) {
         this.rect = rect;
-        
+        this.isFlatpack = isFlatpack;
+
         let buttons = [];
         for (let i = 0; i < constructableDtoList.length; ++i) {
-            buttons.push(new ConstructionButton(constructableDtoList[i], isFlatpack));
+            buttons.push(new ConstructionButton(constructableDtoList[i], isFlatpack, tileId));
         }
         this.uiButtons = buttons.sort((a, b) => a.constructableDto.level - b.constructableDto.level);
         this.onResize(rect);

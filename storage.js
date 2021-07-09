@@ -40,8 +40,8 @@ class StorageSlot {
 }
 
 class Storage {
-	constructor(rect, name, tileId, itemList) {
-		this.type = "storage"; // used for other things to know what is open
+	constructor(rect, name, tileId, itemList, type) {
+		this.type = type; // used for other things to know what is open
 		this.name = name;
 		this.tileId = tileId;
 		this.columns = 5;
