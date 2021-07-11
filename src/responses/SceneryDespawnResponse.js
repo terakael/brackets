@@ -1,6 +1,6 @@
-class ConstructableDespawnResponse {    
+class SceneryDespawnResponse {    
     constructor() {
-        this.action = "constructable_despawn";
+        this.action = "scenery_despawn";
     }
 
     process(obj) {
@@ -16,4 +16,4 @@ class ConstructableDespawnResponse {
     }
 }
 
-ResponseController.register(new ConstructableDespawnResponse());
+ResponseController.register(new SceneryDespawnResponse());
