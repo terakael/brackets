@@ -4,12 +4,13 @@ class PvmStartResponse {
     }
 
     process(obj) {
+        console.log(obj);
         const {playerId, monsterId, tileId} = obj;
 
         const player = Game.Room.getPlayerById(playerId);
         const monster = Game.Room.getNpcById(monsterId);
 
-        if (player !== null && monster !== null) {
+        if (player !== undefined && monster !== undefined) {
             player.inCombat = true;
             player.setDestPosAndSpeedByTileId(tileId, -8);
             
