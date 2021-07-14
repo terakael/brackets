@@ -358,6 +358,7 @@
         this.drawLegacy(ctx, xview, yview);
 
         for (let i = 0; i < this.teleportExplosions.length; ++i) {
+            ctx.save();
             let lifetime = (1 - this.teleportExplosions[i].lifetime); // 0 -> 1
             let size = Math.sin(1 - lifetime) * 64;
 
@@ -368,6 +369,7 @@
             ctx.arc(this.teleportExplosions[i].x - xview, 
                     this.teleportExplosions[i].y - yview, size, 0, 2 * Math.PI);
             ctx.fill();
+            ctx.restore();
         }
 
         // these draw calls still draw stuff like the death curtain, health bars, chat etc so draw these last.
