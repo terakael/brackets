@@ -144,11 +144,15 @@
                 }
             }
             
-            if (moving || this.inCombat) {
+            if (moving) {
                 // only process one part of the player, then reflect the current frame through all the rest
                 this.getBaseSpriteFrame().process(step);
                 
-            } else if (this.pendingFaceDirection) {
+            } else if (this.inCombat) {
+                if (this.getBaseSpriteFrame().currentFrame > 0)
+                    this.getBaseSpriteFrame().process(step);
+            }
+            else if (this.pendingFaceDirection) {
                 this.currentAnimation = this.pendingFaceDirection;
                 this.pendingFaceDirection = null;
             }
@@ -453,6 +457,14 @@
 
             if (obj.hasOwnProperty("faceDirection")) {
                 this.pendingFaceDirection = obj.faceDirection;
+            }
+
+            if (obj.hasOwnProperty("doAttack")) {
+                // just tells the client to start the attack animation.
+                // the attack animation is a rubber-banding animation, which stops when it gets back to 0.
+                // by setting it to 1, it triggers the full process and stops when we rubber-band back to teh start.
+                this.getBaseSpriteFrame().currentFrame = 1;
+                this.getBaseSpriteFrame().forwards = true;
             }
         }
 

@@ -158,8 +158,12 @@
         if (this.inCombat && Math.abs(this.dest.x - this.pos.x) < 1 && Math.abs(this.dest.y - this.pos.y) < 1)
             this.currentAnimation = "attack";
 
-        if (moving || this.inCombat || this.getCurrentSpriteFrame().alwaysAnimate())
+        if (moving || this.getCurrentSpriteFrame().alwaysAnimate())
             this.spriteframes[this.currentAnimation].process(step);
+        else if (this.inCombat) {
+            if (this.spriteframes[this.currentAnimation].currentFrame > 0)
+                this.spriteframes[this.currentAnimation].process(step);
+        }
         else
             this.spriteframes[this.currentAnimation].currentFrame = 1;
     }
@@ -217,6 +221,14 @@
                 this.hitsplats[idxReplaceHitsplat] = hitsplat;
             }
             this.healthBarTimer = 5;
+        }
+
+        if (obj.hasOwnProperty("doAttack")) {
+            // just tells the client to start the attack animation.
+            // the attack animation is a rubber-banding animation, which stops when it gets back to 0.
+            // by setting it to 1, it triggers the full process and stops when we rubber-band back to teh start.
+            this.spriteframes[this.currentAnimation].currentFrame = 1;
+            this.spriteframes[this.currentAnimation].forwards = true;
         }
     }
 
