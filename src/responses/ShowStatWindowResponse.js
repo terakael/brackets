@@ -4,8 +4,22 @@ class ShowStatWindowResponse {
     }
 
     process(obj) {
-        if (obj.statId === 8) {// potions
-            Game.activeUiWindow = new Game.PotionWindow(Game.worldCameraRect, obj.rows, "potions");
+
+        const {statId, rows} = obj;
+
+        switch (statId) {
+            case 9: { // herblore
+                Game.activeUiWindow = new Game.PotionWindow(Game.worldCameraRect, rows, "potions");
+                break;
+            }
+
+            case 13: { // artisan
+                Game.activeUiWindow = new ArtisanWindow(Game.worldCameraRect, obj.artisanData);
+                break;
+            }
+
+            default:
+                break;
         }
     }
 }

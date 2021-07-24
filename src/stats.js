@@ -277,13 +277,11 @@
         if (this.hoverStatId == null)
             return;
 
-        if (this.stats[this.hoverStatId].name === "herb") {
-            Game.ws.send({
-                action: "show_stat_window",
-                id: Game.currentPlayer.id,
-                statId: this.hoverStatId
-            });
-        }
+        Game.ws.send({
+            action: "show_stat_window",
+            id: Game.currentPlayer.id,
+            statId: this.hoverStatId + 1 // client stat array is 0-based; server stat enum is 1-based
+        });
     }
     Stats.prototype.onResize = function(newLeft) {
         this.rect.setPos(newLeft, this.rect.top);
