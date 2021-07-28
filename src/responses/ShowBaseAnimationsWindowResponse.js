@@ -1,0 +1,11 @@
+class ShowBaseAnimationsWindowResponse {    
+    constructor() {
+        this.action = "show_base_animations_window";
+    }
+
+    process(obj) {
+        Game.activeUiWindow = new BaseAnimationsWindow(Game.worldCameraRect, obj.baseAnimations, obj.customizableAnimations);
+    }
+}
+
+ResponseController.register(new ShowBaseAnimationsWindowResponse());

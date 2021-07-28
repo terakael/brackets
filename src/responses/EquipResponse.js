@@ -6,7 +6,6 @@ class EquipResponse {
     process(obj) {
         Game.currentPlayer.setEquippedSlots(obj.equippedSlots);
         Game.currentPlayer.setBonuses(obj.bonuses);
-        Game.currentPlayer.setEquipAnimations(obj.equipAnimations);
     }
 }
 

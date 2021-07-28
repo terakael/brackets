@@ -48,12 +48,12 @@
             // right/attack right: onhand, legs, body, head, offhand
             // TODO: daggers should always be drawn on the top?
             this.drawOrders = new Map();
-            this.drawOrders.set("down", ["CAPE", "LEGS","TORSO","NECKLACE","HEAD","OFFHAND","ONHAND"]);
-            this.drawOrders.set("up", ["LEGS","TORSO", "CAPE", "NECKLACE", "HEAD","ONHAND","OFFHAND"]);
-            this.drawOrders.set("left", ["ONHAND","LEGS","TORSO","HEAD", "NECKLACE","OFFHAND", "CAPE"]);
-            this.drawOrders.set("attack_left", ["ONHAND","LEGS","TORSO","HEAD", "NECKLACE","OFFHAND", "CAPE"]);
-            this.drawOrders.set("right", ["OFFHAND","LEGS","TORSO","HEAD", "NECKLACE","ONHAND", "CAPE"]);
-            this.drawOrders.set("attack_right", ["OFFHAND","LEGS","TORSO","HEAD", "NECKLACE","ONHAND", "CAPE"]);
+            this.drawOrders.set("down", ["CAPE","LEGS","PANTS","SHOES","TORSO","SHIRT","NECKLACE","HEAD","HAIR","BEARD","OFFHAND","ONHAND"]);
+            this.drawOrders.set("up", ["LEGS","PANTS","SHOES","TORSO","SHIRT", "CAPE", "NECKLACE", "BEARD","HEAD","HAIR","ONHAND","OFFHAND"]);
+            this.drawOrders.set("left", ["ONHAND","LEGS","PANTS","SHOES","TORSO","SHIRT","HEAD","HAIR","NECKLACE","BEARD","OFFHAND", "CAPE"]);
+            this.drawOrders.set("attack_left", ["ONHAND","LEGS","PANTS","SHOES","TORSO","SHIRT","HEAD","HAIR","NECKLACE","BEARD","OFFHAND", "CAPE"]);
+            this.drawOrders.set("right", ["OFFHAND","LEGS","PANTS","SHOES","TORSO","SHIRT","HEAD","HAIR","NECKLACE","BEARD","ONHAND", "CAPE"]);
+            this.drawOrders.set("attack_right", ["OFFHAND","LEGS","PANTS","SHOES","TORSO","SHIRT","HEAD","HAIR","NECKLACE","BEARD","ONHAND", "CAPE"]);
 
             this.setAnimations(obj.baseAnimations);
             this.setEquipAnimations(obj.equipAnimations);
@@ -69,7 +69,7 @@
             }
             
 			// parameter step is the time between frames ( in seconds )
-            var moving = false;
+            let moving = false;
             
             if (!this.deathSequence) {
                 // TODO try this out using the spell movement mechanics
@@ -267,16 +267,14 @@
         Player.prototype.getCurrentSpriteFrames = function() {
             let frames = [];
 
-            let drawOrder = this.drawOrders.get(this.currentAnimation);
+            this.drawOrders.get(this.currentAnimation).forEach(type => {
+                if (this.baseframes.has(type))
+                    frames.push(this.getBaseSpriteFrame(type));
 
-            // overlay with equip frames
-            for (let i = 0; i < drawOrder.length; ++i) {
-                if (this.baseframes.has(drawOrder[i]))
-                    frames.push(this.getBaseSpriteFrame(drawOrder[i]));
-
-                if (this.spriteframes.has(drawOrder[i]))
-                    frames.push(this.getCurrentSpriteFrame(drawOrder[i]));
-            }            
+                if (this.spriteframes.has(type)) {
+                    frames.push(this.getCurrentSpriteFrame(type));
+                }
+            });      
 
             return frames;
         }
@@ -342,13 +340,40 @@
         }
 
         Player.prototype.setAnimations = function(animations) {
+            this.baseframes.clear(); // clear everything for a refresh
+            
             for (let part in animations) {// head, torso, legs
                 for (let type in animations[part]) {// up, down, left, right, attack
+                    if (type === "color")
+                        continue;
+                    
                     if (!this.baseframes.has(part))
                         this.baseframes.set(part, []);
             
                     this.baseframes.get(part)[type] = new SpriteFrame(SpriteManager.getSpriteFrameById(animations[part][type]).frameData);
+                    if (animations[part]["color"]) {
+                        this.baseframes.get(part)[type].color = animations[part]["color"];
+                    }
                 }
+            }
+        }
+
+        Player.prototype.setAnimation = function(part, animation) {
+            this.baseframes.set(part, []); // clear this part so we can reset it if it exists
+            
+            for (let type in animation) {
+                if (type === "color")
+                    continue;
+
+                this.baseframes.get(part)[type] = new SpriteFrame(SpriteManager.getSpriteFrameById(animation[type]).frameData);
+
+                if (animation[type] !== 0) {
+                    this.baseframes.get(part)[type].currentFrame=this.getBaseSpriteFrame().currentFrame;
+                    this.baseframes.get(part)[type].frameTimer=this.getBaseSpriteFrame().frameTimer;
+                }
+
+                if (animation["color"])
+                    this.baseframes.get(part)[type].color = animation["color"];
             }
         }
 
@@ -448,6 +473,10 @@
 
             if (obj.hasOwnProperty("equipAnimations")) {
                 this.setEquipAnimations(obj.equipAnimations);
+            }
+
+            if (obj.hasOwnProperty("baseAnimations")) {
+                this.setAnimations(obj.baseAnimations);
             }
 
             if (obj.hasOwnProperty("respawn")) {

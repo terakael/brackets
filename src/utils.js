@@ -117,7 +117,7 @@
     }
 
     decToHexColor = function(dec) {
-        if (!dec)
+        if (isNaN(dec))
             return null;
 
         let hex = dec.toString(16);

@@ -102,32 +102,19 @@ class SpriteManager {
 			c.canvas.width = spriteMap.width;
 			c.canvas.height = spriteMap.height;
 			c.clearRect(0, 0, c.canvas.width, c.canvas.height);
-			
-			c.globalCompositeOperation = "source-over";
+
+			// draw the image
 			c.drawImage(spriteMap, 0, 0, spriteMap.width, spriteMap.height);
 
-			const hsl = decToHsl(color);
-
-			// adjust "lightness"
-			c.globalCompositeOperation =  "color-dodge";
-			// for common slider, to produce a valid value for both directions
-			const l = hsl.l >= 100 ? hsl.l - 100 : 100 - (100 - hsl.l);
-			c.fillStyle = "hsl(0, 50%, " + hsl.l + "%)";
+			// overlay it with a rectangle containing our colour
+			c.globalCompositeOperation = "overlay";
+			c.fillStyle = decToHexColor(color)
 			c.fillRect(0, 0, spriteMap.width, spriteMap.height);
 			
-			// adjust saturation
-			c.globalCompositeOperation = "saturation";
-			c.fillStyle = "hsl(0," + hsl.s + "%, 50%)";
-			c.fillRect(0, 0, spriteMap.width, spriteMap.height);
-		
-			// adjust hue
-			c.globalCompositeOperation = "hue";
-			c.fillStyle = "hsl(" + hsl.h + ",1%, 50%)";
-			c.fillRect(0, 0, spriteMap.width, spriteMap.height);
-
+			// clip out the image
 			c.globalCompositeOperation = "destination-in";
 			c.drawImage(spriteMap, 0, 0, spriteMap.width, spriteMap.height);
-
+			
 			const map = new Image();
 			map.src = c.canvas.toDataURL();
 			const spriteMapWithColor = {
@@ -141,6 +128,7 @@ class SpriteManager {
 			map.onload = function() {
 				spriteMapWithColor.ready = true;
 			}
+			c.globalCompositeOperation = "source-over";
 		}
 		return null;
 	}

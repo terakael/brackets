@@ -7,6 +7,7 @@ class LogonResponse {
         document.title = obj.playerDto.name;
         const canvas = document.getElementById("game")
 
+        console.log(obj);
         const player = new Game.Player(obj.playerDto);
         player.loadAttackStyles(obj.attackStyles);
         player.setAttackStyle(obj.playerDto.attackStyleId);
