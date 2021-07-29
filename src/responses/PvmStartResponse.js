@@ -4,7 +4,6 @@ class PvmStartResponse {
     }
 
     process(obj) {
-        console.log(obj);
         const {playerId, monsterId, tileId} = obj;
 
         const player = Game.Room.getPlayerById(playerId);

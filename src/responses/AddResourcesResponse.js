@@ -5,7 +5,6 @@ class AddResourcesResponse {
 
     process(obj) {
         const resource = obj;
-        console.log(resource);
         if (resource.spriteFrames)
             SpriteManager.loadSpriteFrames(resource.spriteFrames);
 

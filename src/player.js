@@ -359,22 +359,23 @@
         }
 
         Player.prototype.setAnimation = function(part, animation) {
-            this.baseframes.set(part, []); // clear this part so we can reset it if it exists
+            this.baseframes.set(part, {}); // clear this part so we can reset it if it exists
+
+            const {currentFrame, frameTimer, forwards} = this.getBaseSpriteFrame();
             
             for (let type in animation) {
                 if (type === "color")
                     continue;
 
-                this.baseframes.get(part)[type] = new SpriteFrame(SpriteManager.getSpriteFrameById(animation[type]).frameData);
-
                 if (animation[type] !== 0) {
-                    this.baseframes.get(part)[type].currentFrame=this.getBaseSpriteFrame().currentFrame;
-                    this.baseframes.get(part)[type].frameTimer=this.getBaseSpriteFrame().frameTimer;
+                    this.baseframes.get(part)[type] = new SpriteFrame(SpriteManager.getSpriteFrameById(animation[type]).frameData);
+                    if (animation["color"])
+                        this.baseframes.get(part)[type].color = animation["color"];
                 }
-
-                if (animation["color"])
-                    this.baseframes.get(part)[type].color = animation["color"];
             }
+
+            if (!Object.keys(this.baseframes.get(part)).length)
+                this.baseframes.delete(part);
         }
 
         Player.prototype.setEquipAnimations = function(animations) {

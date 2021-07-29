@@ -30,21 +30,24 @@ class BaseAnimationSwitcher {
 
     draw(context) {
         context.strokeStyle = "red";
+        context.lineWidth = this.leftArrowRect.pointWithin(Game.mousePos) ? 3 : 1;
         context.strokeRect(this.leftArrowRect.left, this.leftArrowRect.top, this.leftArrowRect.width, this.leftArrowRect.height);
-        if (this.leftArrowRect.pointWithin(Game.mousePos)) {
-            context.fillStyle = "red";
+        if (this.leftArrowPressed) {
+            context.fillStyle = "#f00";
             context.fillRect(this.leftArrowRect.left, this.leftArrowRect.top, this.leftArrowRect.width, this.leftArrowRect.height);
         }
         
+        context.lineWidth = this.rightArrowRect.pointWithin(Game.mousePos) ? 3 : 1;
         context.strokeRect(this.rightArrowRect.left, this.rightArrowRect.top, this.rightArrowRect.width, this.rightArrowRect.height);
-        if (this.rightArrowRect.pointWithin(Game.mousePos)) {
-            context.fillStyle = "red";
+        if (this.rightArrowPressed) {
+            context.fillStyle = "#f00";
             context.fillRect(this.rightArrowRect.left, this.rightArrowRect.top, this.rightArrowRect.width, this.rightArrowRect.height);
         }
 
+        context.lineWidth = this.colorRect.pointWithin(Game.mousePos) ? 3 : 1;
         context.strokeRect(this.colorRect.left, this.colorRect.top, this.colorRect.width, this.colorRect.height);
-        if (this.colorRect.pointWithin(Game.mousePos)) {
-            context.fillStyle = "red";
+        if (this.colorRectPressed) {
+            context.fillStyle = "#f00";
             context.fillRect(this.colorRect.left, this.colorRect.top, this.colorRect.width, this.colorRect.height);
         }
 
@@ -59,18 +62,12 @@ class BaseAnimationSwitcher {
     }
 
     onMouseDown(e) {
-        if (e.button !== 0)
-            return;
-
         this.leftArrowPressed = this.leftArrowRect.pointWithin(Game.mousePos);
         this.rightArrowPressed = this.rightArrowRect.pointWithin(Game.mousePos);
         this.colorRectPressed = this.colorRect.pointWithin(Game.mousePos);
     }
 
     onMouseUp(e) {
-        if (e.button !== 0)
-            return;
-        
         if (this.leftArrowRect.pointWithin(Game.mousePos) && this.leftArrowPressed) {
             Game.ws.send({
                 action: "cycle_base_animation",
@@ -107,7 +104,7 @@ class BaseAnimationsWindow {
     constructor(rect, baseAnimations, customizableAnimations) {
         this.rect = rect;
         this.saveButtonPressed = false;
-        
+        this.playerDirections = ["down", "right", "up", "left"];
         this.samplePlayer = new Game.Player({id: -1, name: "", tileId: -1, combatLevel: -1, currentHp: -1, maxHp: -1});
         this.samplePlayer.setAnimations({...customizableAnimations, ...baseAnimations});
 
@@ -143,27 +140,37 @@ class BaseAnimationsWindow {
 
         context.textAlign = "center";
         context.fillStyle = "white";
+        context.font = "20px customFont";
 
-        var y = this.rect.top + 20;
-        context.fillText("- character configuration -", this.rect.left + (this.rect.width / 2), y);
+        let y = this.rect.top + 20;
+        context.fillText("- character customization -", this.rect.left + (this.rect.width / 2), y);
+
+        context.fillStyle = "#222";
+        context.fillRect(this.samplePlayerRect.left, this.samplePlayerRect.top, this.samplePlayerRect.width, this.samplePlayerRect.height);
+
+        context.strokeStyle = "red";
+        context.strokeRect(this.samplePlayerRect.left, this.samplePlayerRect.top, this.samplePlayerRect.width, this.samplePlayerRect.height);
 
         const scale = 5;
         context.save();
         const transform = new Transform();
         transform.scale(scale, scale);
         context.setTransform.apply(context, transform.m);
+
+        const {width, height} = this.samplePlayer.getBaseSpriteFrame().getCurrentFrame();
         this.samplePlayer.getCurrentSpriteFrames().forEach(frame => {
             frame.draw(context, 
-                ((this.rect.right - 10) / scale) - (frame.getCurrentFrame().width / 2),
-                ((this.rect.top + (this.rect.height / 2)) / scale) + (frame.getCurrentFrame().height / 2));
+                ((this.rect.right - 10) / scale) - (width / 2),
+                ((this.rect.top + (this.rect.height / 2) - 10) / scale) + (height / 2));
         });
         context.restore();
 
         this.switchers.forEach(switcher => switcher.draw(context));
 
         context.strokeStyle = "red";
+        context.lineWidth = this.saveButtonRect.pointWithin(Game.mousePos) ? 3 : 1;
         context.strokeRect(this.saveButtonRect.left, this.saveButtonRect.top, this.saveButtonRect.width, this.saveButtonRect.height);
-        if (this.saveButtonRect.pointWithin(Game.mousePos)) {
+        if (this.saveButtonPressed) {
             context.fillStyle = "red";
             context.fillRect(this.saveButtonRect.left, this.saveButtonRect.top, this.saveButtonRect.width, this.saveButtonRect.height);
         }
@@ -171,14 +178,15 @@ class BaseAnimationsWindow {
         context.textBaseline = "middle";
         context.font = "20px customFont";
         context.fillStyle = "white";
-        context.fillText("save", this.saveButtonRect.left + (this.saveButtonRect.width / 2), this.saveButtonRect.top + (this.saveButtonRect.height / 2));
+        context.fillText("save", this.saveButtonRect.left + (this.saveButtonRect.width / 2), this.saveButtonRect.top + (this.saveButtonRect.height / 2));       
         
         context.restore();
     }
 
     process(dt) {
-        this.samplePlayer.getCurrentSpriteFrames().forEach(frame => {
-            frame.process(dt);
+        this.samplePlayer.getBaseSpriteFrame().process(dt);
+        this.samplePlayer.baseframes.forEach(frame => {
+            frame[this.playerDirections[0]].currentFrame = this.samplePlayer.getBaseSpriteFrame().currentFrame;
         });
         
         if (Game.ContextMenu.active)
@@ -186,16 +194,11 @@ class BaseAnimationsWindow {
     }
 
     onMouseDown(e) {
-        if (e.button == 0) {// leftclick
-            if (Game.ContextMenu.active) {
-                const menuItem = Game.ContextMenu.handleMenuSelect();
-                Game.ContextMenu.hide();
-                return;
-            }
-        }
-
-        this.saveButtonPressed = this.saveButtonRect.pointWithin(Game.mousePos)
+        if (e.button !== 0)
+            return;
+        
         if (this.rect.pointWithin(Game.mousePos)) {
+            this.saveButtonPressed = this.saveButtonRect.pointWithin(Game.mousePos)
             this.switchers.forEach(button => button.onMouseDown(e));
         } else {
             Game.activeUiWindow = null;
@@ -203,9 +206,18 @@ class BaseAnimationsWindow {
     }
 
     onMouseUp(e) {
+        if (e.button !== 0)
+            return;
+
+        if (this.samplePlayerRect.pointWithin(Game.mousePos)) {
+            const removedElement = this.playerDirections.shift();
+            this.playerDirections.push(removedElement);
+            this.samplePlayer.currentAnimation = this.playerDirections[0];
+        }
+
         this.switchers.forEach(button => button.onMouseUp(e));
 
-        if (e.button == 0 && this.saveButtonPressed && this.saveButtonRect.pointWithin(Game.mousePos)) {
+        if (this.saveButtonPressed && this.saveButtonRect.pointWithin(Game.mousePos)) {
             const animations = [];
             this.switchers.forEach((switcher, part) => {
                 animations.push({part: part, upId: switcher.animation.up, color: switcher.animation.color});
@@ -218,6 +230,7 @@ class BaseAnimationsWindow {
             
             Game.activeUiWindow = null;
         }
+        this.saveButtonPressed = false;
     }
 
     onMouseScroll(e) {
@@ -249,5 +262,6 @@ class BaseAnimationsWindow {
         this.switchers.forEach(switcher => switcher.setPos(this.rect.left + 10, this.rect.top + 50 + (rowCount++ * 40)));
 
         this.saveButtonRect = new Rectangle(uix + uiWidth - 10 - 64, uiy + uiHeight - 10 - 32, 64, 32);
+        this.samplePlayerRect = new Rectangle(this.rect.right - 10 - (32*5), this.rect.top + 50, (32*5), (32*5));
     }
 }

@@ -4,7 +4,6 @@ class CycleBaseAnimationResponse {
     }
 
     process(obj) {
-        console.log(obj);
         if (Game.activeUiWindow instanceof BaseAnimationsWindow) {
             Game.activeUiWindow.cycleAnimation(obj.type, obj.animation);
         }
