@@ -393,41 +393,6 @@
     Room.prototype.drawLegacy = function(ctx, xview, yview) {
         // add everything to the draw map so we can draw in the correct order
         var drawMap = new Map();
-        
-        // add the current player
-        let playerSpriteFrame = this.player.getCurrentSpriteFrame();
-        let mapKey = this.player.y + (playerSpriteFrame.getCurrentFrame().height * playerSpriteFrame.scale.y) - ((playerSpriteFrame.anchor.y * playerSpriteFrame.getCurrentFrame().height) * playerSpriteFrame.scale.y);
-        if (!drawMap.has(mapKey))
-            drawMap.set(mapKey, []);
-            
-        drawMap.get(mapKey).push({
-            id: this.player.id,
-            name: this.player.name,
-            x: this.player.x, 
-            y: this.player.y,
-            sprite: this.player.getCurrentSpriteFrames(),
-            type: "player",
-            leftclickOption: 0
-        });
-
-        // add the other players
-        for (var i in this.otherPlayers) {
-            let currentSpriteFrame = this.otherPlayers[i].getCurrentSpriteFrames()[0];
-            let mapKey = this.otherPlayers[i].y + (currentSpriteFrame.getCurrentFrame().height * currentSpriteFrame.scale.y) - ((currentSpriteFrame.anchor.y * currentSpriteFrame.getCurrentFrame().height) * currentSpriteFrame.scale.y);
-            if (!drawMap.has(mapKey))
-                drawMap.set(mapKey, []);
-
-            drawMap.get(mapKey).push({
-                id: this.otherPlayers[i].id,
-                name: this.otherPlayers[i].name + ` (lvl ${this.otherPlayers[i].combatLevel})`,
-                x: this.otherPlayers[i].x, 
-                y: this.otherPlayers[i].y - (this.otherPlayers[i].deathSequence ? ((1 - this.otherPlayers[i].deathsCurtain) * 32) : 0),
-                sprite: this.otherPlayers[i].getCurrentSpriteFrames(),
-                type: "player",
-                leftclickOption: 0,
-                transparency: this.otherPlayers[i].deathSequence ? Math.max(this.otherPlayers[i].deathsCurtain, 0.01) : 1
-            });
-        }
 
         // add the NPCs
         for (var i = 0; i < this.npcs.length; ++i) {
@@ -448,6 +413,41 @@
                 transparency: Math.max(1 - this.npcs[i].deathTimer, 0.01)
             });
         }
+
+        // add the other players
+        for (var i in this.otherPlayers) {
+            let currentSpriteFrame = this.otherPlayers[i].getCurrentSpriteFrames()[0];
+            let mapKey = this.otherPlayers[i].y + (currentSpriteFrame.getCurrentFrame().height * currentSpriteFrame.scale.y) - ((currentSpriteFrame.anchor.y * currentSpriteFrame.getCurrentFrame().height) * currentSpriteFrame.scale.y);
+            if (!drawMap.has(mapKey))
+                drawMap.set(mapKey, []);
+
+            drawMap.get(mapKey).push({
+                id: this.otherPlayers[i].id,
+                name: this.otherPlayers[i].name + ` (lvl ${this.otherPlayers[i].combatLevel})`,
+                x: this.otherPlayers[i].x, 
+                y: this.otherPlayers[i].y - (this.otherPlayers[i].deathSequence ? ((1 - this.otherPlayers[i].deathsCurtain) * 32) : 0),
+                sprite: this.otherPlayers[i].getCurrentSpriteFrames(),
+                type: "player",
+                leftclickOption: 0,
+                transparency: this.otherPlayers[i].deathSequence ? Math.max(this.otherPlayers[i].deathsCurtain, 0.01) : 1
+            });
+        }
+
+        // add the current player
+        let playerSpriteFrame = this.player.getCurrentSpriteFrame();
+        let mapKey = this.player.y + (playerSpriteFrame.getCurrentFrame().height * playerSpriteFrame.scale.y) - ((playerSpriteFrame.anchor.y * playerSpriteFrame.getCurrentFrame().height) * playerSpriteFrame.scale.y);
+        if (!drawMap.has(mapKey))
+            drawMap.set(mapKey, []);
+            
+        drawMap.get(mapKey).push({
+            id: this.player.id,
+            name: this.player.name,
+            x: this.player.x, 
+            y: this.player.y,
+            sprite: this.player.getCurrentSpriteFrames(),
+            type: "player",
+            leftclickOption: 0
+        });
 
         // add scenery
         this.compileDrawableSceneryMap(xview, yview);

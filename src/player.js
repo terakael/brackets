@@ -48,12 +48,12 @@
             // right/attack right: onhand, legs, body, head, offhand
             // TODO: daggers should always be drawn on the top?
             this.drawOrders = new Map();
-            this.drawOrders.set("down", ["CAPE","LEGS","PANTS","SHOES","TORSO","SHIRT","NECKLACE","HEAD","HAIR","BEARD","OFFHAND","ONHAND"]);
-            this.drawOrders.set("up", ["LEGS","PANTS","SHOES","TORSO","SHIRT", "CAPE", "NECKLACE", "BEARD","HEAD","HAIR","ONHAND","OFFHAND"]);
-            this.drawOrders.set("left", ["ONHAND","LEGS","PANTS","SHOES","TORSO","SHIRT","HEAD","HAIR","NECKLACE","BEARD","OFFHAND", "CAPE"]);
-            this.drawOrders.set("attack_left", ["ONHAND","LEGS","PANTS","SHOES","TORSO","SHIRT","HEAD","HAIR","NECKLACE","BEARD","OFFHAND", "CAPE"]);
-            this.drawOrders.set("right", ["OFFHAND","LEGS","PANTS","SHOES","TORSO","SHIRT","HEAD","HAIR","NECKLACE","BEARD","ONHAND", "CAPE"]);
-            this.drawOrders.set("attack_right", ["OFFHAND","LEGS","PANTS","SHOES","TORSO","SHIRT","HEAD","HAIR","NECKLACE","BEARD","ONHAND", "CAPE"]);
+            this.drawOrders.set("down", ["CAPE","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","NECKLACE","HEAD","BEARD","HAIR","HEADWEAR","OFFHAND","ONHAND"]);
+            this.drawOrders.set("up", ["LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT", "BEARD","HEAD","BODYWEAR", "HAIR","HEADWEAR","NECKLACE","CAPE", "ONHAND","OFFHAND"]);
+            this.drawOrders.set("left", ["ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","OFFHAND"]);
+            this.drawOrders.set("attack_left", ["ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","OFFHAND"]);
+            this.drawOrders.set("right", ["OFFHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","ONHAND"]);
+            this.drawOrders.set("attack_right", ["OFFHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","ONHAND"]);
 
             this.setAnimations(obj.baseAnimations);
             this.setEquipAnimations(obj.equipAnimations);

@@ -259,9 +259,9 @@ class BaseAnimationsWindow {
         this.rect = new Rectangle(uix, uiy, uiWidth, uiHeight);
 
         let rowCount = 0;
-        this.switchers.forEach(switcher => switcher.setPos(this.rect.left + 10, this.rect.top + 50 + (rowCount++ * 40)));
+        this.switchers.forEach(switcher => switcher.setPos(this.rect.left + 10, this.rect.top + 50 + (rowCount++ * 42)));
 
-        this.saveButtonRect = new Rectangle(uix + uiWidth - 10 - 64, uiy + uiHeight - 10 - 32, 64, 32);
+        this.saveButtonRect = new Rectangle(uix + uiWidth - 10 - (32*5), uiy + uiHeight - 10 - 32, (32*5), 32);
         this.samplePlayerRect = new Rectangle(this.rect.right - 10 - (32*5), this.rect.top + 50, (32*5), (32*5));
     }
 }
