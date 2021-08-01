@@ -49,7 +49,7 @@
             // TODO: daggers should always be drawn on the top?
             this.drawOrders = new Map();
             this.drawOrders.set("down", ["CAPE","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","NECKLACE","HEAD","BEARD","HAIR","HEADWEAR","OFFHAND","ONHAND"]);
-            this.drawOrders.set("up", ["LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT", "BEARD","HEAD","BODYWEAR", "HAIR","HEADWEAR","NECKLACE","CAPE", "ONHAND","OFFHAND"]);
+            this.drawOrders.set("up", ["LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT", "BEARD","HEAD","BODYWEAR", "HAIR","NECKLACE","CAPE","HEADWEAR", "ONHAND","OFFHAND"]);
             this.drawOrders.set("left", ["ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","OFFHAND"]);
             this.drawOrders.set("attack_left", ["ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","OFFHAND"]);
             this.drawOrders.set("right", ["OFFHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","ONHAND"]);
