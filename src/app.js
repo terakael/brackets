@@ -251,15 +251,7 @@ $(function () {
                                 }
                             }
                         }
-                        for (let i in Game.Room.groundItems) {
-                            const groundItem = Game.Room.groundItems[i];
-                            if (groundItem.clickBox.pointWithin(Game.cursor.mousePos)) {
-                                Game.ContextMenu.push([
-                                    { action: "take", objectName: groundItem.item.name, itemId: groundItem.item.id, tileId: groundItem.tileId },
-                                    { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, tileId: groundItem.tileId, type: "grounditem"}
-                                ]);
-                            }
-                        }
+
                         Game.Room.drawableSceneryMap.forEach(function(value, key, map) {
                             for (let i in value) {
                                 const boundingBox = value[i].sprite[0].getBoundingBox();
@@ -402,6 +394,16 @@ $(function () {
                                 }]);
                             }
                         }
+
+                        Game.Room.groundItems
+                            .filter(groundItem => groundItem.clickBox.pointWithin(Game.cursor.mousePos))
+                            .reverse() // we wanna go from the top down to the bottom of the pile, so we need to reverse the list
+                            .forEach(groundItem => {
+                                Game.ContextMenu.push([
+                                    { action: "take", objectName: groundItem.item.name, itemId: groundItem.item.id, tileId: groundItem.tileId },
+                                    { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, tileId: groundItem.tileId, type: "grounditem"}
+                                ]);
+                            });
                         break;
                 }
             }
@@ -452,13 +454,8 @@ $(function () {
         }
     }, false);
 
-    // setup the magic camera !!!
-    
-    
-
     const FPS = 50;
     const INTERVAL = 1000 / FPS; // milliseconds
-    // const STEP = INTERVAL / 1000; // seconds
     
     // Game update function
     var update = function (dt) {

@@ -325,33 +325,42 @@
 
         ctx.save();// make the items on the ground smaller than in the inventory
         ctx.scale(0.5, 0.5);
-        for (let i in this.groundItems) {
+
+        const hoverItems = this.groundItems.filter(item => {
+            const rect = new Rectangle(
+                item.clickBox.left - xview, 
+                item.clickBox.top - yview, 
+                item.clickBox.width, 
+                item.clickBox.height);
+
+            return rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
+                Game.worldCameraRect.pointWithin(Game.mousePos);
+        });
+
+        const glowingItemIndex = hoverItems.length ? this.groundItems.indexOf(hoverItems[hoverItems.length - 1]) : -1;
+        
+        for (let i = 0; i < this.groundItems.length; ++i) {
+            if (i === glowingItemIndex) {
+                ctx.save();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = "red";
+            }
             this.groundItems[i].draw(ctx, xview, yview, 0.5, 0.5);
+            if (i === glowingItemIndex) {
+                ctx.restore();
+            }
         }
         ctx.restore();
 
         if (Game.activeUiWindow == null) {// if there's a window up then don't show hover texts for items behind it
-            for (let i in this.groundItems) {
-                const rect = new Rectangle(
-                    this.groundItems[i].clickBox.left - xview, 
-                    this.groundItems[i].clickBox.top - yview, 
-                    this.groundItems[i].clickBox.width, this.groundItems[i].clickBox.height);
-
-                if (rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
-                    Game.worldCameraRect.pointWithin(Game.mousePos)) {
-                    // if there's a slot in use then show nothing; you cannot use an inv item on a ground item.
-                    // this means don't even show the usual "take" option; the current state is a use inv item on something
-                    if (Game.currentPlayer.inventory.slotInUse == null) {
-                        // { action: "take", objectName: groundItem.item.name, groundItemId: groundItem.groundItemId }
-                        Game.ContextMenu.setLeftclick(Game.mousePos, {
-                            id: Game.currentPlayer.id,
-                            action: "take", 
-                            objectName: this.groundItems[i].item.name, 
-                            itemId: this.groundItems[i].item.id,
-                            tileId: this.groundItems[i].tileId
-                        });
-                    }
-                }
+            if (glowingItemIndex >= 0 && Game.currentPlayer.inventory.slotInUse == null) {
+                Game.ContextMenu.setLeftclick(Game.mousePos, {
+                    id: Game.currentPlayer.id,
+                    action: "take", 
+                    objectName: this.groundItems[glowingItemIndex].item.name, 
+                    itemId: this.groundItems[glowingItemIndex].item.id,
+                    tileId: this.groundItems[glowingItemIndex].tileId
+                });
             }
         }
 
@@ -401,9 +410,10 @@
             if (!drawMap.has(mapKey))
                 drawMap.set(mapKey, []);
 
+            const isAttackable = this.npcs[i].get("leftclickOption") === 1;
             drawMap.get(mapKey).push({
                 id: this.npcs[i].instanceId,
-                name: this.npcs[i].get("name") + (this.npcs[i].get("leftclickOption") == 4096 ? ` (lvl ${this.npcs[i].get("cmb")})` : ""),
+                name: this.npcs[i].get("name") + (isAttackable ? ` (lvl ${this.npcs[i].get("cmb")})` : ""),
                 x: this.npcs[i].pos.x, 
                 y: this.npcs[i].pos.y - (this.npcs[i].deathTimer * 32),
                 sprite: [this.npcs[i].getCurrentSpriteFrame()],
@@ -472,19 +482,36 @@
         orderedDrawMap.forEach(function(value, key, map) {
             for (let i = 0; i < value.length; ++i) {
                 ctx.globalAlpha = value[i].transparency || 1;
-                for (let j = 0; j < value[i].sprite.length; ++j)
+
+                const clickBox = value[i].sprite[0].getBoundingBox();
+                const rect = new Rectangle(value[i].x + clickBox.left - xview,
+                                                value[i].y + clickBox.top - yview,
+                                                clickBox.width, clickBox.height);
+                
+                const mouseOver = rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) && Game.worldCameraRect.pointWithin(Game.mousePos);
+                const unusable = ((value[i].attributes || 0) & 1) === 1 && value[i].type === "scenery";
+                const slotInUse = Game.currentPlayer.inventory.slotInUse;
+
+                if (!Game.activeUiWindow && mouseOver && (slotInUse && !unusable)) {
+                    // draw the back-image
+                    ctx.save();
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = "white";
+                    for (let j = 0; j < value[i].sprite.length; ++j)
+                        value[i].sprite[j].draw(ctx, value[i].x - xview, value[i].y - yview, value[i].sprite[j].color);
+                    ctx.restore();
+                }
+                
+                for (let j = 0; j < value[i].sprite.length; ++j) {
                     value[i].sprite[j].draw(ctx, value[i].x - xview, value[i].y - yview, value[i].sprite[j].color);
+                    if (value[i].sprite[j].glow) {
+                        ctx.restore();
+                    }
+                }
 
                 if (!Game.activeUiWindow) {
-                    const clickBox = value[i].sprite[0].getBoundingBox();
-                    const rect = new Rectangle(value[i].x + clickBox.left - xview,
-                                                    value[i].y + clickBox.top - yview,
-                                                    clickBox.width, clickBox.height);
-
                     // mouse position needs to account for scale because the whole context is currently scaled
-                    if (rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
-                        Game.worldCameraRect.pointWithin(Game.mousePos)) {
-                        
+                    if (mouseOver) {
                         if (Game.drawBoundingBoxes) {
                             ctx.strokeStyle = "red";
                             ctx.strokeRect(rect.left, rect.top, rect.width, rect.height);
@@ -496,15 +523,14 @@
                             ctx.stroke();
                         }
 
-                        let unusable = ((value[i].attributes || 0) & 1) == 1 && value[i].type === "scenery";
-                        if (Game.currentPlayer.inventory.slotInUse && value[i].name && !unusable) {
+                        if (slotInUse && value[i].name && !unusable) {
                             Game.ContextMenu.setLeftclick(Game.mousePos, {
                                 id: Game.currentPlayer.id,
                                 action: "use",
-                                src: Game.currentPlayer.inventory.slotInUse.item.id,
+                                src: slotInUse.item.id,
                                 dest: value[i].tileId,
                                 type: value[i].type,
-                                label: "use {0} -> {1}".format(Game.currentPlayer.inventory.slotInUse.item.name, value[i].name)
+                                label: "use {0} -> {1}".format(slotInUse.item.name, value[i].name)
                             });
                         } else {
                             if (value[i].leftclickOption) {

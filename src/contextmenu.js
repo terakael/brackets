@@ -60,7 +60,7 @@
 					if (levelPart) {
 						let matches = levelPart.match(/\(lvl (\d+)\)/);
 						ctx.font = "bold 12pt customFont";
-						ctx.fillStyle = this.getFillStyleFromCombatLevelDifference(Game.currentPlayer.combatLevel, matches[1]);
+						ctx.fillStyle = getFillStyleFromCombatLevelDifference(Game.currentPlayer.combatLevel, matches[1]);
 						ctx.fillText(levelPart, rect.left + 10 + (~~ctx.measureText(label).width + 0.5), rect.top + (rect.height / 2));
 					}
 
@@ -99,7 +99,7 @@
 					ctx.save();
 					let matches = levelPart.match(/\(lvl (\d+)\)/);
 					ctx.font = "bold 12pt customFont";
-					ctx.fillStyle = this.getFillStyleFromCombatLevelDifference(Game.currentPlayer.combatLevel, matches[1]);	
+					ctx.fillStyle = getFillStyleFromCombatLevelDifference(Game.currentPlayer.combatLevel, matches[1]);	
 					ctx.fillText(levelPart, this.rect.left + 10 + (~~ctx.measureText(label).width + 0.5), this.rect.top + ((this.menuOptionHeight * i) + (this.menuOptionHeight / 2)));
 					ctx.restore();
 				}
@@ -232,22 +232,6 @@
 		setLeftclick: function(currentMousePos, obj) {
 			this.leftclickPos = currentMousePos;
 			this.leftclickMenuOption = obj;
-		},
-		getFillStyleFromCombatLevelDifference: function(playerCmb, enemyCmb) {
-			let difference = playerCmb - enemyCmb;
-			if (Math.abs(difference) < 10) {
-				if (difference > 0) {
-					return `rgb(${255 - (difference * 15)}, 255, 0)`
-				} else if (difference < 0) {
-					return `rgb(255, ${255 + (difference * 15)}, 0)`;
-				} else {
-					return "rgb(255, 255, 0)";
-				}
-			} else if (playerCmb > enemyCmb) {
-				return "#0f0";
-			} else {
-				return "#f22";
-			}
 		}
     };
     

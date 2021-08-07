@@ -59,23 +59,7 @@
         if (this.currentStock > 1)
             context.fillText(countToFriendly(this.currentStock), this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
 
-        // draw the icon
-        var itemWidth = this.item.spriteFrame.getCurrentFrame().width;
-        var itemHeight = this.item.spriteFrame.getCurrentFrame().height;
-
-        let spriteFrame = this.item.spriteFrame.getCurrentFrame();
-        let spriteMap = SpriteManager.getSpriteMapById(this.item.spriteFrame.spriteMapId);
-        if (spriteMap) {
-            context.drawImage(spriteMap, 
-                spriteFrame.left, 
-                spriteFrame.top, 
-                spriteFrame.width, 
-                spriteFrame.height, 
-                this.rect.left + (this.rect.width / 2) + buttonOffsetX - (itemWidth / 2), 
-                this.rect.top + (this.rect.height / 2) + buttonOffsetY - (itemHeight / 2), 
-                itemWidth, 
-                itemHeight);
-        }
+        this.item.draw(context, this.rect.left + (this.rect.width/2), this.rect.top + (this.rect.height/2));
 
         context.restore();
     }

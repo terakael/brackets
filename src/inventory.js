@@ -228,6 +228,7 @@ class Inventory {
 											action: "offer",
 											objectId: slot.item.id,
 											amount: intAmount,
+											slot: slot.id
 										});
 									}
 								});
@@ -241,6 +242,7 @@ class Inventory {
 						objectId: slot.item.id,
 						amount: offerAmounts[i],
 						label: `offer ${offerAmounts[i] == -1 ? "all" : offerAmounts[i]} ${slot.item.name}`,
+						slot: slot.id
 					});
 				}
 

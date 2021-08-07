@@ -86,28 +86,32 @@
         // the sprite itself is drawn in the main room via the drawMap.
         // we still draw hitsplats and health bar here though.
         context.save();
-        context.setTransform(1, 0, 0, 1, 0, 0);
+        // context.setTransform(1, 0, 0, 1, 0, 0);
+
+        const scale = 0.5;
+        context.scale(scale, scale);
+        
         const frameHeight = this.spriteframes[this.currentAnimation].getCurrentFrame().height;
-        const scale = this.spriteframes[this.currentAnimation].scale.y;
+        const frameScale = this.spriteframes[this.currentAnimation].scale.y;
         if (this.deathTimer === 0)
-            this.drawHealthBar(context, (this.pos.x - xView + 2.5) * Game.scale, (this.pos.y - yView - (frameHeight * scale) - (10 * (1/Game.scale))) * Game.scale, this.currentHp, this.get("maxHp"));
+            this.drawHealthBar(context, (this.pos.x - xView + 2.5) * (1/scale), (this.pos.y - yView - (frameHeight * frameScale) - (10 * (1/(1/scale)))) * (1/scale), this.currentHp, this.get("maxHp"));
 
         const hitsplatPositions = [
             {x: this.pos.x - xView, y: this.pos.y - yView - 8},
-            {x: this.pos.x - xView, y: this.pos.y - yView - 16},
-            {x: this.pos.x - xView + 8, y: this.pos.y - yView - 12}
+            {x: this.pos.x - xView, y: this.pos.y - yView - 20},
+            {x: this.pos.x - xView + 12, y: this.pos.y - yView - 14}
         ]
 
         for (let i = 0; i < this.hitsplats.length; ++i) {
             if (this.hitsplats[i].lifetime > 0)
-                this.drawHitsplat(context, hitsplatPositions[i].x * Game.scale, hitsplatPositions[i].y * Game.scale, this.hitsplats[i]);
+                this.drawHitsplat(context, hitsplatPositions[i].x * (1/scale), hitsplatPositions[i].y * (1/scale), this.hitsplats[i]);
         }
 
         if (this.chatMessage != "") {
             context.font = "12pt customFont";
             context.textAlign = "center";
             context.fillStyle = "yellow"
-            context.fillText(this.chatMessage, (this.pos.x - xView) * Game.scale, (this.pos.y - yView - (frameHeight * scale) - (this.healthBarTimer > 0 ? 15 : 0)) * Game.scale);
+            context.fillText(this.chatMessage, (this.pos.x - xView) * (1/scale), (this.pos.y - yView - (frameHeight * frameScale) - (this.healthBarTimer > 0 ? 10 : 0)) * (1/scale));
         }
 
         context.restore();

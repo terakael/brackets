@@ -189,14 +189,17 @@
 		Player.prototype.draw = function(context, xView, yView) {
             if (this.deathSequence != true) {
                 context.save()
-                context.setTransform(1, 0, 0, 1, 0, 0);
+
+                const scale = 0.5;
+                context.scale(scale, scale);
+                
                 let healthBarOffset = this.inCombat ? (this.attackingFromRight ? 2.5 : -2.5) : 0;
-                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView + healthBarOffset) * Game.scale, (this.y - yView - this.height - (10 * (1/Game.scale))) * Game.scale, Math.min(this.currentHp, this.maxHp), this.maxHp);
+                var showingHealthBar = this.stats.drawHealthBar(context, (this.x - xView + healthBarOffset) * (1/scale), (this.y - yView - this.height - (10 * (1/(1/scale)))) * (1/scale), Math.min(this.currentHp, this.maxHp), this.maxHp);
                 if (this.chatMessage != "") {
                     context.font = "12pt customFont";
                     context.textAlign = "center";
                     context.fillStyle = "yellow"
-                    context.fillText(this.chatMessage, (this.x - xView) * Game.scale, (this.y - yView - this.height - (showingHealthBar ? 15 : 0)) * Game.scale);
+                    context.fillText(this.chatMessage, (this.x - xView) * (1/scale), (this.y - yView - this.height - (showingHealthBar ? 15 : 0)) * (1/scale));
                 }
 
                 const hitsplatPositions = [
@@ -207,7 +210,7 @@
         
                 for (let i = 0; i < this.hitsplats.length; ++i) {
                     if (this.hitsplats[i].lifetime > 0)
-                        this.drawHitsplat(context, hitsplatPositions[i].x * Game.scale, hitsplatPositions[i].y * Game.scale, this.hitsplats[i]);
+                        this.drawHitsplat(context, hitsplatPositions[i].x * (1/scale), hitsplatPositions[i].y * (1/scale), this.hitsplats[i]);
                 }
 
                 if (this.actionBubbleTimer > 0) {
@@ -215,14 +218,16 @@
                         
                         context.save();
                         context.globalAlpha = 0.7;
-                        SpriteManager.getSpriteFrameById(555).draw(context, (this.x - xView) * Game.scale, (this.y - yView - 32 - 8) * Game.scale);
+                        // SpriteManager.getSpriteFrameById(555).draw(context, (this.x - xView) * gameScale, (this.y - yView - 32 - 8) * gameScale);
+                        SpriteManager.getSpriteFrameById(555).draw(context, (this.x - xView) * (1/scale), (this.y - yView - 32 - 8) * (1/scale));
                         context.restore();
 
                         context.save();
-                        context.scale(0.5, 0.5);
+                        const spriteScale = 0.7;
+                        context.scale(spriteScale, spriteScale);
 
                         // 555 is the skill bubble sprite frame
-                        this.actionBubbleSprite.draw(context, (this.x - xView) * (Game.scale*2), (this.y - yView - 32 - 8) * (Game.scale*2));
+                        this.actionBubbleSprite.draw(context, (this.x - xView) * ((1/scale)*(1/spriteScale)), (this.y - yView - 32 - 8) * ((1/scale)*(1/spriteScale)));
                         context.restore();
                     }
                 }
@@ -392,6 +397,9 @@
                     if (animations[part]["color"]) {
                         this.spriteframes.get(part)[type].color = animations[part]["color"];
                     }
+                    // if (part === "ONHAND") {
+                    //     this.spriteframes.get(part)[type].shadowColor = "yellow";
+                    // }
                     this.spriteframes.get(part)[type].currentFrame=this.getBaseSpriteFrame().currentFrame;
                 }
             }

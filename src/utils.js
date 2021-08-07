@@ -165,4 +165,21 @@
       clamp = function(val, min, max) {
         return val > max ? max : val < min ? min : val;
       }
+
+      getFillStyleFromCombatLevelDifference = function(playerCmb, enemyCmb) {
+        let difference = playerCmb - enemyCmb;
+        if (Math.abs(difference) < 10) {
+            if (difference > 0) {
+                return `rgb(${255 - (difference * 15)}, 255, 0)`
+            } else if (difference < 0) {
+                return `rgb(255, ${255 + (difference * 15)}, 0)`;
+            } else {
+                return "rgb(255, 255, 0)";
+            }
+        } else if (playerCmb > enemyCmb) {
+            return "#0f0";
+        } else {
+            return "#f22";
+        }
+    }
 }());

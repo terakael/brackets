@@ -1,10 +1,10 @@
 class DialogueOptionResponse {    
     constructor() {
-        this.action = "dialogue_option";
+        this.action = "show_dialogue_options";
     }
 
     process(obj) {
-        Game.activeUiWindow = new Game.DialogueOptionWindow(Game.worldCameraRect, obj.options);
+        Game.activeUiWindow = new DialogueOptionWindow(Game.worldCameraRect, obj.options);
     }
 }
 

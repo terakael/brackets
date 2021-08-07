@@ -1,10 +1,10 @@
 class DialogueResponse {    
     constructor() {
-        this.action = "dialogue";
+        this.action = "show_dialogue";
     }
 
     process(obj) {
-        Game.activeUiWindow = obj.dialogue === "" ? null : new Game.DialogueWindow(Game.worldCameraRect, obj);
+        Game.activeUiWindow = obj.dialogue === "" ? null : new DialogueWindow(Game.worldCameraRect, obj);
     }
 }
 

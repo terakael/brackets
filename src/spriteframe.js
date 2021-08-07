@@ -13,6 +13,7 @@ class SpriteFrame {
 		this.anchor = {x: obj.anchorX || 0.5, y: obj.anchorY || 0.5};
 		this.scale = {x: obj.scaleX || 1, y: obj.scaleY || 1};
 		this.color = obj.color;
+		this.shadowColor = null;
 
 		this.frames = [];
 		for (var i = 0; i < this.frameCount; ++i) {
@@ -47,18 +48,26 @@ class SpriteFrame {
 	
 	draw(ctx, x, y, color) {
 		color = color || this.color;
-		let spriteMap = SpriteManager.getSpriteMapById(this.spriteMapId);
-		if (!spriteMap)
-			return; // maybe sprite map hasn't finished loading yet
+		let spriteMap = null;
 
 		if (color) {
 			let spriteMapObj = SpriteManager.getSpriteMapById(this.spriteMapId, color);
 			if (spriteMapObj)
 				spriteMap = spriteMapObj;
+		} else {
+			spriteMap = SpriteManager.getSpriteMapById(this.spriteMapId);
 		}
 
 		if (spriteMap) {
+			if (this.shadowColor) {
+			    ctx.save();
+			    ctx.shadowBlur = 40;
+			    ctx.shadowColor = this.shadowColor;
+			}
 			this.drawImage(ctx, x, y, spriteMap);
+			if (this.shadowColor) {
+				ctx.restore();
+			}
 		}
 	}
 

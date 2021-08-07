@@ -1,12 +1,12 @@
-(function() {
-    function DialogueWindow(worldRect, obj) {
+class DialogueWindow {
+    constructor(worldRect, obj) {
         this.dialogue = obj.dialogue;
         this.speaker = obj.speaker;
 
         this.onResize(worldRect);
     }
     
-    DialogueWindow.prototype.draw = function(context, xview, yview) {
+    draw(context, xview, yview) {
         context.save();
 
         context.fillStyle = "rgba(0, 0, 0, 0.6)";
@@ -34,23 +34,23 @@
         context.restore();
     }
 
-    DialogueWindow.prototype.process = function(dt) {
+    process(dt) {
 
     }
 
-    DialogueWindow.prototype.onMouseDown = function(e) {
+    onMouseDown(e) {
         if (!this.rect.pointWithin(Game.mousePos)) {
             Game.activeUiWindow = null;
         } else {
-            Game.ws.send({action: "dialogue"});
+            Game.ws.send({action: "next_dialogue"});
         }
     }
 
-    DialogueWindow.prototype.onMouseUp = function(e) {
+    onMouseUp(e) {
 
     }
 
-    DialogueWindow.prototype.onResize = function(worldRect) {
+    onResize(worldRect) {
         let uiWidth = worldRect.width / 1.25;
         this.lines = wordWrap(this.dialogue, uiWidth / 15).split('\n');
 
@@ -60,6 +60,4 @@
         this.rect = new Rectangle(uix, uiy, uiWidth, uiHeight);
         
     }
-
-    Game.DialogueWindow = DialogueWindow;
-}());
+}
