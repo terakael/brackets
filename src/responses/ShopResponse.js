@@ -1,6 +1,6 @@
 class ShopResponse {    
     constructor() {
-        this.action = "shop";
+        this.action = "show_shop";
     }
 
     process(obj) {

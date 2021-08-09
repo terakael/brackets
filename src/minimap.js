@@ -59,32 +59,6 @@
 					if (Math.abs(diffx) + (frame.width * spriteFrame.scale.x) > 500 || Math.abs(diffy) + (frame.height * spriteFrame.scale.y) > 500)
 					 	continue;
 
-					
-					// let dx = ((this.rect.left + (this.rect.width/2)) + (diffx/this.radius*(this.rect.width/2))) - 2.5;
-					// let sx = 0;
-					// if (dx < this.rect.left) {
-					// 	sx = (this.rect.left - dx) / (frame.width * spriteFrame.scale.x);
-					// }
-					// let dy = ((this.rect.top + (this.rect.height/2)) + (diffy/this.radius*(this.rect.width/2))) - 2.5;
-					// let sy = 0;
-					// if (dy < this.rect.top) {
-					// 	sy = (this.rect.top - dy) / (frame.height * spriteFrame.scale.y);
-					// }
-
-					// let sw = (frame.width * spriteFrame.scale.x);
-					// if (dx + (frame.width * spriteFrame.scale.x) > this.rect.right)
-					// 	sw = (this.rect.right - dx) / (frame.width * spriteFrame.scale.x);
-
-					// let sh = frame.height;
-					// if (dy + frame.height > this.rect.bottom) {
-					// 	sh = (this.rect.bottom - dy) / (frame.height * spriteFrame.scale.y);
-					// }
-
-					// spriteFrame.drawDetailed(context, sx, sy, sw, sh, 
-					// 	dx + (sx * (frame.width * spriteFrame.scale.x)), 
-					// 	dy + (sy * (frame.height * spriteFrame.scale.y)), 
-					// 	sw, 
-					// 	sh);
 					spriteFrame.draw(context, 
 						((this.rect.left + (this.rect.width/2)) + (diffx/this.radius*(this.rect.width/2))) + 2.5, 
 						((this.rect.top + (this.rect.height/2)) + (diffy/this.radius*(this.rect.width/2))) + 2.5);
@@ -147,6 +121,9 @@
 			this.npcs = npcs;
 		},
 		onMouseDown: function(button) {
+			if (button !== 0)
+				return;	// left-click only
+			
 			var x = ((Game.mousePos.x - (this.rect.left + (this.rect.width/2))) / (this.rect.width/2)) * this.radius;
 			var y = ((Game.mousePos.y - (this.rect.top + (this.rect.height/2))) / (this.rect.height/2)) * this.radius;
 

@@ -48,12 +48,12 @@
             // right/attack right: onhand, legs, body, head, offhand
             // TODO: daggers should always be drawn on the top?
             this.drawOrders = new Map();
-            this.drawOrders.set("down", ["CAPE","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","NECKLACE","HEAD","BEARD","HAIR","HEADWEAR","OFFHAND","ONHAND"]);
-            this.drawOrders.set("up", ["LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT", "BEARD","HEAD","BODYWEAR", "HAIR","NECKLACE","CAPE","HEADWEAR", "ONHAND","OFFHAND"]);
-            this.drawOrders.set("left", ["ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","OFFHAND"]);
-            this.drawOrders.set("attack_left", ["ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","OFFHAND"]);
-            this.drawOrders.set("right", ["OFFHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","ONHAND"]);
-            this.drawOrders.set("attack_right", ["OFFHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","ONHAND"]);
+            this.drawOrders.set("down", ["CAPE","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","NECKLACE","HEAD","BEARD","HAIR","HEADWEAR","GLOVES","OFFHAND","ONHAND"]);
+            this.drawOrders.set("up", ["LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT", "BEARD","HEAD","BODYWEAR", "HAIR","NECKLACE","CAPE","HEADWEAR","GLOVES","ONHAND","OFFHAND"]);
+            this.drawOrders.set("left", ["ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES","OFFHAND"]);
+            this.drawOrders.set("attack_left", ["ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES","OFFHAND"]);
+            this.drawOrders.set("right", ["OFFHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES","ONHAND"]);
+            this.drawOrders.set("attack_right", ["OFFHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES","ONHAND"]);
 
             this.setAnimations(obj.baseAnimations);
             this.setEquipAnimations(obj.equipAnimations);
@@ -528,6 +528,10 @@
             if (!this.inCombat) {
                 this.currentAnimation = this.attackingFromRight ? "left" : "right";
             }
+        }
+
+        Player.prototype.getTileId = function() {
+            return xyToTileId(~~this.x, ~~this.y);
         }
 
 		// add "class" Player to our Game object
