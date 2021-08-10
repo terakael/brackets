@@ -104,8 +104,10 @@ class ArtisanTasksShop {
 }
 
 class ArtisanEnhanceShopSlot {
-    constructor(item) {
-        this.item = item;
+    constructor(itemId, enhancedItemId, points) {
+        this.item = SpriteManager.getItemById(itemId);
+        this.enhancedItem = SpriteManager.getItemById(enhancedItemId);
+        this.numPoints = points;
     }
 
     setRect(x, y, w, h) {
@@ -115,11 +117,91 @@ class ArtisanEnhanceShopSlot {
     draw(context) {
         context.save();
 
-        const drawItem = SpriteManager.getItemById(this.item.itemId);
-        if (drawItem) {
-            drawItem.spriteFrame.draw(context, this.rect.left + (this.rect.width / 2), this.rect.top + (this.rect.height / 2));
+        if (this.rect.pointWithin(Game.mousePos)) {
+            context.fillStyle = "#111";
+            context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
+
+            Game.ContextMenu.setLeftclick(Game.mousePos, {
+                action: "enhance_item", 
+                label: `enhance 1 ${this.item.name}`,
+                itemId: this.item.id,
+                amount: 1,
+                tileId: Game.currentPlayer.getTileId()
+            });
         }
+        
+        this.item.spriteFrame.draw(context, this.rect.left + (this.rect.width * 0.25), this.rect.top + (this.rect.height / 2));
+
+        context.fillStyle = "#600";
+        context.fillRect(this.rect.left + (this.rect.width * 0.5) - 10, this.rect.top + (this.rect.height * 0.5 - 2.5), 15, 5);
+
+        context.beginPath();
+        context.moveTo(this.rect.left + (this.rect.width * 0.5), this.rect.top + (this.rect.height * 0.5 - 5));
+        context.lineTo(this.rect.left + (this.rect.width * 0.5) + 12.5, this.rect.top + (this.rect.height * 0.5));
+        context.lineTo(this.rect.left + (this.rect.width * 0.5), this.rect.top + (this.rect.height * 0.5 + 5));
+        context.fill();
+        
+        this.enhancedItem.spriteFrame.draw(context, this.rect.left + (this.rect.width * 0.75), this.rect.top + (this.rect.height / 2));
+
+        context.textAlign = "center";
+        context.font = "12px customFont";
+        context.fillStyle = "white";
+
+        context.textBaseline = "top";
+        context.fillText(this.enhancedItem.name, this.rect.left + (this.rect.width / 2), this.rect.top);
+
+        context.textBaseline = "bottom";
+        context.fillText(`${this.numPoints} points`, this.rect.left + (this.rect.width / 2), this.rect.bottom);
+
         context.restore();
+    }
+
+    onMouseDown(e) {
+        switch (e.button) {
+        case 0: // left
+            if (!Game.ContextMenu.active)
+                    Game.ws.send(Game.ContextMenu.leftclickMenuOption);
+            break;
+        case 2: // right
+            let options = [];
+			options.push(Game.ContextMenu.leftclickMenuOption);
+
+            const amounts = [5, 10, "X", -1];
+            for (let i = 0; i < amounts.length; ++i) {
+                if (amounts[i] === "X") {
+                    // withdraw x
+                    options.push({
+                        label: `enhance X ${this.item.name}`,
+                        callback: () => {
+                            ChatBox.requireInput("amount to enhance", /[0-9km]/).then(amount => {
+                                const intAmount = friendlyToCount(amount);
+                                if (intAmount > 0) {
+                                    Game.ws.send({
+                                        action: "enhance_item",
+                                        amount: intAmount,
+                                        itemId: this.item.id,
+                                        tileId: Game.currentPlayer.getTileId()
+                                    });
+                                }
+                            });
+                        }
+                    });
+                    continue;
+                }
+
+                options.push({
+                    action: "enhance_item",
+                    label: `enhance ${amounts[i] == -1 ? "all" : amounts[i]} ${this.item.name}`,
+                    amount: amounts[i],
+                    itemId: this.item.id,
+                    tileId: Game.currentPlayer.getTileId()
+                });
+            }
+
+            Game.ContextMenu.hide();// clear all the previous actions
+            Game.ContextMenu.push(options);
+            break;
+        }
     }
 }
 
@@ -127,7 +209,16 @@ class ArtisanEnhanceShop {
     constructor(enhanceableItems) {
         this.tabName = "enhance";
         this.enhanceableItems = [];
-        enhanceableItems.forEach(item => this.enhanceableItems.push(new ArtisanEnhanceShopSlot(item)));
+
+        enhanceableItems.forEach(item => {
+            this.enhanceableItems.push(new ArtisanEnhanceShopSlot(item.itemId, item.enhancedItemId, item.numPoints));
+        });
+        // for (const [itemId, enhancedItemId] of Object.entries(enhanceableItems)) {
+        //     this.enhanceableItems.push(new ArtisanEnhanceShopSlot(Number(itemId), Number(enhancedItemId)));
+        // }
+
+        // while (this.enhanceableItems.length < 10)
+        //     this.enhanceableItems.push(new ArtisanEnhanceShopSlot(0, 0));
     }
 
     setRect(x, y, w, h) {
@@ -136,26 +227,33 @@ class ArtisanEnhanceShop {
         //     this.enhanceableItems[i].setRect(this.rect.left + ((i * 60) + 5) + 40, this.rect.top + 5 + 16 + 20, 32, 32);
         // }
 
-        const itemWidth = 60;
-        const itemsPerRow = ~~(w/itemWidth);
-        const buffer = (w - (itemsPerRow * itemWidth)) / 2;
+        const itemWidth = 120;
+        const itemHeight = 60;
+        const itemsPerRow = ~~((w - 20)/itemWidth);
+        const buffer = (w - (itemsPerRow * itemWidth) - (itemsPerRow * 10) + 10) / 2;
         for (let i = 0; i < this.enhanceableItems.length; ++i) {
-            this.enhanceableItems[i].setRect(x + ((i % itemsPerRow) * itemWidth) + buffer, y + (~~(i/itemsPerRow) * itemWidth) + 20, itemWidth, itemWidth);
+            this.enhanceableItems[i].setRect(x + ((i % itemsPerRow) * itemWidth) + buffer + ((i % itemsPerRow) * 10), y + (~~(i/itemsPerRow) * itemHeight) + (~~(i/itemsPerRow) * 10) + 20, itemWidth, itemHeight);
         }
     }
 
     draw(context) {
         context.save();
 
-        context.textAlign = "center";
-        context.font = "17px customFont";
-        context.textBaseline = "middle";
-        context.fillStyle = "white";
-        context.fillText("enhance", this.rect.left + (this.rect.width / 2), this.rect.top + (this.rect.height / 2));
-
         this.enhanceableItems.forEach(item => item.draw(context));
         
+        if (this.enhanceableItems.length === 0) {
+            context.textAlign = "center";
+            context.font = "17px customFont";
+            context.textBaseline = "middle";
+            context.fillStyle = "white";
+            context.fillText("you have nothing to enhance.", this.rect.left + (this.rect.width / 2), this.rect.top + (this.rect.height / 2));
+        }
+        
         context.restore();
+    }
+
+    onMouseDown(e) {
+        this.enhanceableItems.forEach(item => item.onMouseDown(e));
     }
 }
 

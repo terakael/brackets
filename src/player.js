@@ -50,10 +50,11 @@
             this.drawOrders = new Map();
             this.drawOrders.set("down", ["CAPE","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","NECKLACE","HEAD","BEARD","HAIR","HEADWEAR","GLOVES","OFFHAND","ONHAND"]);
             this.drawOrders.set("up", ["LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT", "BEARD","HEAD","BODYWEAR", "HAIR","NECKLACE","CAPE","HEADWEAR","GLOVES","ONHAND","OFFHAND"]);
-            this.drawOrders.set("left", ["ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES","OFFHAND"]);
-            this.drawOrders.set("attack_left", ["ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES","OFFHAND"]);
+            // this.drawOrders.set("left", ["ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES","OFFHAND"]);
+            // this.drawOrders.set("attack_left", ["ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES","OFFHAND"]);
             this.drawOrders.set("right", ["OFFHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES","ONHAND"]);
             this.drawOrders.set("attack_right", ["OFFHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES","ONHAND"]);
+            this.setDrawOrderForWeaponType(obj.weaponType === "DAGGERS");
 
             this.setAnimations(obj.baseAnimations);
             this.setEquipAnimations(obj.equipAnimations);
@@ -488,6 +489,11 @@
                 this.setAnimations(obj.baseAnimations);
             }
 
+            if (obj.hasOwnProperty("weaponType")) {
+                // this.weaponType = obj.weaponType;
+                this.setDrawOrderForWeaponType(obj.weaponType === "DAGGERS");
+            }
+
             if (obj.hasOwnProperty("respawn")) {
                 this.deathSequence = false;
                 this.combatOffsetX = 0;
@@ -504,6 +510,11 @@
                 this.getBaseSpriteFrame().currentFrame = 1;
                 this.getBaseSpriteFrame().forwards = true;
             }
+        }
+
+        Player.prototype.setDrawOrderForWeaponType = function(isDaggers) {
+            this.drawOrders.set("left", [isDaggers ? "OFFHAND" : "ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES",isDaggers?"ONHAND":"OFFHAND"]);
+            this.drawOrders.set("attack_left", [isDaggers ? "OFFHAND" : "ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES",isDaggers?"ONHAND":"OFFHAND"]);
         }
 
         Player.prototype.loadAttackStyles = function(obj) {
