@@ -74,32 +74,153 @@ class ArtisanTasksShopSlot {
     }
 }
 
-class ArtisanTasksShop {
-    constructor(taskOptions) {
-        this.tabName = "task";
-        this.taskOptions = [];
-        taskOptions.forEach(taskOption => this.taskOptions.push(new ArtisanTasksShopSlot(taskOption)));
+class ArtisanTaskShopBlockedTask {
+    constructor(id, itemId) {
+        this.id = id;
+        this.item = itemId === 0 ? null : SpriteManager.getItemById(itemId);
     }
 
     setRect(x, y, w, h) {
         this.rect = new Rectangle(x, y, w, h);
 
-        for (let i = 0; i < this.taskOptions.length; ++i) {
-            this.taskOptions[i].setRect(this.rect.left + ((i%2) * this.rect.width/2), this.rect.top + 30 + (~~(i/2) * 45), this.rect.width / 2, 45);
-        }
+        const unblockRectWidth = 100;
+        this.unblockRect = new Rectangle(this.rect.right - unblockRectWidth, this.rect.top + 2, unblockRectWidth, h - 4);
     }
 
     draw(context) {
         context.save();
 
-        context.textAlign = "center";
-        context.font = "17px customFont";
+        const isHover = this.rect.pointWithin(Game.mousePos);
+        const isHoverUnblockButton = this.unblockRect.pointWithin(Game.mousePos);
+
+        context.textAlign = "left";
+        context.textBaseline = "middle";
+        context.font = "15px customFont";
+
+        if (isHover) {
+            context.fillStyle = "#111";
+            context.fillRect(this.rect.left, this.rect.top, this.rect.width, this.rect.height);
+        }
+
+        if (this.item) {
+            context.fillStyle = "white";
+            context.fillText(`${this.id}. ${this.item.name}`, this.rect.left + 10, this.rect.top + (this.rect.height / 2));
+
+            context.textAlign = "center";
+            context.fillText("unblock", this.unblockRect.left + (this.unblockRect.width / 2), this.unblockRect.top + (this.unblockRect.height / 2));
+
+            context.strokeStyle = "red";
+            context.lineWidth = isHoverUnblockButton ? 3 : 1;
+            context.strokeRect(this.unblockRect.left, this.unblockRect.top, this.unblockRect.width, this.unblockRect.height);
+        } else {
+            context.fillStyle = "#999";
+            context.fillText(`${this.id}. - none -`, this.rect.left + 10, this.rect.top + (this.rect.height / 2));
+        }
+        
+        context.restore();
+    }
+
+    onMouseDown(e) {
+        switch (e.button) {
+            case 0: // left
+            if (!Game.ContextMenu.active && this.unblockRect.pointWithin(Game.mousePos) && this.item) {
+                Game.ws.send({
+                    action: "unblock_artisan_task",
+                    itemId: this.item.id,
+                    tileId: Game.currentPlayer.getTileId()
+                });
+            }
+            
+            break;
+        }
+    }
+}
+
+class ArtisanTasksShop {
+    constructor(obj) {
+        this.tabName = "task";
+
+        this.assignedItem = obj.currentTaskItemId === 0 ? null : SpriteManager.getItemById(obj.currentTaskItemId);
+        this.numAssigned = obj.numAssigned;
+        this.numCompleted = obj.numCompleted;
+
+        this.blockedTaskItems = [];
+        for (let [key, value] of Object.entries(obj.blockedTaskItemIds)) {
+            this.blockedTaskItems.push(new ArtisanTaskShopBlockedTask(Number(key), Number(value)));
+        }
+
+        this.currentTaskTitleYOffset = 50;
+        this.blockedTasksTitleYOffset = 150;
+    }
+
+    setRect(x, y, w, h) {
+        this.rect = new Rectangle(x, y, w, h);
+
+        const buttonWidth = 130;
+        this.blockTaskButtonRect = new Rectangle(this.rect.right - 10 - buttonWidth, this.rect.top + this.currentTaskTitleYOffset, buttonWidth, 20);
+        this.skipTaskButtonRect = new Rectangle(this.rect.right - 10 - buttonWidth, this.blockTaskButtonRect.bottom + 5, buttonWidth, 20);
+
+        const blockedTaskRectHeight = 25;
+        this.blockedTaskItems.forEach(task => task.setRect(this.rect.left + 10, this.rect.top + this.blockedTasksTitleYOffset + (task.id * blockedTaskRectHeight), this.rect.width - 20, blockedTaskRectHeight));
+    }
+
+    draw(context) {
+        context.save();
+
+        context.textAlign = "left";
         context.textBaseline = "middle";
         context.fillStyle = "white";
 
-        this.taskOptions.forEach(option => option.draw(context));
-        
+        context.font = "20px customFont";
+        context.fillText("current task:", this.rect.left + 10, this.rect.top + this.currentTaskTitleYOffset);
+
+        if (this.assignedItem) {
+            context.font = "15px customFont";
+            context.fillText(`-> ${this.assignedItem.name} (${this.numCompleted}/${this.numAssigned} completed)`, this.rect.left + 30, this.rect.top + this.currentTaskTitleYOffset + 25);
+
+            context.strokeStyle = "red";
+            context.lineWidth = this.blockTaskButtonRect.pointWithin(Game.mousePos) ? 3 : 1;
+            context.strokeRect(this.blockTaskButtonRect.left, this.blockTaskButtonRect.top, this.blockTaskButtonRect.width, this.blockTaskButtonRect.height);
+
+            context.lineWidth = this.skipTaskButtonRect.pointWithin(Game.mousePos) ? 3 : 1;
+            context.strokeRect(this.skipTaskButtonRect.left, this.skipTaskButtonRect.top, this.skipTaskButtonRect.width, this.skipTaskButtonRect.height);
+
+            context.textAlign = "center";
+            context.fillStyle = "white";
+            context.fillText("block (100 points)", this.blockTaskButtonRect.left + (this.blockTaskButtonRect.width / 2), this.blockTaskButtonRect.top + (this.blockTaskButtonRect.height / 2));
+            context.fillText("skip (30 points)", this.skipTaskButtonRect.left + (this.skipTaskButtonRect.width / 2), this.skipTaskButtonRect.top + (this.skipTaskButtonRect.height / 2));
+        } else {
+            context.font = "15px customFont";
+            context.fillStyle = "#999";
+            context.fillText("-> no task currently assigned.", this.rect.left + 30, this.rect.top + this.currentTaskTitleYOffset + 25);
+        }
+
+        context.textAlign = "left";
+        context.font = "20px customFont";
+        context.fillText("blocked tasks:", this.rect.left + 10, this.rect.top + this.blockedTasksTitleYOffset);
+
+        this.blockedTaskItems.forEach(item => item.draw(context));
         context.restore();
+    }
+
+    onMouseDown(e) {
+        this.blockedTaskItems.forEach(item => item.onMouseDown(e));
+        
+        switch (e.button) {
+            case 0: // left
+                if (!Game.ContextMenu.active && this.blockTaskButtonRect.pointWithin(Game.mousePos)) {
+                    Game.ws.send({
+                        action: "block_artisan_task",
+                        tileId: Game.currentPlayer.getTileId()
+                    });
+                } else if (!Game.ContextMenu.active && this.skipTaskButtonRect.pointWithin(Game.mousePos)) {
+                    Game.ws.send({
+                        action: "skip_artisan_task",
+                        tileId: Game.currentPlayer.getTileId()
+                    });
+                }
+            break;
+        }
     }
 }
 
@@ -397,7 +518,7 @@ class ArtisanShop {
 
             case "task": // fall through
             default:
-                this.selectedShop = new ArtisanTasksShop(obj.taskOptions);
+                this.selectedShop = new ArtisanTasksShop(obj);
                 break;
         }
         
