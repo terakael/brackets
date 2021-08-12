@@ -195,6 +195,7 @@ class ArtisanTasksShop {
             context.fillText("-> no task currently assigned.", this.rect.left + 30, this.rect.top + this.currentTaskTitleYOffset + 25);
         }
 
+        context.fillStyle = "white";
         context.textAlign = "left";
         context.font = "20px customFont";
         context.fillText("blocked tasks:", this.rect.left + 10, this.rect.top + this.blockedTasksTitleYOffset);
