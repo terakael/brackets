@@ -416,10 +416,10 @@ class ArtisanItemShopSlot {
         context.fillStyle = "white";
 
         context.textBaseline = "top";
-        context.fillText(this.item.name, this.rect.left + (this.rect.width / 2), this.rect.top);
+        context.fillText(this.item.name, this.rect.left + (this.rect.width / 2), this.rect.top + 10);
 
         context.textBaseline = "bottom";
-        context.fillText(`${this.numPoints} points`, this.rect.left + (this.rect.width / 2), this.rect.bottom);
+        context.fillText(`${this.numPoints} points`, this.rect.left + (this.rect.width / 2), this.rect.bottom - 10);
 
         context.restore();
     }
@@ -465,7 +465,7 @@ class ArtisanItemShop {
     setRect(x, y, w, h) {
         this.rect = new Rectangle(x, y, w, h);
 
-        const itemWidth = 60;
+        const itemWidth = 80;
         const itemsPerRow = ~~(w/itemWidth);
         const buffer = (w - (itemsPerRow * itemWidth)) / 2;
         for (let i = 0; i < this.shopStock.length; ++i) {
