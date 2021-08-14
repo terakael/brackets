@@ -503,8 +503,6 @@ class ArtisanShop {
         this.name = "alaina's artisanry";
         this.points = obj.points;
 
-        console.log(obj);
-
         this.tabs = [];
         obj.tabs.forEach(name => this.tabs.push(new ArtisanShopTabs(name)));
 

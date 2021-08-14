@@ -44,7 +44,7 @@
             this.drawOrders = new Map();
             this.drawOrders.set("down", ["CAPE","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","NECKLACE","HEAD","BEARD","HAIR","HEADWEAR","GLOVES","OFFHAND","ONHAND"]);
             this.drawOrders.set("up", ["LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT", "BEARD","HEAD","BODYWEAR", "HAIR","NECKLACE","CAPE","HEADWEAR","GLOVES","ONHAND","OFFHAND"]);
-            this.drawOrders.set("right", ["OFFHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES","ONHAND"]);
+            this.drawOrders.set("right", ["OFFHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","GLOVES","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","ONHAND"]);
             this.drawOrders.set("attack_right", ["OFFHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES","ONHAND"]);
             this.setDrawOrderForWeaponType(obj.weaponType === "DAGGERS");
 
