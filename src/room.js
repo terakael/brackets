@@ -418,7 +418,7 @@
                 y: this.npcs[i].pos.y - (this.npcs[i].deathTimer * 32),
                 sprite: [this.npcs[i].getCurrentSpriteFrame()],
                 type: "npc",
-                leftclickOption: this.npcs[i].get("leftclickOption"),
+                leftclickOption: this.npcs[i].instanceId === Game.currentPlayer.id ? 64 : this.npcs[i].get("leftclickOption"),
                 label: this.npcs[i].getLeftclickLabel(),
                 transparency: Math.max(1 - this.npcs[i].deathTimer, 0.01)
             });

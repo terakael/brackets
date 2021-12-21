@@ -303,7 +303,7 @@ $(function () {
 
                                         // i guess if it's unusable you shouldn't be able to examine it either.
                                         // shit like walls
-                                        // if (!unusable) {
+                                        if (!unusable) {
                                             Game.ContextMenu.push([{ 
                                                     action: "examine", 
                                                     objectName: scenery.name, 
@@ -312,7 +312,7 @@ $(function () {
                                                     type: "scenery"
                                                 }
                                             ]);
-                                        // }
+                                        }
                                     }
                                 }
                             }
@@ -340,20 +340,34 @@ $(function () {
                                                     + (npc.get("leftclickOption") === 1 ? ` (lvl ${npc.get("cmb")})` : "")
                                     }]);
                                 } else {
-                                    if (npc.get("leftclickOption") != 0) {
+                                    const npcContextOptions = Game.ContextMenu.contextOptions.get("npc");
+                                    let otherOptions = npc.get("otherOptions")
+                                    if (npc.instanceId === Game.currentPlayer.id) {
+                                        // this is the player's pet; should have the "pick up" option first
+                                        // original left-click option gets combined with the other options
                                         Game.ContextMenu.push([{
-                                            action: Game.ContextMenu.getContextOptionById(npc.get("leftclickOption"), "npc").name,
+                                            action: "pick up",
                                             objectId: npc.instanceId,
                                             objectName: npc.get("name"),
-                                            type: "npc",
-                                            label: npc.getLeftclickLabel()
+                                            type: "npc"
                                         }]);
+                                        
+                                        otherOptions += npc.get("leftclickOption");
+                                    } else {
+                                        if (npc.get("leftclickOption") != 0) {
+                                            Game.ContextMenu.push([{
+                                                action: Game.ContextMenu.getContextOptionById(npc.get("leftclickOption"), "npc").name,
+                                                objectId: npc.instanceId,
+                                                objectName: npc.get("name"),
+                                                type: "npc",
+                                                label: npc.getLeftclickLabel()
+                                            }]);
+                                        }
                                     }
 
-                                    const npcContextOptions = Game.ContextMenu.contextOptions.get("npc");
                                     for (let j = 0; j < npcContextOptions.length; ++j) {
                                         const contextOption = npcContextOptions[j];
-                                        if (npc.get("otherOptions") & contextOption.id) {
+                                        if (otherOptions & contextOption.id) {
                                             Game.ContextMenu.push([{
                                                 action: contextOption.name, 
                                                 objectId: npc.instanceId, 
@@ -369,8 +383,7 @@ $(function () {
                                         objectId: npc.instanceId, 
                                         tileId: npc.instanceId,
                                         type: "npc"
-                                    }
-                                ]);
+                                    }]);
                                 }
                             }
                         }
