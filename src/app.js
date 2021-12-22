@@ -22,7 +22,8 @@ $(function () {
             items, 
             contextOptions, 
             statMap, 
-            expMap
+            expMap,
+            attackStyles
         } = response;
         
         if (success && action === "cached_resources") {
@@ -39,6 +40,7 @@ $(function () {
                 for (let [key, value] of Object.entries(expMap).sort((a, b) => b < a)) {
                     Game.expMap.set(Number(key), Number(value));
                 }
+                Game.attackStyles = attackStyles;
                 Game.LogonScreen.loading = false;
                 Game.LogonScreen.loadingText = null;
             });

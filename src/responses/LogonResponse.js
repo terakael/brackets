@@ -8,7 +8,6 @@ class LogonResponse {
         const canvas = document.getElementById("game")
 
         const player = new Game.Player(obj.playerDto);
-        player.loadAttackStyles(obj.attackStyles);
         player.setAttackStyle(obj.playerDto.attackStyleId);
 
         Game.cam = new Game.Camera(player.x, player.y, canvas.width - 250, canvas.height);

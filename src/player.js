@@ -38,7 +38,6 @@
             this.baseframes = new Map();// base character parts; shows if you're not equipping anything
             this.currentAnimation = "down";
             
-            this.attackStyles = {};
             this.attackStyle = 0;
 
             this.drawOrders = new Map();
@@ -509,16 +508,12 @@
             this.drawOrders.set("attack_left", [isDaggers ? "OFFHAND" : "ONHAND","LEGS","PANTS","SHOES","LEGWEAR","TORSO","SHIRT","BODYWEAR","HEAD","CAPE","HAIR","NECKLACE","BEARD","HEADWEAR","GLOVES",isDaggers?"ONHAND":"OFFHAND"]);
         }
 
-        Player.prototype.loadAttackStyles = function(obj) {
-            this.attackStyles = obj;
-        }
-
         Player.prototype.setAttackStyle = function(id) {
             this.attackStyle = id;
         }
 
         Player.prototype.getCurrentAttackStyle = function() {
-            return this.attackStyles[this.attackStyle];
+            return Game.attackStyles[this.attackStyle];
         }
 
         Player.prototype.setActionBubble = function(sprite) {
