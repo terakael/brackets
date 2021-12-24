@@ -340,15 +340,15 @@
         const glowingItemIndex = hoverItems.length ? this.groundItems.indexOf(hoverItems[hoverItems.length - 1]) : -1;
         
         for (let i = 0; i < this.groundItems.length; ++i) {
-            if (i === glowingItemIndex) {
-                ctx.save();
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = "red";
-            }
+            // if (i === glowingItemIndex) {
+            //     ctx.save();
+            //     ctx.shadowBlur = 10;
+            //     ctx.shadowColor = "red";
+            // }
             this.groundItems[i].draw(ctx, xview, yview, 0.5, 0.5);
-            if (i === glowingItemIndex) {
-                ctx.restore();
-            }
+            // if (i === glowingItemIndex) {
+            //     ctx.restore();
+            // }
         }
         ctx.restore();
 
@@ -495,7 +495,7 @@
                 if (!Game.activeUiWindow && mouseOver && (slotInUse && !unusable)) {
                     // draw the back-image
                     ctx.save();
-                    ctx.shadowBlur = 10;
+                    ctx.shadowBlur = 3;
                     ctx.shadowColor = "white";
                     for (let j = 0; j < value[i].sprite.length; ++j)
                         value[i].sprite[j].draw(ctx, value[i].x - xview, value[i].y - yview, value[i].sprite[j].color);

@@ -526,14 +526,17 @@ $(function () {
                 ctx.restore();
             }
 
+            let time = Game.time || "00:00";
             if (Game.displayFps) {
-                ctx.save();
-                ctx.textAlign = "right";
-                ctx.font = "15px customFont";
-                ctx.fillStyle = "yellow";
-                ctx.fillText(Game.fps, Game.worldCameraRect.width - 5, 10);
-                ctx.restore();
+                time = `${time} (${Game.fps}fps)`;
             }
+
+            ctx.save();
+            ctx.textAlign = "right";
+            ctx.font = "15px customFont";
+            ctx.fillStyle = "yellow";
+            ctx.fillText(time, Game.worldCameraRect.width - 5, 10);
+            ctx.restore();
 
             if (Game.activeUiWindow)
                 Game.activeUiWindow.draw(ctx);
