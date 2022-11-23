@@ -12,7 +12,10 @@ class AddResourcesResponse {
             SpriteManager.loadItems(resource.items);
 
         if (resource.groundTextures)
-            SpriteManager.loadGroundTextures(resource.groundTextures);
+            console.log(obj)
+            SpriteManager.loadGroundTextures(resource.groundTextures).done((tex) => {
+                Game.Room.loadTextureMaps(tex);
+            });
 
         if (resource.scenery)
             for (let i = 0; i < resource.scenery.length; ++i)
@@ -21,13 +24,7 @@ class AddResourcesResponse {
         if (resource.npcs)
             Game.Room.loadNpcs(resource.npcs);
 
-        SpriteManager.loadSpriteMaps(resource.spriteMaps).done(function() {
-            if (resource.groundTextureSpriteMaps) {
-                Game.Room.loadTextureMaps(resource.groundTextureSpriteMaps).done(function() {
-                    Game.Room.saveGroundTexturesToCanvas();
-                });
-            }
-        });
+        SpriteManager.loadSpriteMaps(resource.spriteMaps);
     }
 }
 

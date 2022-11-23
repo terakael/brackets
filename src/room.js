@@ -166,66 +166,72 @@
         }
     };
 
-    Room.prototype.loadTextureMaps = function(spriteMapIds) {
+    Room.prototype.loadTextureMaps = function(loadedTextures) {
         // this.groundTexturesMap = new Map();
-        let postaction = function(){};
-        let groundTextures = SpriteManager.groundTextures;
-        
-        let spriteMaps = new Map();
-        for (let i = 0; i < groundTextures.length; ++i) {
-            if (!spriteMapIds.includes(groundTextures[i].spriteMapId))
-                continue;
+        // let postaction = function(){};
 
-            if (!spriteMaps.has(groundTextures[i].spriteMapId))
-                spriteMaps.set(groundTextures[i].spriteMapId, SpriteManager.getSpriteMapById(groundTextures[i].spriteMapId));
-        }
+        this.groundTexturesMap = new Map(
+            SpriteManager.groundTextures.map(tex => {
+                return [tex.id, tex.img];
+            })
+        );
 
-        let loadedImages = 0;
-        let that = this;
-        spriteMaps.forEach(function(spriteMap, spriteMapId, map) {
-            
+        this.saveGroundTexturesToCanvas();
 
-            let imgCanvas = document.createElement("canvas");
-            let imgCtx = imgCanvas.getContext("2d");
-            imgCanvas.width = spriteMap.width;
-            imgCanvas.height = spriteMap.height;
-            imgCtx.width = spriteMap.width;
-            imgCtx.height = spriteMap.height;
-            imgCtx.drawImage(spriteMap, 0, 0);
+        // let loadedImages = 0;
+        // let that = this;
+        // loadedTextures.forEach((tex) => {
+        //     // let imgCanvas = document.createElement("canvas");
+        //     // let imgCtx = imgCanvas.getContext("2d");
+        //     // imgCanvas.width = tex.img.width;
+        //     // imgCanvas.height = tex.img.height;
+        //     // imgCtx.width = tex.img.width;
+        //     // imgCtx.height = tex.img.height;
+        //     // imgCtx.drawImage(tex.img, 0, 0);
 
-            let subImgCanvas = document.createElement("canvas");
-            subImgCanvas.width = 32;
-            subImgCanvas.height = 32;
-            subImgCtx = subImgCanvas.getContext("2d");
-            subImgCtx.width = 32;
-            subImgCtx.height = 32;
+        //     // let patternedImage = new Image();
+        //     // patternedImage.onload = function() {
+        //     //     let pat = imgCtx.createPattern(this, "repeat");
+        //     //     that.groundTexturesMap.set(tex.id, pat);
 
-            let loadedSubImages = 0;
-            let matchingGroundTextures = groundTextures.filter(e => e.spriteMapId == spriteMapId);
-            for (let i = 0; i < matchingGroundTextures.length; ++i) {
-                let groundTexture = matchingGroundTextures[i];
-                let imageData = imgCtx.getImageData(groundTexture.getCurrentFrame().left, groundTexture.getCurrentFrame().top, 32, 32);
-                subImgCtx.putImageData(imageData, 0, 0);
+        //     //     if (++loadedImages === loadedTextures.length)
+        //     //         postaction();
+        //     // }
+        //     // patternedImage.src = imgCanvas.toDataURL("image/png");
 
-                let subImg = new Image();
-                subImg.onload = function() {
-                    let pat = imgCtx.createPattern(this, "repeat");
-                    that.groundTexturesMap.set(groundTexture.id, pat);
+        //     // let subImgCanvas = document.createElement("canvas");
+        //     // subImgCanvas.width = 32;
+        //     // subImgCanvas.height = 32;
+        //     // subImgCtx = subImgCanvas.getContext("2d");
+        //     // subImgCtx.width = 32;
+        //     // subImgCtx.height = 32;
 
-                    if (++loadedSubImages === matchingGroundTextures.length) {
-                        if (++loadedImages === spriteMapIds.length)
-                            postaction();
-                    }
-                }
-                subImg.src = subImgCanvas.toDataURL("image/png");
-            }
-        });
+        //     // let loadedSubImages = 0;
+        //     // let matchingGroundTextures = SpriteManager.groundTextures.filter(e => e.id == tex.id);
+        //     // for (let i = 0; i < matchingGroundTextures.length; ++i) {
+        //     //     let groundTexture = matchingGroundTextures[i];
+        //     //     let imageData = imgCtx.getImageData(groundTexture.getCurrentFrame().left, groundTexture.getCurrentFrame().top, 32, 32);
+        //     //     subImgCtx.putImageData(imageData, 0, 0);
 
-        return {
-            done: function(f) {
-                postaction = f || postaction;
-            }
-        }
+        //     //     let subImg = new Image();
+        //     //     subImg.onload = function() {
+        //     //         let pat = imgCtx.createPattern(this, "repeat");
+        //     //         that.groundTexturesMap.set(groundTexture.id, pat);
+
+        //     //         if (++loadedSubImages === matchingGroundTextures.length) {
+        //     //             if (++loadedImages === spriteMapIds.length)
+        //     //                 postaction();
+        //     //         }
+        //     //     }
+        //     //     subImg.src = subImgCanvas.toDataURL("image/png");
+        //     // }
+        // });
+
+        // return {
+        //     done: function(f) {
+        //         postaction = f || postaction;
+        //     }
+        // }
     };
 
     Room.prototype.loadNpcs = function(npcJson) {
@@ -278,13 +284,23 @@
         ctx.save();
 
         let lightsources = new Map();
+        let shadows = new Map();
         this.sceneryInstancesBySceneryId
             .forEach((tileIds, sceneryId) => {
                 const scenery = Game.sceneryMap.get(Number(sceneryId));
-                if (scenery && scenery.lightsourceRadius) {
-                    if (!lightsources.has(scenery.lightsourceRadius))
-                        lightsources.set(scenery.lightsourceRadius, []);
-                    lightsources.set(scenery.lightsourceRadius, lightsources.get(scenery.lightsourceRadius).concat(tileIds));
+                if (scenery) {
+                    if (scenery.lightsourceRadius) {
+                        if (!lightsources.has(scenery.lightsourceRadius))
+                            lightsources.set(scenery.lightsourceRadius, []);
+                        lightsources.set(scenery.lightsourceRadius, lightsources.get(scenery.lightsourceRadius).concat(tileIds));
+                    } else {
+                        // shadows
+                        const spriteFrame = SpriteManager.getSpriteFrameById(scenery.spriteFrameId);
+                        const frameWidth = spriteFrame.getCurrentFrame().width * 0.25; // halved because it's used as a radius
+                        if (!shadows.has(frameWidth))
+                            shadows.set(frameWidth, []);
+                        shadows.set(frameWidth, shadows.get(frameWidth).concat(tileIds));
+                    }
                 }
             });
 
@@ -297,6 +313,30 @@
                     lightsources.set(scenery.lightsourceRadius, lightsources.get(scenery.lightsourceRadius).concat(tileIds));
                 }
             });
+
+        // TODO move the shadows to the ground texture render as they don't move once set
+        if (Game.drawShadows) {
+            ctx.save();
+
+            ctx.filter = "none";
+
+            ctx.beginPath();
+            shadows.forEach((tileIds, radius) => {
+                tileIds.forEach(tileId => {
+                    const xy = tileIdToXY(tileId);
+                    ctx.moveTo(xy.x - xview, xy.y - yview);
+                    ctx.ellipse(xy.x - xview, xy.y - yview, radius, radius * 0.5, 0, 0, 2 * Math.PI);
+                });
+            });
+            ctx.clip();
+            ctx.closePath();
+            if (shadows.size) {
+                ctx.filter = `brightness(${Math.min(0.7, Game.brightness)})`;
+                ctx.drawImage(this.groundTextureCtx.canvas, minx-16, miny-16);
+                ctx.filter = "none";
+            }
+            ctx.restore();
+        }
 
         ctx.beginPath();
         lightsources.forEach((tileIds, radius) => {

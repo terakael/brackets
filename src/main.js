@@ -40,6 +40,7 @@ window.Game = {
     npcMap: new Map(),
     drawBoundingBoxes: false,
     drawGroundTextureOutline: false,
+    drawShadows: false,
     mousePos: { x: 0, y: 0 },
     activeUiWindow: null,
     enableSmoothing: false,

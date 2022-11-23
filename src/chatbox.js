@@ -85,15 +85,10 @@ class ChatBox {
 							break;
 						}
 
-						// case "::night": {
-						// 	Game.targetBrightness = 0.4;
-						// 	break;
-						// }
-
-						// case "::day": {
-						// 	Game.targetBrightness = 1;
-						// 	break;
-						// }
+						case "::shadows": {
+							Game.drawShadows = !Game.drawShadows;
+							break;
+						}
 
 						default: {
 							if (this.input) {

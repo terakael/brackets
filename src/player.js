@@ -411,7 +411,7 @@
             var diffx = this.destPos.x - this.x;
             var diffy = this.destPos.y - this.y;
             var mag = Math.getVectorMagnitude({x: diffx, y: diffy});
-            this.speed = mag / 0.6;
+            this.speed = mag / 0.5;
         }
 
         Player.prototype.handlePlayerUpdate = function(obj) {

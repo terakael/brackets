@@ -186,7 +186,7 @@
         const diffx = this.dest.x - this.pos.x;
         const diffy = this.dest.y - this.pos.y;
         const mag = Math.getVectorMagnitude({x: diffx, y: diffy});
-        this.speed = mag / 0.6;
+        this.speed = mag / 0.5;
     }
 
     NPC.prototype.handleNpcUpdate = function(obj) {
@@ -224,7 +224,7 @@
                 let idxReplaceHitsplat = this.hitsplats.map(e => e.lifetime).indexOf(hitsplatToReplace.lifetime);
                 this.hitsplats[idxReplaceHitsplat] = hitsplat;
             }
-            this.healthBarTimer = 5;
+            this.healthBarTimer = 3;
         }
 
         if (obj.hasOwnProperty("doAttack")) {

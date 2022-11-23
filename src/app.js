@@ -33,7 +33,7 @@ $(function () {
             SpriteManager.loadSpriteMaps(spriteMaps).done(function() {
                 SpriteManager.loadSpriteFrames(spriteFrames);
                 SpriteManager.loadItems(items);
-                Game.Room.loadTextureMaps(spriteMaps.map(e => e.id));
+                // Game.Room.loadTextureMaps(spriteMaps.map(e => e.id));
                 Game.ContextMenu.loadContextOptions(contextOptions);
                 Game.statMap = new Map(Object.entries(statMap));
                 Game.expMap = new Map();

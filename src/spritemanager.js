@@ -56,25 +56,64 @@ class SpriteManager {
 		}
 	}
 
-	static loadGroundTextures(textures) {
-		for (let i = 0; i < textures.length; ++i) {
-			SpriteManager.groundTextures.push(new SpriteFrame({
-				id: textures[i].id,
-				sprite_map_id: textures[i].spriteMapId,
-				x: textures[i].x,
-				y: textures[i].y,
-				w: 32,
-				h: 32,
-				margin: 0,
+	static loadGroundTextures(s) {
+		let postaction = function(){};
+		let loadedImages = 0;
 
-				// TODO in the future we could have animated ground textures e.g. water/lava
-				frame_count: 1,
-				framerate: 0,
-				animation_type_id: 1,
-				anchorX: 0.5,
-				anchorY: 0.5
-			}));
+		console.log(s)
+
+
+		let imgCanvas = document.createElement("canvas");
+		let imgCtx = imgCanvas.getContext("2d");
+		imgCanvas.width = 32;
+		imgCanvas.height = 32;
+		imgCtx.width = 32;
+		imgCtx.height = 32;
+
+		for (let i in s) {
+			let img = new Image();
+			img.src = "data:image/png;base64,{0}".format(s[i].dataBase64);
+			img.onload = function() {
+				let pat = imgCtx.createPattern(this, "repeat");
+				SpriteManager.groundTextures.push({
+					id: s[i].id,
+					img: pat
+				});
+
+				if (++loadedImages === s.length) {
+					postaction(s);
+				}
+			}
+			img.onerror = function() {
+				console.log("error loading tex id=" + s[i].id);
+			}
 		}
+
+		return {
+			done: function(f) {
+				postaction = f || postaction;
+			}
+		}
+
+		// for (let i = 0; i < textures.length; ++i) {
+			
+		// 	// SpriteManager.groundTextures.push(new SpriteFrame({
+		// 	// 	id: textures[i].id,
+		// 	// 	sprite_map_id: textures[i].spriteMapId,
+		// 	// 	x: textures[i].x,
+		// 	// 	y: textures[i].y,
+		// 	// 	w: 32,
+		// 	// 	h: 32,
+		// 	// 	margin: 0,
+
+		// 	// 	// TODO in the future we could have animated ground textures e.g. water/lava
+		// 	// 	frame_count: 1,
+		// 	// 	framerate: 0,
+		// 	// 	animation_type_id: 1,
+		// 	// 	anchorX: 0.5,
+		// 	// 	anchorY: 0.5
+		// 	// }));
+		// }
 	}
 
 	static getItemById(id) {
@@ -137,7 +176,7 @@ class SpriteManager {
 		return SpriteManager.spriteFrames.find(e => e.id === id);
 	}
 
-	static getGroundTextureById(id) {
-		return SpriteManager.groundTextures.find(e => e.id === id);
-	}
+	// static getGroundTextureById(id) {
+	// 	return SpriteManager.groundTextures.find(e => e.id === id);
+	// }
 }

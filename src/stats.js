@@ -249,7 +249,7 @@
         }
     }
     Stats.prototype.showHealthBar = function() {
-        this.healthBarTimer = 5;
+        this.healthBarTimer = 3;
     }
     Stats.prototype.getLevelByStat = function(stat) {
         for (var i = 0; i < this.stats.length; ++i) {
