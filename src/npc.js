@@ -6,6 +6,7 @@
         const xy = tileIdToXY(obj.tileId);
         this.id = npc.id,
         this.instanceId = obj.instanceId;// npc instance id is the spawn tile
+        this.ownerId = obj.ownerId; // used for pets - -1 for everything else
         this.pos = {x: xy.x, y: xy.y};
         this.dest = {x: xy.x, y: xy.y};
         this.speed = 0;

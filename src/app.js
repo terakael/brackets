@@ -344,7 +344,7 @@ $(function () {
                                 } else {
                                     const npcContextOptions = Game.ContextMenu.contextOptions.get("npc");
                                     let otherOptions = npc.get("otherOptions")
-                                    if (npc.instanceId === Game.currentPlayer.id) {
+                                    if (npc.ownerId === Game.currentPlayer.id) {
                                         // this is the player's pet; should have the "pick up" option first
                                         // original left-click option gets combined with the other options
                                         Game.ContextMenu.push([{
