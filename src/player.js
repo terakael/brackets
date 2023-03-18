@@ -429,6 +429,11 @@
                     this.setDestPosAndSpeedByTileId(obj.tileId);
                 }
             }
+
+            // set the camera so we get an effect of going up or down a floor
+            if (obj.hasOwnProperty("relativeFloor")) {
+                Game.cam.rubberBandPos.y += (32 * obj.relativeFloor);
+            }
             
             if (obj.hasOwnProperty("currentHp")) {
                 // set current hp

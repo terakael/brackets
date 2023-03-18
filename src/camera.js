@@ -47,10 +47,10 @@
         // keep following the player (or other desired object)
         if (this.followed != null) {
             if (this.rubberBandPos == null) {
-                this.rubberBandPos = {x: this.followed.x, y: this.followed.y}
+                this.rubberBandPos = {x: this.followed.x, y: this.followed.y - 16}
             } else {
                 this.rubberBandPos.x += (this.followed.x - this.rubberBandPos.x) * (dt * 5);
-                this.rubberBandPos.y += (this.followed.y - this.rubberBandPos.y) * (dt * 5);
+                this.rubberBandPos.y += (this.followed.y - this.rubberBandPos.y - 16) * (dt * 5);
             }
             
             if (this.axis === AXIS.HORIZONTAL || this.axis === AXIS.BOTH) {

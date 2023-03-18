@@ -4,15 +4,17 @@ class SceneryDespawnResponse {
     }
 
     process(obj) {
-        Game.Room.sceneryInstancesBySceneryId.forEach((value, key, map) => {
-            const index = value.indexOf(obj.tileId);
-            if (index != -1) {
-                value.splice(index, 1);
-                Game.Room.loadSceneryInstances([], []);
-                return;
-            }
-        });
-        
+        const {
+            sceneryId,
+            tileId
+        } = obj;
+
+        const index = Game.Room.sceneryInstancesBySceneryId.get(String(sceneryId)).indexOf(tileId);
+        if (index != -1) {
+            Game.Room.sceneryInstancesBySceneryId.get(String(sceneryId)).splice(index, 1);
+            Game.Room.loadSceneryInstances([], []);
+            return;
+        }
     }
 }
 

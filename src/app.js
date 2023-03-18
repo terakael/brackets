@@ -462,11 +462,21 @@ $(function () {
         if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
             var e = window.event || e; // old IE support
 
-            Game.targetScale *= (e.wheelDelta || -e.detail) < 0 ? 0.9 : 1.1;
-            if (Game.targetScale < Game.minScale)
-                Game.targetScale = Game.minScale;
-            else if (Game.targetScale > Game.maxScale)
-                Game.targetScale = Game.maxScale;
+            if ((e.wheelDelta || -e.detail) < 0) {
+                const newScale = ~~(Game.targetScale / 2);
+                if (newScale >= Game.minScale)
+                    Game.targetScale = newScale;
+            } else {
+                const newScale = ~~(Game.targetScale * 2);
+                if (newScale <= Game.maxScale)
+                    Game.targetScale = newScale;
+            }
+
+            // Game.targetScale *= (e.wheelDelta || -e.detail) < 0 ? 0.9 : 1.1;
+            // if (Game.targetScale < Game.minScale)
+            //     Game.targetScale = Game.minScale;
+            // else if (Game.targetScale > Game.maxScale)
+            //     Game.targetScale = Game.maxScale;
         }
     }, false);
 
@@ -638,16 +648,6 @@ window.addEventListener("keydown", function (e) {
                     Game.activeUiWindow = null;
                 }
 
-                break;
-            case 38: // up
-                Game.targetScale += 0.1;
-                if (Game.targetScale > 2)
-                    Game.targetScale = 2;
-                break;
-            case 40: // down
-                Game.targetScale -= 0.1;
-                if (Game.targetScale < 1)
-                    Game.targetScale = 1;
                 break;
             default:
                 ChatBox.onKeyDown(event.keyCode);
