@@ -90,6 +90,11 @@ class ChatBox {
 							break;
 						}
 
+						case "::fog": {
+							Game.fog = !Game.fog;
+							break;
+						}
+
 						default: {
 							if (this.input) {
 								this.input.callback(this.userMessage);

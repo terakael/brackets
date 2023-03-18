@@ -345,6 +345,18 @@
                 const offY = Math.random(-3, 3);
                 const offSize = Math.random(-3, 3);
 
+                // let grd = ctx.createRadialGradient(
+                //     xy.x - xview + offX, 
+                //     xy.y - yview + offY,
+                //     radius + offSize, 
+                //     xy.x - xview + offX, 
+                //     xy.y - yview + offY,
+                //     (radius + offSize) * 1.25);
+                // grd.addColorStop(0, "rgba(255, 255, 102, 0.1");
+                // grd.addColorStop(1, "rgba(255, 0, 0, 0");
+                // ctx.fillStyle = grd;
+                // ctx.fillRect(0, 0, 800, 800);
+
                 const xy = tileIdToXY(tileId);
                 ctx.moveTo(xy.x - xview + offX, xy.y - yview + offY);
                 ctx.ellipse(xy.x - xview + offX, xy.y - yview + offY, (radius*1.25) + offSize, radius + offSize, 0, 0, 2 * Math.PI);
@@ -430,14 +442,36 @@
         for (var i in this.npcs) {
             this.npcs[i].draw(ctx, xview, yview);
         }
-        
+
+        if (Game.fog) {
+            const xpos = (Game.worldCameraRect.left + (Game.worldCameraRect.width * 0.5)) / Game.scale;
+            const ypos = (Game.worldCameraRect.top + (Game.worldCameraRect.height * 0.5)) / Game.scale;
+
+            // left/right edges
+            this.setFog(ctx, xpos, ypos, [xpos - 340, 0, xpos + 340, 0])
+
+            // top/bottom edges
+            this.setFog(ctx, xpos, ypos, [0, ypos - 340, 0, ypos + 340])
+        }
         var mp = Game.mousePos || { x: 0, y: 0 };
         var transformed = this.t.transformPoint(mp.x, mp.y);
+        
+        
         Game.cursor.setPos({ x: transformed.x + xview, y: transformed.y + yview });
         Game.cursor.draw(ctx, xview, yview);
 
         ctx.restore();
     };
+
+    Room.prototype.setFog = function(ctx, xpos, ypos, coords) {
+        let grd = ctx.createLinearGradient(coords[0], coords[1], coords[2], coords[3])
+        grd.addColorStop(0, "rgba(0, 0, 0, 1)");
+        grd.addColorStop(0.01, "rgba(0, 0, 0, 0)");
+        grd.addColorStop(0.99, "rgba(0, 0, 0, 0)");
+        grd.addColorStop(1, "rgba(0, 0, 0, 1)");
+        ctx.fillStyle = grd;
+        ctx.fillRect(xpos - 500, ypos - 500, 1000, 1000);
+    }
 
     Room.prototype.drawLegacy = function(ctx, xview, yview) {
         // add everything to the draw map so we can draw in the correct order

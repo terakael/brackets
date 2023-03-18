@@ -461,7 +461,8 @@ $(function () {
     canvas.addEventListener("mousewheel", function (e) {
         if (Game.worldCameraRect.pointWithin(Game.mousePos)) {
             var e = window.event || e; // old IE support
-            Game.targetScale += Math.max(-0.1, Math.min(0.1, (e.wheelDelta || -e.detail)));
+
+            Game.targetScale *= (e.wheelDelta || -e.detail) < 0 ? 0.9 : 1.1;
             if (Game.targetScale < Game.minScale)
                 Game.targetScale = Game.minScale;
             else if (Game.targetScale > Game.maxScale)

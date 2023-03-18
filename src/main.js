@@ -41,6 +41,7 @@ window.Game = {
     drawBoundingBoxes: false,
     drawGroundTextureOutline: false,
     drawShadows: false,
+    fog: true,
     mousePos: { x: 0, y: 0 },
     activeUiWindow: null,
     enableSmoothing: false,

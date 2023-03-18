@@ -30,6 +30,7 @@
 
         // object that should be followed
         this.followed = null;
+        this.rubberBandPos = null;
 
         // rectangle that represents the viewport
         this.viewportRect = new Rectangle(this.xView, this.yView, this.wView, this.hView);
@@ -45,29 +46,42 @@
     Camera.prototype.update = function (dt) {
         // keep following the player (or other desired object)
         if (this.followed != null) {
+            if (this.rubberBandPos == null) {
+                this.rubberBandPos = {x: this.followed.x, y: this.followed.y}
+            } else {
+                this.rubberBandPos.x += (this.followed.x - this.rubberBandPos.x) * (dt * 5);
+                this.rubberBandPos.y += (this.followed.y - this.rubberBandPos.y) * (dt * 5);
+            }
+            
             if (this.axis === AXIS.HORIZONTAL || this.axis === AXIS.BOTH) {
                 // moves camera on horizontal axis based on followed object position
-                this.targetxView = this.followed.x - this.xDeadZone *(1/Game.scale);
+                this.targetxView = this.rubberBandPos.x - this.xDeadZone + (this.xDeadZone - (this.xDeadZone * (1/Game.scale)))
             }
             if (this.axis === AXIS.VERTICAL || this.axis === AXIS.BOTH) {
                 // moves camera on vertical axis based on followed object position
-                this.targetyView = this.followed.y - this.yDeadZone*(1/Game.scale);
+                this.targetyView = this.rubberBandPos.y - this.yDeadZone + (this.yDeadZone - (this.yDeadZone * (1/Game.scale)))
             }
 
             // if we teleport greater than a certain amount, snap the camera straight to position 
             // instead of dragging across the world (with a slight variance for smoothness)
-            if (Math.abs(this.targetxView - this.xView) > 500)
-                this.xView = this.targetxView + Math.getRandom(-20, 20);
+            if (Math.abs(this.targetxView - this.followed.x) > 500) {
+                this.targetxView = this.followed.x;
+                this.rubberBandPos.x = this.followed.x;
+            }
 
-            if (Math.abs(this.targetyView - this.yView) > 500)
-                this.yView = this.targetyView + Math.getRandom(-20, 20);
+            if (Math.abs(this.targetyView - this.yView) > 500) {
+                this.targetyView = this.followed.y;
+                this.rubberBandPos.y = this.followed.y;
+            }
             
-            this.xView += (this.targetxView - this.xView) * (dt * 5);
-            this.yView += (this.targetyView - this.yView) * (dt * 5);
+            this.xView = this.targetxView;
+            this.yView = this.targetyView;
+            // this.xView += (this.targetxView - this.xView);// * (dt * 5);
+            // this.yView += (this.targetyView - this.yView);// * (dt * 5);
         }
 
-        var wView = this.wView * (1/Game.scale);
-        var hView = this.hView * (1/Game.scale);
+        var wView = this.wView;
+        var hView = this.hView;
         // update viewportRect
         this.viewportRect.set(this.xView, this.yView, wView, hView);
     };
