@@ -76,14 +76,12 @@
             
             this.xView = this.targetxView;
             this.yView = this.targetyView;
-            // this.xView += (this.targetxView - this.xView);// * (dt * 5);
-            // this.yView += (this.targetyView - this.yView);// * (dt * 5);
         }
 
-        var wView = this.wView;
-        var hView = this.hView;
+        // var wView = this.wView;
+        // var hView = this.hView;
         // update viewportRect
-        this.viewportRect.set(this.xView, this.yView, wView, hView);
+        this.viewportRect.set(this.xView, this.yView, this.wView, this.hView);
     };
 
     Camera.prototype.updateCanvasSize = function(x, y, w, h) {
