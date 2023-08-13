@@ -4,6 +4,7 @@ class ResponseController {
     static process(objArray) {
         objArray.forEach(obj => {
             const {action, success, responseText, colour} = obj;
+            // console.log(obj)
 
             if (success && this.messageMap.has(action))
                 this.messageMap.get(action).process(obj);

@@ -24,6 +24,9 @@ class AddResourcesResponse {
         if (resource.npcs)
             Game.Room.loadNpcs(resource.npcs);
 
+        if (resource.ships)
+            Game.Room.loadShips(resource.ships);
+
         SpriteManager.loadSpriteMaps(resource.spriteMaps);
     }
 }

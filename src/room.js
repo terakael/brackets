@@ -5,6 +5,7 @@
         this.currentShow = 0;
         this.otherPlayers = [];
         this.npcs = [];
+        this.ships = [];
         this.constructableInstancesById = new Map();
         this.sceneryInstances = new Map();
         this.sceneryInstancesBySceneryId = new Map();
@@ -254,6 +255,21 @@
         }
     };
 
+    Room.prototype.loadShips = function(shipJson) {
+        for (let i = 0; i < shipJson.length; ++i) {
+            Game.shipMap.set(shipJson[i].hullSceneryId, {
+                id: shipJson[i].hullSceneryId,
+                name: shipJson[i].name,
+                upId: shipJson[i].upId,
+                downId: shipJson[i].downId,
+                leftId: shipJson[i].leftId,
+                rightId: shipJson[i].rightId,
+                leftclickOption: shipJson[i].leftclickOption,
+                otherOptions: shipJson[i].otherOptions
+            });
+        }
+    };
+
     Room.prototype.addPlayer = function (obj) {
         const player = new Game.Player(obj);
         player.stats = new Game.Stats(new Rectangle(0, 0, 0, 0));
@@ -443,6 +459,10 @@
             this.npcs[i].draw(ctx, xview, yview);
         }
 
+        for (var i in this.ships) {
+            this.ships[i].draw(ctx, xview, yview);
+        }
+
         if (Game.fog) {
             const xpos = (Game.worldCameraRect.left + (Game.worldCameraRect.width * 0.5)) / Game.scale;
             const ypos = (Game.worldCameraRect.top + (Game.worldCameraRect.height * 0.5)) / Game.scale;
@@ -495,6 +515,24 @@
                 leftclickOption: this.npcs[i].ownerId === Game.currentPlayer.id ? 64 : this.npcs[i].get("leftclickOption"),
                 label: this.npcs[i].getLeftclickLabel(),
                 transparency: Math.max(1 - this.npcs[i].deathTimer, 0.01)
+            });
+        }
+
+        for (var i = 0; i < this.ships.length; ++i) {
+            let currentSpriteFrame = this.ships[i].getCurrentSpriteFrame();
+            let mapKey = this.ships[i].pos.y + (currentSpriteFrame.getCurrentFrame().height * currentSpriteFrame.scale.y) - ((currentSpriteFrame.anchor.y * currentSpriteFrame.getCurrentFrame().height) * currentSpriteFrame.scale.y);
+            if (!drawMap.has(mapKey))
+                drawMap.set(mapKey, []);
+
+            drawMap.get(mapKey).push({
+                id: this.ships[i].instanceId,
+                name: this.ships[i].get("name"),
+                x: this.ships[i].pos.x, 
+                y: this.ships[i].pos.y,
+                sprite: [this.ships[i].getCurrentSpriteFrame()],
+                type: "ship",
+                tileId: this.ships[i].getTileId(),
+                leftclickOption: this.ships[i].get("leftclickOption")
             });
         }
 

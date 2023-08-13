@@ -38,6 +38,7 @@ window.Game = {
     targetBrightness: 1,
     sceneryMap: new Map(),
     npcMap: new Map(),
+    shipMap: new Map(),
     drawBoundingBoxes: false,
     drawGroundTextureOutline: false,
     drawShadows: false,

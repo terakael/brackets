@@ -146,6 +146,32 @@ $(function () {
                                 }
                             });
 
+                            if (!handled) {
+                                for (let ship of Game.Room.ships) {
+                                    const boundingBox = ship.getCurrentSpriteFrame().getBoundingBox();
+                                    const rect = new Rectangle(
+                                        ship.pos.x + boundingBox.left, 
+                                        ship.pos.y + boundingBox.top, 
+                                        boundingBox.width, 
+                                        boundingBox.height);
+
+                                    if (rect.pointWithin(Game.cursor.mousePos)) {
+                                        Game.cursor.handleClick(true);
+                                        Game.ws.send({
+                                            action: "use",
+                                            type: "ship",
+                                            id: Game.currentPlayer.id,
+                                            src: Game.currentPlayer.inventory.slotInUse.item.id,
+                                            slot: Game.currentPlayer.inventory.slotInUse.id,
+                                            dest: ship.instanceId
+                                        });
+                                        Game.currentPlayer.inventory.slotInUse = null;
+                                        handled = true;
+                                        return;
+                                    }
+                                }
+                            }
+
                             // npc
                             if (!handled) {
                                 for (let i = 0; i < Game.Room.npcs.length; ++i) {
@@ -319,6 +345,60 @@ $(function () {
                                 }
                             }
                         });
+
+                        for (let ship of Game.Room.ships) {
+                            const boundingBox = ship.getCurrentSpriteFrame().getBoundingBox();
+                            const rect = new Rectangle(
+                                ship.pos.x + boundingBox.left, 
+                                ship.pos.y + boundingBox.top, 
+                                boundingBox.width, 
+                                boundingBox.height);
+
+                            if (rect.pointWithin(Game.cursor.mousePos)) {
+                                if (Game.currentPlayer.inventory.slotInUse) {
+                                    Game.ContextMenu.push([{
+                                        id: Game.currentPlayer.id,
+                                        action: "use",
+                                        src: Game.currentPlayer.inventory.slotInUse.item.id,
+                                        dest: ship.instanceId,
+                                        type: "ship",
+                                        label: "use {0} -> {1}".format(Game.currentPlayer.inventory.slotInUse.item.name, ship.get("name"))
+                                    }]);
+                                } else {
+                                    const contextOptions = Game.ContextMenu.contextOptions.get("ship");
+                                    let otherOptions = ship.get("otherOptions")
+                                    if (ship.get("leftclickOption") != 0) {
+                                        Game.ContextMenu.push([{
+                                            action: Game.ContextMenu.getContextOptionById(ship.get("leftclickOption"), "ship").name,
+                                            objectId: ship.instanceId,
+                                            objectName: ship.get("name"),
+                                            tileId: ship.getTileId(),
+                                            type: "ship"
+                                        }]);
+                                    }
+
+                                    for (let contextOption of contextOptions) {
+                                        if (otherOptions & contextOption.id) {
+                                            Game.ContextMenu.push([{
+                                                action: contextOption.name, 
+                                                objectId: ship.instanceId, 
+                                                objectName: ship.get("name"), 
+                                                tileId: ship.getTileId(),
+                                                type: "ship"
+                                            }]);
+                                        }
+                                    }
+
+                                    Game.ContextMenu.push([{ 
+                                        action: "examine", 
+                                        objectName: ship.get("name"), 
+                                        objectId: ship.instanceId, 
+                                        tileId: ship.getTileId(),
+                                        type: "ship"
+                                    }]);
+                                }
+                            }
+                        }
 
                         for (let i = 0; i < Game.Room.npcs.length; ++i) {
                             const npc = Game.Room.npcs[i];
