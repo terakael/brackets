@@ -165,9 +165,6 @@
             moving = true;
         }
 
-        if (this.inCombat && Math.abs(this.dest.x - this.pos.x) < 1 && Math.abs(this.dest.y - this.pos.y) < 1)
-            this.currentAnimation = "attack";
-
         // if (moving || this.getCurrentSpriteFrame().alwaysAnimate())
         //     this.spriteframes[this.currentAnimation].process(step);
         // else if (this.inCombat) {
@@ -175,7 +172,7 @@
         //         this.spriteframes[this.currentAnimation].process(step);
         // }
         // else
-            this.spriteframes[this.currentAnimation].currentFrame = 1;
+            // this.spriteframes[this.currentAnimation].currentFrame = 1;
     }
 
     Ship.prototype.getCurrentSpriteFrame = function() {
@@ -197,17 +194,7 @@
 
     Ship.prototype.handleUpdate = function(obj) {
         if (obj.hasOwnProperty("tileId")) {
-            if (obj.hasOwnProperty("snapToTile")) {
-                // sometimes we don't want the player to walk to the tile (e.g. when we climb a ladder we always want to end up south of it immediately)
-                let xy = tileIdToXY(obj.tileId);
-                this.dest.x = xy.x;
-                this.dest.y = xy.y;
-                this.pos.x = xy.x;
-                this.pos.y = xy.y;
-            } else {
-                if (!this.inCombat) // sometimes an ship has broadcasted a move message just before it gets into combat, which overwrites the combat location
-                    this.setDestPosAndSpeedByTileId(obj.tileId);
-            }
+            this.setDestPosAndSpeedByTileId(obj.tileId);
         }
     }
 

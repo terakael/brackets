@@ -506,6 +506,10 @@
                 this.getBaseSpriteFrame().currentFrame = 1;
                 this.getBaseSpriteFrame().forwards = true;
             }
+
+            if (obj.hasOwnProperty("boardedShip")) {
+                this.onboardShip = obj.boardedShip;
+            }
         }
 
         Player.prototype.setDrawOrderForWeaponType = function(isDaggers) {

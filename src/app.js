@@ -373,7 +373,8 @@ $(function () {
                                             objectId: ship.instanceId,
                                             objectName: ship.get("name"),
                                             tileId: ship.getTileId(),
-                                            type: "ship"
+                                            type: "ship",
+                                            label: `${Game.currentPlayer.onboardShip ? "disembark" : "board"} ${ship.get("name")}`
                                         }]);
                                     }
 

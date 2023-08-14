@@ -65,6 +65,17 @@
         }
     };
 
+    Room.prototype.getShipById = function(id) {
+        return this.ships.find(ship => ship.instanceId === id);
+    };
+    
+    Room.prototype.shipById = function(id, fn) {
+        const ship = this.getShipById(id);
+        if (ship) {
+            fn.call(this, ship);
+        }
+    };
+
     Room.prototype.loadSceneryInstances = function(depletedScenery, openDoors) {   
         this.sceneryInstances = new Map();
 
@@ -532,7 +543,8 @@
                 sprite: [this.ships[i].getCurrentSpriteFrame()],
                 type: "ship",
                 tileId: this.ships[i].getTileId(),
-                leftclickOption: this.ships[i].get("leftclickOption")
+                leftclickOption: this.ships[i].get("leftclickOption"),
+                label: `${Game.currentPlayer.onboardShip ? "disembark" : "board"} ${this.ships[i].get("name")}`
             });
         }
 
@@ -555,21 +567,23 @@
             });
         }
 
-        // add the current player
-        let playerSpriteFrame = this.player.getCurrentSpriteFrame();
-        let mapKey = this.player.y + (playerSpriteFrame.getCurrentFrame().height * playerSpriteFrame.scale.y) - ((playerSpriteFrame.anchor.y * playerSpriteFrame.getCurrentFrame().height) * playerSpriteFrame.scale.y);
-        if (!drawMap.has(mapKey))
-            drawMap.set(mapKey, []);
-            
-        drawMap.get(mapKey).push({
-            id: this.player.id,
-            name: this.player.name,
-            x: this.player.x, 
-            y: this.player.y,
-            sprite: this.player.getCurrentSpriteFrames(),
-            type: "player",
-            leftclickOption: 0
-        });
+        // add the current player (unless we're on a ship)
+        if (!this.player.onboardShip) {
+            let playerSpriteFrame = this.player.getCurrentSpriteFrame();
+            let mapKey = this.player.y + (playerSpriteFrame.getCurrentFrame().height * playerSpriteFrame.scale.y) - ((playerSpriteFrame.anchor.y * playerSpriteFrame.getCurrentFrame().height) * playerSpriteFrame.scale.y);
+            if (!drawMap.has(mapKey))
+                drawMap.set(mapKey, []);
+                
+            drawMap.get(mapKey).push({
+                id: this.player.id,
+                name: this.player.name,
+                x: this.player.x, 
+                y: this.player.y,
+                sprite: this.player.getCurrentSpriteFrames(),
+                type: "player",
+                leftclickOption: 0
+            });
+        }
 
         // add scenery
         this.compileDrawableSceneryMap(xview, yview);
@@ -686,6 +700,8 @@
             this.otherPlayers[i].process(dt);
             playerPrevPositions.set(this.otherPlayers[i].id, {x: this.otherPlayers[i].x, y: this.otherPlayers[i].y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame});
         }
+
+        this.ships.forEach(ship => ship.process(dt));
 
         let changedPlayerIds = [];
         for (let [key, value] of playerPrevPositions.entries()) {
