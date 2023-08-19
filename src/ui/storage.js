@@ -44,7 +44,15 @@ class Storage {
 		this.type = type; // used for other things to know what is open
 		this.name = name;
 		this.tileId = tileId;
-		this.columns = 5;
+		this.columns = Math.ceil(Math.sqrt(itemList.length));
+
+		// if we can get a clean amount of rows then use that
+		for (let i = this.columns; i >= 1; --i) {
+			if (itemList.length % i == 0) {
+				this.columns = i;
+				break;
+			}
+		}
 		this.rect = rect;
 
 		this.mousePosOnClick = {x: 0, y: 0};
@@ -288,7 +296,7 @@ class Storage {
 
 	onResize(worldRect) {
 		// eight slots means four across, two down (with 10 pixels buffer each side)
-		const maxRows = 4;
+		const maxRows = this.columns;
 		const margin = 10;
 		const header = 20; // top area for title header
 		const uiWidth = (StorageSlot.size * maxRows) + (margin * 2);

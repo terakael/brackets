@@ -1,15 +1,14 @@
-const ButtonStates = {
-    off: 0,
-    hover: 1,
-    click: 2,
-    disabled: 3
-}
+// const ButtonStates = {
+//     off: 0,
+//     hover: 1,
+//     click: 2,
+//     disabled: 3
+// }
 
 
-class ConstructionButton {
-    constructor(dto, flatpack, tileId) {
+class ShipAccessoryButton {
+    constructor(dto, tileId) {
         this.rect = new Rectangle(0, 0, 100, 75);
-        this.isFlatpack = flatpack;
         this.tileId = tileId;
 
         if (Game.currentPlayer.stats.getLevelByStat("con") < dto.level)
@@ -17,20 +16,13 @@ class ConstructionButton {
         else
             this.state = ButtonStates.off;
             
-        this.constructableDto = dto;
+        this.accessoryDto = dto;
 
-        this.leftclickOption = this.isFlatpack ? {
-            action: "construction", 
-            sceneryId: this.constructableDto.resultingSceneryId,
-            tileId: this.tileId,
-            label: `build 1 ${Game.sceneryMap.get(this.constructableDto.resultingSceneryId).name}`,
-            flatpack
-        } : {
-            action: "construction", 
-            sceneryId: this.constructableDto.resultingSceneryId,
-            tileId: xyToTileId(~~Game.currentPlayer.x, ~~Game.currentPlayer.y),
-            label: `build ${Game.sceneryMap.get(this.constructableDto.resultingSceneryId).name}`,
-            flatpack
+        this.leftclickOption = {
+            action: "build", 
+            accessoryId: dto.id,
+            tileId: tileId,
+            label: `build ${dto.name}`
         }
 
         this.fillStyle = "#000";
@@ -61,13 +53,13 @@ class ConstructionButton {
         context.textAlign = "right";
         context.textBaseline = "top";
         context.font = "12px customFont";
-        context.fillStyle = Game.currentPlayer.stats.getLevelByStat("con") < this.constructableDto.level ? "red" : "white";
+        context.fillStyle = Game.currentPlayer.stats.getLevelByStat("con") < this.accessoryDto.level ? "red" : "white";
 
         // required smithing level
-        context.fillText("lvl: " + this.constructableDto.level, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
+        context.fillText("lvl: " + this.accessoryDto.level, this.rect.left + this.rect.width + buttonOffsetX - 5, this.rect.top + buttonOffsetY + 5);
 
         // draw the icon
-        const drawSpriteframe = SpriteManager.getSpriteFrameById(Game.sceneryMap.get(this.constructableDto.resultingSceneryId).spriteFrameId);
+        const drawSpriteframe = SpriteManager.getSpriteFrameById(this.accessoryDto.spriteFrameId);
         this.drawSpriteWithScale(context, drawSpriteframe, 48 / drawSpriteframe.getCurrentFrame().height, 
             this.rect.left + (this.rect.width / 2) + buttonOffsetX, 
             this.rect.top + buttonOffsetY);
@@ -82,38 +74,25 @@ class ConstructionButton {
 
         // draw from the right and then go left
         let rightmostOffset = 60;
-        if (this.constructableDto.tertiaryAmount > 0) {
-            const tertiaryItem = SpriteManager.getItemById(this.constructableDto.tertiaryId);
-            var posx = this.rect.left + rightmostOffset + tertiaryItem.spriteFrame.getCurrentFrame().width / 2;
-            var posy = this.rect.bottom - tertiaryItem.spriteFrame.getCurrentFrame().height / 2;
+        if (this.accessoryDto.secondaryMaterialCount > 0) {
+            const secondaryMaterial = SpriteManager.getItemById(this.accessoryDto.secondaryMaterialId);
+            var posx = this.rect.left + rightmostOffset + secondaryMaterial.spriteFrame.getCurrentFrame().width / 2;
+            var posy = this.rect.bottom - secondaryMaterial.spriteFrame.getCurrentFrame().height / 2;
 
-            this.drawSpriteWithScale(context, tertiaryItem.spriteFrame, 0.5, posx + buttonOffsetX + 5, posy + buttonOffsetY);
-            context.fillText(` x${this.constructableDto.tertiaryAmount}`, posx + buttonOffsetX - 5, posy + 10 + buttonOffsetY);
+            this.drawSpriteWithScale(context, secondaryMaterial.spriteFrame, 0.5, posx + buttonOffsetX + 5, posy + buttonOffsetY);
+            context.fillText(` x${this.accessoryDto.secondaryMaterialCount}`, posx + buttonOffsetX - 5, posy + 10 + buttonOffsetY);
             rightmostOffset -= 32;
         }
 
-        if (this.constructableDto.barAmount > 0) {
-            const bar = SpriteManager.getItemById(this.constructableDto.barId);
-            var posx = this.rect.left + rightmostOffset + bar.spriteFrame.getCurrentFrame().width / 2;
-            var posy = this.rect.bottom - bar.spriteFrame.getCurrentFrame().height / 2;
+        if (this.accessoryDto.primaryMaterialCount > 0) {
+            const primaryMaterial = SpriteManager.getItemById(this.accessoryDto.primaryMaterialId);
+            var posx = this.rect.left + rightmostOffset + primaryMaterial.spriteFrame.getCurrentFrame().width / 2;
+            var posy = this.rect.bottom - primaryMaterial.spriteFrame.getCurrentFrame().height / 2;
             
-            this.drawSpriteWithScale(context, bar.spriteFrame, 0.5, posx + buttonOffsetX + 5, posy + buttonOffsetY);
-            context.fillText(` x${this.constructableDto.barAmount}`, posx + buttonOffsetX - 5, posy + 10 + buttonOffsetY);
+            this.drawSpriteWithScale(context, primaryMaterial.spriteFrame, 0.5, posx + buttonOffsetX + 5, posy + buttonOffsetY);
+            context.fillText(` x${this.accessoryDto.primaryMaterialCount}`, posx + buttonOffsetX - 5, posy + 10 + buttonOffsetY);
             rightmostOffset -= 32;
         }
-
-        if (this.constructableDto.plankAmount > 0) {
-            const plank = SpriteManager.getItemById(this.constructableDto.plankId);
-            var posx = this.rect.left + rightmostOffset + plank.spriteFrame.getCurrentFrame().width / 2;
-            var posy = this.rect.bottom - plank.spriteFrame.getCurrentFrame().height / 2;
-
-            this.drawSpriteWithScale(context, plank.spriteFrame, 0.5, posx + buttonOffsetX + 5, posy + buttonOffsetY);
-            context.fillText(` x${this.constructableDto.plankAmount}`, posx + buttonOffsetX - 5, posy + 10 + buttonOffsetY);
-        }
-
-        
-
-        
 
         if (this.state === ButtonStates.disabled) {
             context.fillStyle = "rgba(50, 50, 50, 0.5)";
@@ -187,24 +166,10 @@ class ConstructionButton {
 
                 Game.ContextMenu.push([this.leftclickOption]);
 
-                if (this.isFlatpack) {
-                    let smithAmounts = [5, 10, 25];
-                    for (let i = 0; i < smithAmounts.length; ++i) {
-                        Game.ContextMenu.push([{
-                            action: "construction",
-                            sceneryId: this.constructableDto.resultingSceneryId,
-                            amount: smithAmounts[i],
-                            label: `build ${smithAmounts[i] == 25 ? "all" : smithAmounts[i]} ${Game.sceneryMap.get(this.constructableDto.resultingSceneryId).name}`,
-                            flatpack: this.isFlatpack,
-                            tileId: this.tileId
-                        }]);
-                    }
-                }
-                
                 Game.ContextMenu.push([{
-                    action: "show_construction_materials", 
-                    sceneryId: this.constructableDto.resultingSceneryId,
-                    label: `materials for ${Game.sceneryMap.get(this.constructableDto.resultingSceneryId).name}`
+                    action: "show_ship_accessory_materials", 
+                    accessoryId: this.accessoryDto.id,
+                    label: `materials for ${this.accessoryDto.name}`
                 }]);
             }
         }
@@ -225,16 +190,15 @@ class ConstructionButton {
     }
 }
 
-class ConstructionWindow {
-    constructor(rect, constructableDtoList, isFlatpack, tileId) {
+class ShipAccessoriesWindow {
+    constructor(rect, accessoryDtoList, tileId) {
         this.rect = rect;
-        this.isFlatpack = isFlatpack;
 
         let buttons = [];
-        for (let i = 0; i < constructableDtoList.length; ++i) {
-            buttons.push(new ConstructionButton(constructableDtoList[i], isFlatpack, tileId));
+        for (let i = 0; i < accessoryDtoList.length; ++i) {
+            buttons.push(new ShipAccessoryButton(accessoryDtoList[i], tileId));
         }
-        this.uiButtons = buttons.sort((a, b) => a.constructableDto.level - b.constructableDto.level);
+        this.uiButtons = buttons.sort((a, b) => a.accessoryDto.level - b.accessoryDto.level);
         this.onResize(rect);
     }
     
@@ -267,7 +231,7 @@ class ConstructionWindow {
             if (Game.ContextMenu.active) {
                 const menuItem = Game.ContextMenu.handleMenuSelect();
                 Game.ContextMenu.hide();
-                if (menuItem.action === "construction")
+                if (menuItem.action === "build")
                     Game.activeUiWindow = null; // keep the window open for the show materials option
                 return;
             }

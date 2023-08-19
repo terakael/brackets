@@ -11,6 +11,7 @@
 			this.y = posXY.y;				
             this.destPos = posXY;
             this.inCombat = false;
+            this.onboardShip = obj.boardedShipId !== 0;
 			
 			// move speed in pixels per second
 			this.speed = 53.3;
