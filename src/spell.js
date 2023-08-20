@@ -1,9 +1,9 @@
 (function() {
-    function Spell(source, target, type) {
+    function Spell(sourceTileId, target, type) {
         this.target = target;
         this.spriteFrame = SpriteManager.getSpriteFrameById(type);
-        this.sourcePos = {x: source.x, y: source.y};
-        this.pos = {x: source.x, y: source.y};
+        this.sourcePos = tileIdToXY(sourceTileId);//{x: source.x, y: source.y};
+        this.pos = tileIdToXY(sourceTileId);//{x: source.x, y: source.y};
         this.lifetime = 1;
         this.destPos = {x: target.x || target.pos.x, y: target.y || target.pos.y};
         this.timeToReachTarget = 0;

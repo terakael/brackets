@@ -17,6 +17,7 @@
         this.chatMessage = "";
         this.chatMessageTimer = 0;
         this.deathTimer = 0;
+        this.actionBubbles = new Map();
 
         this.spriteframes = [];
         this.spriteframes["up"] = new SpriteFrame(SpriteManager.getSpriteFrameById(ship.upId).frameData);
@@ -60,6 +61,15 @@
         //     this.deathTimer = 0;
         // }
 
+        this.actionBubbles.forEach((value, key, map) => {
+            const newVal = {spriteId: value.spriteId, timeout: value.timeout - step};
+            if (newVal.timeout <= 0) {
+                map.delete(key);
+            } else {
+                map.set(key, newVal);
+            }
+        });
+
         if (this.deathTimer === 0)
             this.processMovement(step);
 
@@ -98,6 +108,7 @@
         context.scale(scale, scale);
         
         const frameHeight = this.spriteframes[this.currentAnimation].getCurrentFrame().height;
+        const frameWidth = this.spriteframes[this.currentAnimation].getCurrentFrame().width;
         const frameScale = this.spriteframes[this.currentAnimation].scale.y;
         if (this.deathTimer === 0)
             this.drawHealthBar(context, (this.pos.x - xView + 2.5) * (1/scale), (this.pos.y - yView - (frameHeight * frameScale) - (10 * (1/(1/scale)))) * (1/scale), this.currentHp, this.get("maxHp"));
@@ -118,6 +129,27 @@
             context.textAlign = "center";
             context.fillStyle = "yellow"
             context.fillText(this.chatMessage, (this.pos.x - xView) * (1/scale), (this.pos.y - yView - (frameHeight * frameScale) - (this.healthBarTimer > 0 ? 10 : 0)) * (1/scale));
+        }
+
+        if (this.actionBubbles.size) {
+            context.save();
+            context.globalAlpha = 0.7;
+            for (let i = 0; i < this.actionBubbles.size; ++i) {
+                const offset = -((this.actionBubbles.size / 2) * 16) + (i * 16) + 8;
+                SpriteManager.getSpriteFrameById(555).draw(context, (this.pos.x - xView + offset) * (1/scale), (this.pos.y - yView - (frameHeight/2) - 8) * (1/scale));
+            }
+            context.restore();
+
+            context.save();
+            const spriteScale = 0.7;
+            context.scale(spriteScale, spriteScale);
+
+            // 555 is the skill bubble sprite frame
+            for (let i = 0; i < this.actionBubbles.size; ++i) {
+                const offset = -((this.actionBubbles.size / 2) * 16) + (i * 16) + 8;
+                SpriteManager.getSpriteFrameById(this.actionBubbles.get(Array.from(this.actionBubbles.keys())[i]).spriteId).draw(context, (this.pos.x - xView + offset) * ((1/scale)*(1/spriteScale)), (this.pos.y - yView - (frameHeight/2) - 8) * ((1/scale)*(1/spriteScale)));
+            }
+            context.restore();
         }
 
         context.restore();
@@ -221,6 +253,11 @@
 
     Ship.prototype.get = function(val) {
         return Game.shipMap.get(this.id)[val];
+    }
+
+    Ship.prototype.setActionBubble = function(spriteId, playerId) {
+        this.actionBubbles.set(playerId, {spriteId, timeout: 3});
+        console.log(this.actionBubbles);
     }
 
     

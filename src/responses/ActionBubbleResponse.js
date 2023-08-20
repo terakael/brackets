@@ -4,7 +4,13 @@ class ActionBubbleResponse {
     }
 
     process(obj) {
-        Game.Room.playerById(obj.playerId, p => p.setActionBubble(obj.iconId));
+        const ship = Game.Room.getShipById(obj.shipId);
+        if (ship) {
+            ship.setActionBubble(obj.iconId, obj.playerId);
+        }
+        else {
+            Game.Room.playerById(obj.playerId, p => p.setActionBubble(obj.iconId));
+        }
     }
 }
 

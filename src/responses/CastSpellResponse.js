@@ -4,15 +4,14 @@ class CastSpellResponse {
     }
 
     process(obj) {
-        const {targetId, targetType, playerId, spriteFrameId} = obj;
+        const {targetId, targetType, sourceTileId, spriteFrameId} = obj;
 
-        const caster = Game.Room.getPlayerById(playerId);
         const target = (targetType === "npc") 
             ? Game.Room.getNpcById(targetId) 
             : Game.Room.getPlayerById(targetId);
         
-        if (target && caster) {
-            let spell = new Game.Spell(caster, target, spriteFrameId);
+        if (target) {
+            let spell = new Game.Spell(sourceTileId, target, spriteFrameId);
             Game.Room.spells.push(spell);
 
             if (target === Game.currentPlayer)

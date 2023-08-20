@@ -595,8 +595,9 @@
 
         // active spells
         for (let i = 0; i < this.spells.length; ++i) {
-            if (!drawMap.has(this.spells[i].pos.y))
+            if (!drawMap.has(this.spells[i].pos.y)) {
                 drawMap.set(this.spells[i].pos.y, []);
+            }
             drawMap.get(this.spells[i].pos.y).push({
                 x: this.spells[i].pos.x,
                 y: this.spells[i].pos.y,
