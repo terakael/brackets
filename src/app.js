@@ -378,15 +378,18 @@ $(function () {
                                         }]);
                                     }
 
-                                    for (let contextOption of contextOptions) {
-                                        if (otherOptions & contextOption.id) {
-                                            Game.ContextMenu.push([{
-                                                action: contextOption.name, 
-                                                objectId: ship.instanceId, 
-                                                objectName: ship.get("name"), 
-                                                tileId: ship.getTileId(),
-                                                type: "ship"
-                                            }]);
+                                    // options like repair, storage etc are visible only when onboard
+                                    if (Game.currentPlayer.onboardShip) {
+                                        for (let contextOption of contextOptions) {
+                                            if (otherOptions & contextOption.id) {
+                                                Game.ContextMenu.push([{
+                                                    action: contextOption.name, 
+                                                    objectId: ship.instanceId, 
+                                                    objectName: ship.get("name"), 
+                                                    tileId: ship.getTileId(),
+                                                    type: "ship"
+                                                }]);
+                                            }
                                         }
                                     }
 
