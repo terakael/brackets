@@ -4,7 +4,7 @@ class ShowBaseAnimationsWindowResponse {
     }
 
     process(obj) {
-        Game.activeUiWindow = new BaseAnimationsWindow(Game.worldCameraRect, obj.baseAnimations, obj.customizableAnimations);
+        Game.activeUiWindow = new BaseAnimationsWindow(Game.worldCameraRect, obj.baseAnimations, obj.customizableAnimations, obj.palette);
     }
 }
 
