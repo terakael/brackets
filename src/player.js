@@ -11,7 +11,7 @@
 			this.y = posXY.y;				
             this.destPos = posXY;
             this.inCombat = false;
-            this.onboardShip = obj.boardedShipId !== 0;
+            this.onboardShipId = obj.boardedShipId;
 			
 			// move speed in pixels per second
 			this.speed = 53.3;
@@ -508,8 +508,10 @@
                 this.getBaseSpriteFrame().forwards = true;
             }
 
-            if (obj.hasOwnProperty("boardedShip")) {
-                this.onboardShip = obj.boardedShip;
+            if (obj.hasOwnProperty("boardedShipId")) {
+                this.onboardShipId = obj.boardedShipId;
+                if (!this.onboardShipId)
+                    Game.shipUi.clear();
             }
         }
 

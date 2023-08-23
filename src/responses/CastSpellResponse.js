@@ -4,14 +4,23 @@ class CastSpellResponse {
     }
 
     process(obj) {
-        const {targetId, targetType, sourceTileId, spriteFrameId} = obj;
+        const {targetId, targetType, sourceTileId, spriteFrameId, lifetime} = obj;
 
-        const target = (targetType === "npc") 
-            ? Game.Room.getNpcById(targetId) 
-            : Game.Room.getPlayerById(targetId);
+        let target = null;
+        switch (targetType) {
+            case "npc":
+                target = Game.Room.getNpcById(targetId);
+                break;
+            case "player":
+                target = Game.Room.getPlayerById(targetId);
+                break;
+            case "ship":
+                target = Game.Room.getShipById(targetId);
+                break;
+        }
         
         if (target) {
-            let spell = new Game.Spell(sourceTileId, target, spriteFrameId);
+            let spell = new Game.Spell(sourceTileId, target, spriteFrameId, lifetime);
             Game.Room.spells.push(spell);
 
             if (target === Game.currentPlayer)

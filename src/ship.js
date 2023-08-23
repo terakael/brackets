@@ -1,7 +1,6 @@
 (function(){
     function Ship(obj){
         const ship = Game.shipMap.get(obj.hullSceneryId);
-        console.log(ship);
 
         this.tileId = obj.tileId;
         const xy = tileIdToXY(obj.tileId);
@@ -17,29 +16,17 @@
         this.chatMessage = "";
         this.chatMessageTimer = 0;
         this.deathTimer = 0;
+        this.maxHp = obj.maxHp;
+        this.maxArmour = obj.maxArmour;
+        
         this.actionBubbles = new Map();
 
         this.spriteframes = [];
         this.spriteframes["up"] = new SpriteFrame(SpriteManager.getSpriteFrameById(ship.upId).frameData);
-        // this.spriteframes["up"].setScale({x: ship.scaleX, y: ship.scaleY});
-        
         this.spriteframes["down"] = new SpriteFrame(SpriteManager.getSpriteFrameById(ship.downId).frameData);
-        // this.spriteframes["down"].setScale({x: ship.scaleX, y: ship.scaleY});
-        
         this.spriteframes["left"] = new SpriteFrame(SpriteManager.getSpriteFrameById(ship.leftId).frameData);
-        // this.spriteframes["left"].setScale({x: ship.scaleX, y: ship.scaleY});
-        
         this.spriteframes["right"] = new SpriteFrame(SpriteManager.getSpriteFrameById(ship.rightId).frameData);
-        // this.spriteframes["right"].setScale({x: ship.scaleX, y: ship.scaleY});
 
-        // this.spriteframes["attack"] = new SpriteFrame(SpriteManager.getSpriteFrameById(ship.attackId).frameData);
-        // this.spriteframes["attack"].setScale({x: ship.scaleX, y: ship.scaleY});
-
-        // this.combatOffset = (this.spriteframes["attack"].getCurrentFrame().width * ship.scaleX) / 4;
-
-        // just to avoid all the ships facing the same direction at the start
-        // const potentialStartAnimations = ["up", "down", "left", "right"];
-        // this.currentAnimation = potentialStartAnimations[Math.floor(Math.random() * potentialStartAnimations.length)];
         this.currentAnimation = "down";
     }
 
@@ -108,10 +95,13 @@
         context.scale(scale, scale);
         
         const frameHeight = this.spriteframes[this.currentAnimation].getCurrentFrame().height;
-        const frameWidth = this.spriteframes[this.currentAnimation].getCurrentFrame().width;
         const frameScale = this.spriteframes[this.currentAnimation].scale.y;
         if (this.deathTimer === 0)
-            this.drawHealthBar(context, (this.pos.x - xView + 2.5) * (1/scale), (this.pos.y - yView - (frameHeight * frameScale) - (10 * (1/(1/scale)))) * (1/scale), this.currentHp, this.get("maxHp"));
+            this.drawHealthBar(context, 
+                (this.pos.x - xView + 2.5) * (1/scale), 
+                (this.pos.y - yView - ((frameHeight/2) * frameScale)) * (1/scale), 
+                this.currentHp, this.maxHp, 
+                this.currentArmour, this.maxArmour);
 
         const hitsplatPositions = [
             {x: this.pos.x - xView, y: this.pos.y - yView - 8},
@@ -128,7 +118,7 @@
             context.font = "12pt customFont";
             context.textAlign = "center";
             context.fillStyle = "yellow"
-            context.fillText(this.chatMessage, (this.pos.x - xView) * (1/scale), (this.pos.y - yView - (frameHeight * frameScale) - (this.healthBarTimer > 0 ? 10 : 0)) * (1/scale));
+            context.fillText(this.chatMessage, (this.pos.x - xView) * (1/scale), (this.pos.y - yView - ((frameHeight/2) * frameScale) - (this.healthBarTimer > 0 ? 10 : 0)) * (1/scale));
         }
 
         if (this.actionBubbles.size) {
@@ -169,7 +159,6 @@
         const diffx = this.dest.x - this.pos.x;
         const diffy = this.dest.y - this.pos.y;
         
-        let moving = false;
         if (Math.abs(diffx) > 1 || Math.abs(diffy) > 1) {
             const n = Math.getVectorNormal({x: diffx, y: diffy});
             if (Math.abs(n.x * step * this.speed) > Math.abs(diffx) || Math.abs(diffx) > 64)
@@ -194,17 +183,7 @@
             } else {
                 this.currentAnimation = "right";
             }
-            moving = true;
         }
-
-        // if (moving || this.getCurrentSpriteFrame().alwaysAnimate())
-        //     this.spriteframes[this.currentAnimation].process(step);
-        // else if (this.inCombat) {
-        //     if (this.spriteframes[this.currentAnimation].currentFrame > 0)
-        //         this.spriteframes[this.currentAnimation].process(step);
-        // }
-        // else
-            // this.spriteframes[this.currentAnimation].currentFrame = 1;
     }
 
     Ship.prototype.getCurrentSpriteFrame = function() {
@@ -228,21 +207,62 @@
         if (obj.hasOwnProperty("tileId")) {
             this.setDestPosAndSpeedByTileId(obj.tileId);
         }
+
+        if (obj.hasOwnProperty("damage")) {
+            const hitsplat = {
+                damage: obj.damage,
+                lifetime: 0.8,
+                damageSpriteFrameId: obj.damageSpriteFrameId
+            };
+            if (this.hitsplats.length < 3)
+                this.hitsplats.push(hitsplat);  
+            else {
+                let hitsplatToReplace = this.hitsplats.reduce(function(res, obj) {
+                    return (obj.lifetime < res.lifetime) ? obj : res;
+                });
+                let idxReplaceHitsplat = this.hitsplats.map(e => e.lifetime).indexOf(hitsplatToReplace.lifetime);
+                this.hitsplats[idxReplaceHitsplat] = hitsplat;
+            }
+            this.healthBarTimer = 3;
+        }
+
+        if (obj.hasOwnProperty("hp")) {
+            this.currentHp = obj.hp;
+        }
+
+        if (obj.hasOwnProperty("armour")) {
+            this.currentArmour = obj.armour;
+        }
     }
 
-    Ship.prototype.drawHealthBar = function(ctx, x, y, currentHp, maxHp) {
+    Ship.prototype.drawHealthBar = function(ctx, x, y, currentHp, maxHp, currentArmour, maxArmour) {
         if (this.healthBarTimer === 0)
             return false;
 
         const barLength = 32;
+        let offset = 2.5;
+        
+        if (maxArmour > 0) {
+            const currentArmourLength = ~~(barLength * (currentArmour/maxArmour));
+
+            ctx.fillStyle = "#888";
+            ctx.fillRect(x - ~~(barLength/2), y - offset, currentArmourLength, 5);
+
+            ctx.fillStyle = "#ccc";
+            ctx.fillRect(x - ~~(barLength/2) + currentArmourLength, y - offset, barLength - currentArmourLength, 5);
+
+            offset += 5;
+        }
+        
         const currentHpLength = ~~(barLength * (currentHp/maxHp));
 
         ctx.fillStyle = "#0f0";
-        ctx.fillRect(x - ~~(barLength/2), y - 2.5, currentHpLength, 5);
+        ctx.fillRect(x - ~~(barLength/2), y - offset, currentHpLength, 5);
 
         ctx.fillStyle = "#f00";
-        ctx.fillRect(x - ~~(barLength/2) + currentHpLength, y - 2.5, barLength - currentHpLength, 5);
+        ctx.fillRect(x - ~~(barLength/2) + currentHpLength, y - offset, barLength - currentHpLength, 5);
 
+        
         return true;
     }
 

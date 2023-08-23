@@ -535,6 +535,11 @@
             if (!drawMap.has(mapKey))
                 drawMap.set(mapKey, []);
 
+            const action = Game.currentPlayer.onboardShipId && (Game.currentPlayer.onboardShipId !== this.ships[i].instanceId) 
+                ? {label: "attack", id: 16} 
+                : {label: "board", id: 1};
+            const verb = Game.currentPlayer.onboardShipId === this.ships[i].instanceId ? "disembark" : action.label;
+
             drawMap.get(mapKey).push({
                 id: this.ships[i].instanceId,
                 name: this.ships[i].get("name"),
@@ -543,8 +548,8 @@
                 sprite: [this.ships[i].getCurrentSpriteFrame()],
                 type: "ship",
                 tileId: this.ships[i].getTileId(),
-                leftclickOption: this.ships[i].get("leftclickOption"),
-                label: `${Game.currentPlayer.onboardShip ? "disembark" : "board"} ${this.ships[i].get("name")}`
+                leftclickOption: action.id,
+                label: `${verb} ${this.ships[i].get("name")}`
             });
         }
 
@@ -568,7 +573,7 @@
         }
 
         // add the current player (unless we're on a ship)
-        if (!this.player.onboardShip) {
+        if (!this.player.onboardShipId) {
             let playerSpriteFrame = this.player.getCurrentSpriteFrame();
             let mapKey = this.player.y + (playerSpriteFrame.getCurrentFrame().height * playerSpriteFrame.scale.y) - ((playerSpriteFrame.anchor.y * playerSpriteFrame.getCurrentFrame().height) * playerSpriteFrame.scale.y);
             if (!drawMap.has(mapKey))

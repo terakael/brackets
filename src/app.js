@@ -44,6 +44,8 @@ $(function () {
                 Game.LogonScreen.loading = false;
                 Game.LogonScreen.loadingText = null;
             });
+
+            Game.shipUi = new ShipUi();
         }
     });
 
@@ -366,20 +368,23 @@ $(function () {
                                     }]);
                                 } else {
                                     const contextOptions = Game.ContextMenu.contextOptions.get("ship");
-                                    let otherOptions = ship.get("otherOptions")
-                                    if (ship.get("leftclickOption") != 0) {
-                                        Game.ContextMenu.push([{
-                                            action: Game.ContextMenu.getContextOptionById(ship.get("leftclickOption"), "ship").name,
-                                            objectId: ship.instanceId,
-                                            objectName: ship.get("name"),
-                                            tileId: ship.getTileId(),
-                                            type: "ship",
-                                            label: `${Game.currentPlayer.onboardShip ? "disembark" : "board"} ${ship.get("name")}`
-                                        }]);
-                                    }
+                                    const action = Game.currentPlayer.onboardShipId && (Game.currentPlayer.onboardShipId !== ship.instanceId) 
+                                        ? {label: "attack", id: 16} 
+                                        : {label: "board", id: 1};
+                                    const verb = Game.currentPlayer.onboardShipId === ship.instanceId ? "disembark" : action.label;
+
+                                    Game.ContextMenu.push([{
+                                        action: action.label,
+                                        objectId: ship.instanceId,
+                                        objectName: ship.get("name"),
+                                        tileId: ship.getTileId(),
+                                        type: "ship",
+                                        label: `${verb} ${ship.get("name")}`
+                                    }]);
 
                                     // options like repair, storage etc are visible only when onboard
-                                    if (Game.currentPlayer.onboardShip) {
+                                    if (Game.currentPlayer.onboardShipId === ship.instanceId) {
+                                        let otherOptions = ship.get("otherOptions")
                                         for (let contextOption of contextOptions) {
                                             if (otherOptions & contextOption.id) {
                                                 Game.ContextMenu.push([{
@@ -610,6 +615,7 @@ $(function () {
             Game.currentPlayer.inventory.draw(ctx, Game.hudcam.xView, Game.hudcam.yView + Game.Minimap.height + 20);
             Game.currentPlayer.stats.draw(ctx, Game.hudcam.xView, Game.currentPlayer.stats.rect.top);
             Game.HUD.draw(ctx);
+            Game.shipUi.draw(ctx);
             
             ChatBox.draw(ctx, 0, ctx.canvas.height);
             if (Game.Room.currentShow <= 0.98) {

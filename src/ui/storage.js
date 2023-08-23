@@ -22,11 +22,15 @@ class StorageSlot {
 
 			context.textAlign = "right";
 			context.font = "10pt customFont";
-			if (this.item.isStackable()) {
+			// if (this.item.isStackable()) {
+			if (this.count > 1 || this.item.isStackable()) {
 				context.textBaseline = "top";
 				context.fillStyle = countToFriendlyColor(this.count);
 				context.fillText(countToFriendly(this.count), this.rect.left + this.rect.width - 5, this.rect.top + 5);
-			} else if (this.item.isCharged()) {
+			// } else if (this.item.isCharged()) {
+			}
+			
+			if (this.charges > 0 || this.item.isCharged()) {
 				context.textBaseline = "bottom";
 				context.fillStyle = "red";
 				context.fillText(this.charges, this.rect.left + this.rect.width - 5, this.rect.bottom - 5);
