@@ -41,8 +41,12 @@ class ShipUi {
         if (this.depth != null)
             ctx.fillText(`depth: ${this.depth}`, 10, 80);
 
-        if (this.fish != null)
+        if (this.fish != null) {
+            ctx.save();
+            ctx.fillStyle = this.fish === "danger" ? "red" : "white"
             ctx.fillText(`fish: ${this.fish}`, 10, 100);
+            ctx.restore();
+        }
 
         if (this.accessorySpriteIds != null) {
             ctx.fillText("accessories: ", 10, 120);

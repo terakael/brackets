@@ -608,6 +608,8 @@ $(function () {
             ctx.fillRect(0, 0, Game.cam.viewportRect.width * Game.scale, Game.cam.viewportRect.height * Game.scale);
             Game.Room.draw(ctx, Game.cam.xView, Game.cam.yView);
 
+            ctx.textBaseline = "middle";
+
             // redraw all hud objects
             ctx.fillStyle = Game.hudcam.pat || "black";
             ctx.fillRect(Game.hudcam.xView, Game.hudcam.yView, Game.hudcam.viewportRect.width, Game.hudcam.viewportRect.height);

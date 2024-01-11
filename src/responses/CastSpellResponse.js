@@ -4,7 +4,7 @@ class CastSpellResponse {
     }
 
     process(obj) {
-        const {targetId, targetType, sourceTileId, spriteFrameId, lifetime} = obj;
+        const {targetId, targetType, sourceTileId, spriteFrameId, lifetime, speed} = obj;
 
         let target = null;
         switch (targetType) {
@@ -17,14 +17,17 @@ class CastSpellResponse {
             case "ship":
                 target = Game.Room.getShipById(targetId);
                 break;
+            case "tile":
+                target = tileIdToXY(targetId);
+                break;
         }
         
         if (target) {
-            let spell = new Game.Spell(sourceTileId, target, spriteFrameId, lifetime);
+            let spell = new Game.Spell(sourceTileId, target, spriteFrameId, lifetime, speed);
             Game.Room.spells.push(spell);
 
-            if (target === Game.currentPlayer)
-                ChatBox.add(`${caster.name} is casting magic on you!`, "#fff");
+            // if (target === Game.currentPlayer)
+            //     ChatBox.add(`${caster.name} is casting magic on you!`, "#fff");
         }
     }
 }
