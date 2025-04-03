@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: danscape-frontend
+  labels:
+    app: danscape-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: danscape-frontend
+  template:
+    metadata:
+      labels:
+        app: danscape-frontend
+    spec:
+      containers:
+      - name: danscape-frontend
+        image: docker.io/terakael/kwqzxs:20250401_01
+        imagePullPolicy: Always # Good practice to ensure updates are pulled
+        ports:
+        - containerPort: 80 # The port Nginx listens on (from Dockerfile)
+        resources: # Optional but recommended: Set resource requests/limits
+          requests:
+            cpu: "50m" # 0.05 CPU core
+            memory: "64Mi" # 64 Megabytes
+          limits:
+            cpu: "100m"
+            memory: "128Mi"

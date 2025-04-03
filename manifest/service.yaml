@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: danscape-frontend-service
+spec:
+  selector:
+    app: danscape-frontend # Must match the labels on the Deployment's pods
+  ports:
+  - protocol: TCP
+    port: 80 # Service's internal port
+    targetPort: 80 # Port on the frontend containers (Nginx default)

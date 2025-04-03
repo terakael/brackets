@@ -2,8 +2,8 @@ $(function () {
     // prepare our game canvas
     const canvas = document.getElementById("game");
     const context = canvas.getContext("2d");
-    
-    canvas.width  = window.innerWidth;
+
+    canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
     Game.boundingRect = canvas.getBoundingClientRect();
@@ -12,25 +12,25 @@ $(function () {
     otherCanvas.width = canvas.width;
     otherCanvas.height = canvas.height
     Game.otherContext = otherCanvas.getContext("2d");
-    
+
     const resourceWs = new GameWebSocket(Game.ip, Game.resourcePort, "resources", response => {
         const {
-            success, 
-            action, 
-            spriteMaps, 
-            spriteFrames, 
-            items, 
-            contextOptions, 
-            statMap, 
+            success,
+            action,
+            spriteMaps,
+            spriteFrames,
+            items,
+            contextOptions,
+            statMap,
             expMap,
             attackStyles
         } = response;
-        
+
         if (success && action === "cached_resources") {
             Game.LogonScreen.loadingText = "loading resources...";
             Game.LogonScreen.draw(context, canvas.width, canvas.height);
 
-            SpriteManager.loadSpriteMaps(spriteMaps).done(function() {
+            SpriteManager.loadSpriteMaps(spriteMaps).done(function () {
                 SpriteManager.loadSpriteFrames(spriteFrames);
                 SpriteManager.loadItems(items);
                 // Game.Room.loadTextureMaps(spriteMaps.map(e => e.id));
@@ -49,9 +49,9 @@ $(function () {
         }
     });
 
-    resourceWs.ws.onopen = function() {
+    resourceWs.ws.onopen = function () {
         const font = new FontFace('customFont', 'url(./font.ttf)');
-        font.load().then(function() {
+        font.load().then(function () {
             document.fonts.add(font);
             // get the initial resources for the game (sprite maps, scenery etc)
             resourceWs.send({
@@ -61,10 +61,10 @@ $(function () {
         });
     };
 
-    resourceWs.ws.onclose = function() {
+    resourceWs.ws.onclose = function () {
         console.log("loaded resources");
     };
-    
+
     canvas.addEventListener("mousedown", function (e) {
         if (Game.state === 'game') {
             ChatBox.clearInput(); // e.g. "enter deposit amount: " thing
@@ -72,7 +72,7 @@ $(function () {
             // TODO inventory, minimap, stats etc should all be contained within this
             if (Game.HUD.mouseWithin(Game.mousePos)) {
                 Game.HUD.onMouseDown(e);
-            } 
+            }
 
             if (Game.activeUiWindow) {
                 Game.activeUiWindow.onMouseDown(e);
@@ -81,7 +81,7 @@ $(function () {
                 // if the player right-clicks on an item near the bottom of the inventory and the context option is off the inventory rect
                 // then we still want to handle the mouse click right
                 Game.currentPlayer.inventory.onMouseDown(e.button);
-            } 
+            }
             else if (Game.ContextMenu.active && e.button == 0) {// left
                 // selecting a context option within the game world
                 Game.ContextMenu.handleMenuSelect();
@@ -89,7 +89,7 @@ $(function () {
             }
             else if (Game.Minimap.rect.pointWithin(Game.mousePos)) {
                 Game.Minimap.onMouseDown(e.button);
-            } 
+            }
             else if (Game.currentPlayer.stats.rect.pointWithin(Game.mousePos)) {
                 Game.currentPlayer.stats.onMouseDown(e.button);
             }
@@ -120,15 +120,15 @@ $(function () {
                         } else if (Game.currentPlayer.inventory.slotInUse != null) {
                             // are we hovering over a player/scenery/npc?
                             let handled = false;
-                            Game.Room.drawableSceneryMap.forEach(function(value, key, map) {
+                            Game.Room.drawableSceneryMap.forEach(function (value, key, map) {
                                 for (let i in value) {
                                     const boundingBox = value[i].sprite[0].getBoundingBox();
                                     const rect = new Rectangle(
-                                        value[i].x + boundingBox.left, 
-                                        value[i].y + boundingBox.top, 
-                                        boundingBox.width, 
+                                        value[i].x + boundingBox.left,
+                                        value[i].y + boundingBox.top,
+                                        boundingBox.width,
                                         boundingBox.height);
-    
+
                                     const unusable = (value[i].attributes & 1) == 1;
                                     if (rect.pointWithin(Game.cursor.mousePos) && !unusable) {// don't use with walls, fences etc
                                         Game.cursor.handleClick(true);
@@ -152,9 +152,9 @@ $(function () {
                                 for (let ship of Game.Room.ships) {
                                     const boundingBox = ship.getCurrentSpriteFrame().getBoundingBox();
                                     const rect = new Rectangle(
-                                        ship.pos.x + boundingBox.left, 
-                                        ship.pos.y + boundingBox.top, 
-                                        boundingBox.width, 
+                                        ship.pos.x + boundingBox.left,
+                                        ship.pos.y + boundingBox.top,
+                                        boundingBox.width,
                                         boundingBox.height);
 
                                     if (rect.pointWithin(Game.cursor.mousePos)) {
@@ -179,9 +179,9 @@ $(function () {
                                 for (let i = 0; i < Game.Room.npcs.length; ++i) {
                                     const boundingBox = Game.Room.npcs[i].getCurrentSpriteFrame().getBoundingBox();
                                     const rect = new Rectangle(
-                                        Game.Room.npcs[i].pos.x + boundingBox.left, 
-                                        Game.Room.npcs[i].pos.y + boundingBox.top, 
-                                        boundingBox.width, 
+                                        Game.Room.npcs[i].pos.x + boundingBox.left,
+                                        Game.Room.npcs[i].pos.y + boundingBox.top,
+                                        boundingBox.width,
                                         boundingBox.height);
 
                                     if (rect.pointWithin(Game.cursor.mousePos)) {
@@ -206,11 +206,11 @@ $(function () {
                                     const player = Game.Room.otherPlayers[i];
                                     const boundingBox = player.getCurrentSpriteFrame().getBoundingBox();
                                     const rect = new Rectangle(
-                                        player.x + boundingBox.left, 
-                                        player.y + boundingBox.top, 
-                                        boundingBox.width, 
+                                        player.x + boundingBox.left,
+                                        player.y + boundingBox.top,
+                                        boundingBox.width,
                                         boundingBox.height);
-        
+
                                     if (rect.pointWithin(Game.cursor.mousePos)) {
                                         Game.cursor.handleClick(true);
                                         Game.ws.send({
@@ -231,9 +231,9 @@ $(function () {
                             if (!handled) {
                                 const boundingBox = Game.currentPlayer.getCurrentSpriteFrame().getBoundingBox();
                                 const rect = new Rectangle(
-                                    Game.currentPlayer.x + boundingBox.left, 
-                                    Game.currentPlayer.y + boundingBox.top, 
-                                    boundingBox.width, 
+                                    Game.currentPlayer.x + boundingBox.left,
+                                    Game.currentPlayer.y + boundingBox.top,
+                                    boundingBox.width,
                                     boundingBox.height);
 
                                 if (rect.pointWithin(Game.cursor.mousePos)) {
@@ -251,7 +251,7 @@ $(function () {
                                     return;
                                 }
                             }
-                            
+
                             Game.currentPlayer.inventory.slotInUse = null;
                         }
 
@@ -259,7 +259,7 @@ $(function () {
                     case 2: // right
                         if (Game.shiftPressed)
                             console.log(xyToTileId(~~Game.cursor.mousePos.x, ~~Game.cursor.mousePos.y));
-                    
+
                         // take all the things that are at this position and add them to the context menu
                         if (Game.ContextMenu.active)
                             break;
@@ -282,19 +282,19 @@ $(function () {
                             }
                         }
 
-                        Game.Room.drawableSceneryMap.forEach(function(value, key, map) {
+                        Game.Room.drawableSceneryMap.forEach(function (value, key, map) {
                             for (let i in value) {
                                 const boundingBox = value[i].sprite[0].getBoundingBox();
                                 const rect = new Rectangle(
-                                    value[i].x + boundingBox.left, 
-                                    value[i].y + boundingBox.top, 
-                                    boundingBox.width, 
+                                    value[i].x + boundingBox.left,
+                                    value[i].y + boundingBox.top,
+                                    boundingBox.width,
                                     boundingBox.height);
 
                                 if (rect.pointWithin(Game.cursor.mousePos)) {
                                     const tileId = value[i].tileId;
                                     const scenery = Game.sceneryMap.get(value[i].id);
-                                    
+
                                     const unusable = ((value[i].attributes || 0) & 1) == 1;
                                     if (Game.currentPlayer.inventory.slotInUse && scenery.name && !unusable) {
                                         Game.ContextMenu.push([{
@@ -322,10 +322,10 @@ $(function () {
                                             const contextOption = sceneryContextOptions[i];
                                             if (scenery.otherOptions & contextOption.id) {
                                                 Game.ContextMenu.push([{
-                                                    action: contextOption.name, 
-                                                    objectId: scenery.id, 
-                                                    tileId: tileId, 
-                                                    objectName: scenery.name, 
+                                                    action: contextOption.name,
+                                                    objectId: scenery.id,
+                                                    tileId: tileId,
+                                                    objectName: scenery.name,
                                                     type: "scenery"
                                                 }]);
                                             }
@@ -334,13 +334,13 @@ $(function () {
                                         // i guess if it's unusable you shouldn't be able to examine it either.
                                         // shit like walls
                                         if (!unusable) {
-                                            Game.ContextMenu.push([{ 
-                                                    action: "examine", 
-                                                    objectName: scenery.name, 
-                                                    objectId: scenery.id, 
-                                                    tileId,
-                                                    type: "scenery"
-                                                }
+                                            Game.ContextMenu.push([{
+                                                action: "examine",
+                                                objectName: scenery.name,
+                                                objectId: scenery.id,
+                                                tileId,
+                                                type: "scenery"
+                                            }
                                             ]);
                                         }
                                     }
@@ -351,9 +351,9 @@ $(function () {
                         for (let ship of Game.Room.ships) {
                             const boundingBox = ship.getCurrentSpriteFrame().getBoundingBox();
                             const rect = new Rectangle(
-                                ship.pos.x + boundingBox.left, 
-                                ship.pos.y + boundingBox.top, 
-                                boundingBox.width, 
+                                ship.pos.x + boundingBox.left,
+                                ship.pos.y + boundingBox.top,
+                                boundingBox.width,
                                 boundingBox.height);
 
                             if (rect.pointWithin(Game.cursor.mousePos)) {
@@ -368,9 +368,9 @@ $(function () {
                                     }]);
                                 } else {
                                     const contextOptions = Game.ContextMenu.contextOptions.get("ship");
-                                    const action = Game.currentPlayer.onboardShipId && (Game.currentPlayer.onboardShipId !== ship.instanceId) 
-                                        ? {label: "attack", id: 16} 
-                                        : {label: "board", id: 1};
+                                    const action = Game.currentPlayer.onboardShipId && (Game.currentPlayer.onboardShipId !== ship.instanceId)
+                                        ? { label: "attack", id: 16 }
+                                        : { label: "board", id: 1 };
                                     const verb = Game.currentPlayer.onboardShipId === ship.instanceId ? "disembark" : action.label;
 
                                     Game.ContextMenu.push([{
@@ -388,9 +388,9 @@ $(function () {
                                         for (let contextOption of contextOptions) {
                                             if (otherOptions & contextOption.id) {
                                                 Game.ContextMenu.push([{
-                                                    action: contextOption.name, 
-                                                    objectId: ship.instanceId, 
-                                                    objectName: ship.get("name"), 
+                                                    action: contextOption.name,
+                                                    objectId: ship.instanceId,
+                                                    objectName: ship.get("name"),
                                                     tileId: ship.getTileId(),
                                                     type: "ship"
                                                 }]);
@@ -398,10 +398,10 @@ $(function () {
                                         }
                                     }
 
-                                    Game.ContextMenu.push([{ 
-                                        action: "examine", 
-                                        objectName: ship.get("name"), 
-                                        objectId: ship.instanceId, 
+                                    Game.ContextMenu.push([{
+                                        action: "examine",
+                                        objectName: ship.get("name"),
+                                        objectId: ship.instanceId,
                                         tileId: ship.getTileId(),
                                         type: "ship"
                                     }]);
@@ -414,9 +414,9 @@ $(function () {
 
                             const boundingBox = npc.getCurrentSpriteFrame().getBoundingBox();
                             const rect = new Rectangle(
-                                npc.pos.x + boundingBox.left, 
-                                npc.pos.y + boundingBox.top, 
-                                boundingBox.width, 
+                                npc.pos.x + boundingBox.left,
+                                npc.pos.y + boundingBox.top,
+                                boundingBox.width,
                                 boundingBox.height);
 
                             if (rect.pointWithin(Game.cursor.mousePos)) {
@@ -428,7 +428,7 @@ $(function () {
                                         dest: npc.instanceId,
                                         type: "npc",
                                         label: "use {0} -> {1}".format(Game.currentPlayer.inventory.slotInUse.item.name, npc.get("name"))
-                                                    + (npc.get("leftclickOption") === 1 ? ` (lvl ${npc.get("cmb")})` : "")
+                                            + (npc.get("leftclickOption") === 1 ? ` (lvl ${npc.get("cmb")})` : "")
                                     }]);
                                 } else {
                                     const npcContextOptions = Game.ContextMenu.contextOptions.get("npc");
@@ -442,7 +442,7 @@ $(function () {
                                             objectName: npc.get("name"),
                                             type: "npc"
                                         }]);
-                                        
+
                                         otherOptions += npc.get("leftclickOption");
                                     } else {
                                         if (npc.get("leftclickOption") != 0) {
@@ -460,18 +460,18 @@ $(function () {
                                         const contextOption = npcContextOptions[j];
                                         if (otherOptions & contextOption.id) {
                                             Game.ContextMenu.push([{
-                                                action: contextOption.name, 
-                                                objectId: npc.instanceId, 
-                                                objectName: npc.get("name"), 
+                                                action: contextOption.name,
+                                                objectId: npc.instanceId,
+                                                objectName: npc.get("name"),
                                                 type: "npc"
                                             }]);
                                         }
                                     }
 
-                                    Game.ContextMenu.push([{ 
-                                        action: "examine", 
-                                        objectName: npc.get("name"), 
-                                        objectId: npc.instanceId, 
+                                    Game.ContextMenu.push([{
+                                        action: "examine",
+                                        objectName: npc.get("name"),
+                                        objectId: npc.instanceId,
                                         tileId: npc.instanceId,
                                         type: "npc"
                                     }]);
@@ -481,9 +481,9 @@ $(function () {
 
                         const boundingBox = Game.currentPlayer.getCurrentSpriteFrame().getBoundingBox();
                         const rect = new Rectangle(
-                            Game.currentPlayer.x + boundingBox.left, 
-                            Game.currentPlayer.y + boundingBox.top, 
-                            boundingBox.width, 
+                            Game.currentPlayer.x + boundingBox.left,
+                            Game.currentPlayer.y + boundingBox.top,
+                            boundingBox.width,
                             boundingBox.height);
 
                         if (rect.pointWithin(Game.cursor.mousePos)) {
@@ -505,7 +505,7 @@ $(function () {
                             .forEach(groundItem => {
                                 Game.ContextMenu.push([
                                     { action: "take", objectName: groundItem.item.name, itemId: groundItem.item.id, tileId: groundItem.tileId },
-                                    { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, tileId: groundItem.tileId, type: "grounditem"}
+                                    { action: "examine", objectName: groundItem.item.name, objectId: groundItem.item.id, tileId: groundItem.tileId, type: "grounditem" }
                                 ]);
                             });
                         break;
@@ -532,7 +532,7 @@ $(function () {
             // TODO move inventory, minimap etc events into this
             if (Game.HUD.mouseWithin(Game.mousePos)) {
                 Game.HUD.onMouseUp(e);
-            } 
+            }
 
             switch (e.button) {
                 case 0:
@@ -571,7 +571,7 @@ $(function () {
 
     const FPS = 50;
     const INTERVAL = 1000 / FPS; // milliseconds
-    
+
     // Game update function
     var update = function (dt) {
         if (Game.state === 'game') {
@@ -602,7 +602,7 @@ $(function () {
         ctx.beginPath();
 
         if (Game.state === 'game') {
-            
+
             // redraw all room objects
             ctx.fillStyle = "#000";
             ctx.fillRect(0, 0, Game.cam.viewportRect.width * Game.scale, Game.cam.viewportRect.height * Game.scale);
@@ -618,14 +618,14 @@ $(function () {
             Game.currentPlayer.stats.draw(ctx, Game.hudcam.xView, Game.currentPlayer.stats.rect.top);
             Game.HUD.draw(ctx);
             Game.shipUi.draw(ctx);
-            
+
             ChatBox.draw(ctx, 0, ctx.canvas.height);
             if (Game.Room.currentShow <= 0.98) {
                 // fade out the logon screen background
                 ctx.save();
                 ctx.globalAlpha = 1 - Game.Room.currentShow;
-                ctx.drawImage(Game.LogonScreen.bkg, 0, 0, ctx.canvas.width, ctx.canvas.height, 
-                                                    0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.drawImage(Game.LogonScreen.bkg, 0, 0, ctx.canvas.width, ctx.canvas.height,
+                    0, 0, ctx.canvas.width, ctx.canvas.height);
                 ctx.restore();
             }
 
@@ -643,7 +643,7 @@ $(function () {
 
             if (Game.activeUiWindow)
                 Game.activeUiWindow.draw(ctx);
-            
+
             Game.ContextMenu.draw(ctx);
         }
         else if (Game.state === 'logonscreen') {
@@ -651,11 +651,11 @@ $(function () {
         }
     };
 
-    var processResponses = function() {
+    var processResponses = function () {
         ResponseController.process([...Game.responseQueue]);
         Game.responseQueue = [];
     }
-    
+
     // Game Loop
     var gameLoop = function (dt) {
         processResponses();
@@ -669,7 +669,7 @@ $(function () {
     Game.displayFps = true;
     let fpsSamples = [];
     Game.play = function () {
-        requestTimeout(function() {
+        requestTimeout(function () {
             // TODO game loop should return exec ms to subtract off INTERVAL
             gameLoop(INTERVAL / 1000);
 
@@ -753,13 +753,13 @@ window.addEventListener("keyup", function (e) {
     if (event.keyCode === 17) // ctrl
         Game.ctrlPressed = false;
 });
-window.addEventListener("resize", function(e) {
+window.addEventListener("resize", function (e) {
     const canvas = document.getElementById("game");
-    canvas.width  = window.innerWidth;
+    canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     Game.boundingRect = canvas.getBoundingClientRect();
 
-    Game.otherContext.canvas.width  = canvas.width;
+    Game.otherContext.canvas.width = canvas.width;
     Game.otherContext.canvas.height = canvas.height;
 
 

@@ -135,12 +135,12 @@
         let moving = false;
         if (Math.abs(diffx) > 1 || Math.abs(diffy) > 1) {
             const n = Math.getVectorNormal({x: diffx, y: diffy});
-            if (Math.abs(n.x * step * this.speed) > Math.abs(diffx) || Math.abs(diffx) > 64)
+            if (Math.abs(n.x * step * this.speed) > Math.abs(diffx) || Math.abs(diffx) > 128)
                 this.pos.x = this.dest.x;
             else
                 this.pos.x += n.x * step * this.speed;
             
-            if (Math.abs(n.y * step * this.speed) > Math.abs(diffy) || Math.abs(diffy) > 64)
+            if (Math.abs(n.y * step * this.speed) > Math.abs(diffy) || Math.abs(diffy) > 128)
                 this.pos.y = this.dest.y;
             else
                 this.pos.y += n.y * step * this.speed;

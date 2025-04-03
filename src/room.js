@@ -1,4 +1,4 @@
-(function() {
+(function () {
     function Room() {
         this.player = {};
         this.show = 0;
@@ -19,8 +19,8 @@
         this.groundItems = [];
         this.t = new Transform();
     }
-    
-    Room.prototype.loadMinimap = function(minimapBase64, segmentId) {
+
+    Room.prototype.loadMinimap = function (minimapBase64, segmentId) {
         let image = new Image();
         image.src = `data:image/png;base64,${minimapBase64}`;
         image.onload = () => Game.Minimap.load(image, segmentId);
@@ -41,42 +41,42 @@
         this.sceneryCtx = sceneryCanvas.getContext("2d");
     };
 
-    Room.prototype.getPlayerById = function(id) {
+    Room.prototype.getPlayerById = function (id) {
         if (this.player.id === id)
             return this.player;
         return this.otherPlayers.find(p => p.id === id);
     };
 
-    Room.prototype.playerById = function(id, fn) {
+    Room.prototype.playerById = function (id, fn) {
         const player = this.getPlayerById(id);
         if (player) {
             fn.call(this, player);
         }
     };
 
-    Room.prototype.getNpcById = function(id) {
+    Room.prototype.getNpcById = function (id) {
         return this.npcs.find(npc => npc.instanceId === id);
     };
 
-    Room.prototype.npcById = function(id, fn) {
+    Room.prototype.npcById = function (id, fn) {
         const npc = this.getNpcById(id);
         if (npc) {
             fn.call(this, npc);
         }
     };
 
-    Room.prototype.getShipById = function(id) {
+    Room.prototype.getShipById = function (id) {
         return this.ships.find(ship => ship.instanceId === id);
     };
-    
-    Room.prototype.shipById = function(id, fn) {
+
+    Room.prototype.shipById = function (id, fn) {
         const ship = this.getShipById(id);
         if (ship) {
             fn.call(this, ship);
         }
     };
 
-    Room.prototype.loadSceneryInstances = function(depletedScenery, openDoors) {   
+    Room.prototype.loadSceneryInstances = function (depletedScenery, openDoors) {
         this.sceneryInstances = new Map();
 
         let fn = (sceneryId, tileIdList) => {
@@ -93,7 +93,7 @@
                 }
 
                 const xy = tileIdToXY(tileIdList[i]);
-                const mapKey = xy.y + newSprite.getBoundingBox().bottom;
+                const mapKey = (scenery.attributes & 16) ? Number.MAX_SAFE_INTEGER : xy.y + newSprite.getBoundingBox().bottom;
 
                 if (!this.sceneryInstances.has(mapKey))
                     this.sceneryInstances.set(mapKey, []);
@@ -101,9 +101,9 @@
                 this.sceneryInstances.get(mapKey).push({
                     id: scenery.id,
                     name: scenery.name,
-                    x: xy.x, 
+                    x: xy.x,
                     y: xy.y,
-                    tileId: tileIdList[i], 
+                    tileId: tileIdList[i],
                     leftclickOption: scenery.leftclickOption,
                     label: sceneryLabel,
                     sprite: [newSprite],
@@ -121,8 +121,8 @@
             fn(sceneryId, tileIdList);
         }
 
-        
-        
+
+
         // for (const [sceneryId, tileIdList] of this.sceneryInstancesBySceneryId.entries()) {
         //     const scenery = Game.sceneryMap.get(Number(sceneryId));
         //     for (let i = 0; i < tileIdList.length; ++i) {
@@ -158,7 +158,7 @@
         // }
     };
 
-    Room.prototype.addSceneryToCanvas = function(instances) {
+    Room.prototype.addSceneryToCanvas = function (instances) {
         this.sceneryCtx.clearRect(0, 0, this.sceneryCtx.canvas.width, this.sceneryCtx.canvas.height);
 
         let playerTileId = xyToTileId(~~Game.currentPlayer.destPos.x, ~~Game.currentPlayer.destPos.y);
@@ -178,7 +178,7 @@
         }
     };
 
-    Room.prototype.loadTextureMaps = function(loadedTextures) {
+    Room.prototype.loadTextureMaps = function (loadedTextures) {
         // this.groundTexturesMap = new Map();
         // let postaction = function(){};
 
@@ -246,7 +246,7 @@
         // }
     };
 
-    Room.prototype.loadNpcs = function(npcJson) {
+    Room.prototype.loadNpcs = function (npcJson) {
         for (let i = 0; i < npcJson.length; ++i) {
             Game.npcMap.set(npcJson[i].id, {
                 id: npcJson[i].id,
@@ -266,7 +266,7 @@
         }
     };
 
-    Room.prototype.loadShips = function(shipJson) {
+    Room.prototype.loadShips = function (shipJson) {
         for (let i = 0; i < shipJson.length; ++i) {
             Game.shipMap.set(shipJson[i].hullSceneryId, {
                 id: shipJson[i].hullSceneryId,
@@ -298,14 +298,14 @@
         ctx.setTransform.apply(ctx, this.t.m);
 
         // draw the ground textures
-        let minx = this.player.destPos.x - this.player.combatOffsetX - xview - (12*32);
-        let miny = (this.player.destPos.y - yview - (12*32));
+        let minx = this.player.destPos.x - this.player.combatOffsetX - xview - (12 * 32);
+        let miny = (this.player.destPos.y - yview - (12 * 32));
 
         const canvasWidth = this.groundTextureCtx.canvas.width;
         const canvasHeight = this.groundTextureCtx.canvas.height;
-        
+
         ctx.filter = `brightness(${Game.brightness})`;
-        ctx.drawImage(this.groundTextureCtx.canvas, minx-16, miny-16);
+        ctx.drawImage(this.groundTextureCtx.canvas, minx - 16, miny - 16);
         ctx.filter = "none";
 
         ctx.save();
@@ -359,7 +359,7 @@
             ctx.closePath();
             if (shadows.size) {
                 ctx.filter = `brightness(${Math.min(0.7, Game.brightness)})`;
-                ctx.drawImage(this.groundTextureCtx.canvas, minx-16, miny-16);
+                ctx.drawImage(this.groundTextureCtx.canvas, minx - 16, miny - 16);
                 ctx.filter = "none";
             }
             ctx.restore();
@@ -386,20 +386,20 @@
 
                 const xy = tileIdToXY(tileId);
                 ctx.moveTo(xy.x - xview + offX, xy.y - yview + offY);
-                ctx.ellipse(xy.x - xview + offX, xy.y - yview + offY, (radius*1.25) + offSize, radius + offSize, 0, 0, 2 * Math.PI);
+                ctx.ellipse(xy.x - xview + offX, xy.y - yview + offY, (radius * 1.25) + offSize, radius + offSize, 0, 0, 2 * Math.PI);
             });
         });
-        
+
         ctx.clip(); //call the clip method so the next render is clipped in last path
         // ctx.shadowColor = "white";
         // ctx.shadowBlur = 30;
         // ctx.globalCompositeOperation = "destination-out";
         // ctx.shadowOffsetX = 500;
         ctx.closePath();
-        
+
         if (lightsources.size)
-            ctx.drawImage(this.groundTextureCtx.canvas, minx-16, miny-16);
-            
+            ctx.drawImage(this.groundTextureCtx.canvas, minx - 16, miny - 16);
+
         ctx.restore();
 
         ctx.save();// make the items on the ground smaller than in the inventory
@@ -407,17 +407,17 @@
 
         const hoverItems = this.groundItems.filter(item => {
             const rect = new Rectangle(
-                item.clickBox.left - xview, 
-                item.clickBox.top - yview, 
-                item.clickBox.width, 
+                item.clickBox.left - xview,
+                item.clickBox.top - yview,
+                item.clickBox.width,
                 item.clickBox.height);
 
-            return rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) &&
+            return rect.pointWithin({ x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale }) &&
                 Game.worldCameraRect.pointWithin(Game.mousePos);
         });
 
         const glowingItemIndex = hoverItems.length ? this.groundItems.indexOf(hoverItems[hoverItems.length - 1]) : -1;
-        
+
         for (let i = 0; i < this.groundItems.length; ++i) {
             // if (i === glowingItemIndex) {
             //     ctx.save();
@@ -435,8 +435,8 @@
             if (glowingItemIndex >= 0 && Game.currentPlayer.inventory.slotInUse == null) {
                 Game.ContextMenu.setLeftclick(Game.mousePos, {
                     id: Game.currentPlayer.id,
-                    action: "take", 
-                    objectName: this.groundItems[glowingItemIndex].item.name, 
+                    action: "take",
+                    objectName: this.groundItems[glowingItemIndex].item.name,
                     itemId: this.groundItems[glowingItemIndex].item.id,
                     tileId: this.groundItems[glowingItemIndex].tileId
                 });
@@ -454,8 +454,8 @@
             ctx.fillStyle = `rgb(${lifetime * 255}, 255, ${(1 - lifetime) * 255}`;
 
             ctx.beginPath();
-            ctx.arc(this.teleportExplosions[i].x - xview, 
-                    this.teleportExplosions[i].y - yview, size, 0, 2 * Math.PI);
+            ctx.arc(this.teleportExplosions[i].x - xview,
+                this.teleportExplosions[i].y - yview, size, 0, 2 * Math.PI);
             ctx.fill();
             ctx.restore();
         }
@@ -486,15 +486,15 @@
         }
         var mp = Game.mousePos || { x: 0, y: 0 };
         var transformed = this.t.transformPoint(mp.x, mp.y);
-        
-        
+
+
         Game.cursor.setPos({ x: transformed.x + xview, y: transformed.y + yview });
         Game.cursor.draw(ctx, xview, yview);
 
         ctx.restore();
     };
 
-    Room.prototype.setFog = function(ctx, xpos, ypos, coords) {
+    Room.prototype.setFog = function (ctx, xpos, ypos, coords) {
         let grd = ctx.createLinearGradient(coords[0], coords[1], coords[2], coords[3])
         grd.addColorStop(0, "rgba(0, 0, 0, 1)");
         grd.addColorStop(0.01, "rgba(0, 0, 0, 0)");
@@ -504,7 +504,7 @@
         ctx.fillRect(xpos - 500, ypos - 500, 1000, 1000);
     }
 
-    Room.prototype.drawLegacy = function(ctx, xview, yview) {
+    Room.prototype.drawLegacy = function (ctx, xview, yview) {
         // add everything to the draw map so we can draw in the correct order
         var drawMap = new Map();
 
@@ -519,7 +519,7 @@
             drawMap.get(mapKey).push({
                 id: this.npcs[i].instanceId,
                 name: this.npcs[i].get("name") + (isAttackable ? ` (lvl ${this.npcs[i].get("cmb")})` : ""),
-                x: this.npcs[i].pos.x, 
+                x: this.npcs[i].pos.x,
                 y: this.npcs[i].pos.y - (this.npcs[i].deathTimer * 32),
                 sprite: [this.npcs[i].getCurrentSpriteFrame()],
                 type: "npc",
@@ -535,15 +535,15 @@
             if (!drawMap.has(mapKey))
                 drawMap.set(mapKey, []);
 
-            const action = Game.currentPlayer.onboardShipId && (Game.currentPlayer.onboardShipId !== this.ships[i].instanceId) 
-                ? {label: "attack", id: 16} 
-                : {label: "board", id: 1};
+            const action = Game.currentPlayer.onboardShipId && (Game.currentPlayer.onboardShipId !== this.ships[i].instanceId)
+                ? { label: "attack", id: 16 }
+                : { label: "board", id: 1 };
             const verb = Game.currentPlayer.onboardShipId === this.ships[i].instanceId ? "disembark" : action.label;
 
             drawMap.get(mapKey).push({
                 id: this.ships[i].instanceId,
                 name: this.ships[i].get("name"),
-                x: this.ships[i].pos.x, 
+                x: this.ships[i].pos.x,
                 y: this.ships[i].pos.y,
                 sprite: [this.ships[i].getCurrentSpriteFrame()],
                 type: "ship",
@@ -563,7 +563,7 @@
             drawMap.get(mapKey).push({
                 id: this.otherPlayers[i].id,
                 name: this.otherPlayers[i].name + ` (lvl ${this.otherPlayers[i].combatLevel})`,
-                x: this.otherPlayers[i].x, 
+                x: this.otherPlayers[i].x,
                 y: this.otherPlayers[i].y - (this.otherPlayers[i].deathSequence ? ((1 - this.otherPlayers[i].deathsCurtain) * 32) : 0),
                 sprite: this.otherPlayers[i].getCurrentSpriteFrames(),
                 type: "player",
@@ -578,11 +578,11 @@
             let mapKey = this.player.y + (playerSpriteFrame.getCurrentFrame().height * playerSpriteFrame.scale.y) - ((playerSpriteFrame.anchor.y * playerSpriteFrame.getCurrentFrame().height) * playerSpriteFrame.scale.y);
             if (!drawMap.has(mapKey))
                 drawMap.set(mapKey, []);
-                
+
             drawMap.get(mapKey).push({
                 id: this.player.id,
                 name: this.player.name,
-                x: this.player.x, 
+                x: this.player.x,
                 y: this.player.y,
                 sprite: this.player.getCurrentSpriteFrames(),
                 type: "player",
@@ -592,7 +592,7 @@
 
         // add scenery
         this.compileDrawableSceneryMap(xview, yview);
-        this.drawableSceneryMap.forEach(function(value, key, map) {
+        this.drawableSceneryMap.forEach(function (value, key, map) {
             if (!drawMap.has(key))
                 drawMap.set(key, []);
             drawMap.set(key, drawMap.get(key).concat(value));
@@ -611,16 +611,16 @@
         }
 
         const orderedDrawMap = new Map([...drawMap.entries()].sort());// order by ypos
-        orderedDrawMap.forEach(function(value, key, map) {
+        orderedDrawMap.forEach(function (value, key, map) {
             for (let i = 0; i < value.length; ++i) {
                 ctx.globalAlpha = value[i].transparency || 1;
 
                 const clickBox = value[i].sprite[0].getBoundingBox();
                 const rect = new Rectangle(value[i].x + clickBox.left - xview,
-                                                value[i].y + clickBox.top - yview,
-                                                clickBox.width, clickBox.height);
-                
-                const mouseOver = rect.pointWithin({x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale}) && Game.worldCameraRect.pointWithin(Game.mousePos);
+                    value[i].y + clickBox.top - yview,
+                    clickBox.width, clickBox.height);
+
+                const mouseOver = rect.pointWithin({ x: Game.mousePos.x / Game.scale, y: Game.mousePos.y / Game.scale }) && Game.worldCameraRect.pointWithin(Game.mousePos);
                 const unusable = ((value[i].attributes || 0) & 1) === 1 && value[i].type === "scenery";
                 const slotInUse = Game.currentPlayer.inventory.slotInUse;
 
@@ -633,7 +633,7 @@
                         value[i].sprite[j].draw(ctx, value[i].x - xview, value[i].y - yview, value[i].sprite[j].color);
                     ctx.restore();
                 }
-                
+
                 for (let j = 0; j < value[i].sprite.length; ++j) {
                     value[i].sprite[j].draw(ctx, value[i].x - xview, value[i].y - yview, value[i].sprite[j].color);
                     if (value[i].sprite[j].glow) {
@@ -698,13 +698,13 @@
         // for all the things that had a modification in either of the two.
         let playerPrevPositions = new Map();
         let playerNewPositions = new Map();
-        playerPrevPositions.set(this.player.id, {x: this.player.x, y: this.player.y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame});
+        playerPrevPositions.set(this.player.id, { x: this.player.x, y: this.player.y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame });
         this.player.process(dt);
-        playerNewPositions.set(this.player.id, {x: this.player.x, y: this.player.y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame});
+        playerNewPositions.set(this.player.id, { x: this.player.x, y: this.player.y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame });
         for (let i in this.otherPlayers) {
-            playerPrevPositions.set(this.otherPlayers[i].id, {x: this.otherPlayers[i].x, y: this.otherPlayers[i].y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame});
+            playerPrevPositions.set(this.otherPlayers[i].id, { x: this.otherPlayers[i].x, y: this.otherPlayers[i].y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame });
             this.otherPlayers[i].process(dt);
-            playerPrevPositions.set(this.otherPlayers[i].id, {x: this.otherPlayers[i].x, y: this.otherPlayers[i].y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame});
+            playerPrevPositions.set(this.otherPlayers[i].id, { x: this.otherPlayers[i].x, y: this.otherPlayers[i].y, spriteFrame: this.player.getBaseSpriteFrame().currentFrame });
         }
 
         this.ships.forEach(ship => ship.process(dt));
@@ -713,11 +713,11 @@
         for (let [key, value] of playerPrevPositions.entries()) {
             if (!playerNewPositions[key])
                 continue;
-            
-            if (playerNewPositions[key].x !== value.x 
-                    || playerNewPositions[key].y !== value.y 
-                    || playerNewPositions.spriteFrame !== value.spriteFrame) {
-                        changedPlayerIds.add(key)
+
+            if (playerNewPositions[key].x !== value.x
+                || playerNewPositions[key].y !== value.y
+                || playerNewPositions.spriteFrame !== value.spriteFrame) {
+                changedPlayerIds.add(key)
             }
         }
 
@@ -725,9 +725,9 @@
         let npcNewPositions = new Map();
         this.npcs = this.npcs.filter(npc => npc.deathTimer < 1);
         for (let i in this.npcs) {
-            npcPrevPositions.set(this.npcs[i].instanceId, {x: this.npcs[i].pos.x, y: this.npcs[i].pos.y, spriteFrame: this.npcs[i].getCurrentSpriteFrame().currentFrame});
+            npcPrevPositions.set(this.npcs[i].instanceId, { x: this.npcs[i].pos.x, y: this.npcs[i].pos.y, spriteFrame: this.npcs[i].getCurrentSpriteFrame().currentFrame });
             this.npcs[i].process(dt);
-            npcNewPositions.set(this.npcs[i].instanceId, {x: this.npcs[i].pos.x, y: this.npcs[i].pos.y, spriteFrame: this.npcs[i].getCurrentSpriteFrame().currentFrame});
+            npcNewPositions.set(this.npcs[i].instanceId, { x: this.npcs[i].pos.x, y: this.npcs[i].pos.y, spriteFrame: this.npcs[i].getCurrentSpriteFrame().currentFrame });
         }
 
         let changedNpcInstanceIds = [];
@@ -735,17 +735,17 @@
             if (!npcNewPositions[key])
                 continue;
 
-            if (npcNewPositions[key].x !== value.x 
-                || npcNewPositions[key].y !== value.y 
+            if (npcNewPositions[key].x !== value.x
+                || npcNewPositions[key].y !== value.y
                 || npcNewPositions.spriteFrame !== value.spriteFrame) {
-                    changedNpcInstanceIds.add(key)
+                changedNpcInstanceIds.add(key)
             }
         }
 
         // scenery never moves, so we just need to record the sprite frame
         let sceneryPrevPositions = new Map();
         let sceneryNewPositions = new Map();
-        this.drawableSceneryMap.forEach(function(value, key, map) {
+        this.drawableSceneryMap.forEach(function (value, key, map) {
             for (let i in value) {
                 sceneryPrevPositions.set(value[i].tileId, value[i].sprite[0].currentFrame)
                 value[i].sprite[0].process(dt);
@@ -758,13 +758,13 @@
             if (!sceneryNewPositions[key])
                 continue;
 
-            if (sceneryNewPositions[key].x !== value.x 
-                || sceneryNewPositions[key].y !== value.y 
+            if (sceneryNewPositions[key].x !== value.x
+                || sceneryNewPositions[key].y !== value.y
                 || sceneryNewPositions.spriteFrame !== value.spriteFrame) {
-                    changedSceneryInstanceIds.add(key)
+                changedSceneryInstanceIds.add(key)
             }
         }
-        
+
         this.spells.forEach(e => e.process(dt));
         this.spells = this.spells.filter(spell => spell.lifetime > 0);
 
@@ -776,7 +776,7 @@
         Game.Minimap.setNpcs(this.npcs);
     };
 
-    Room.prototype.updateGroundTextures = function() {
+    Room.prototype.updateGroundTextures = function () {
         // we can group identical tiles and draw them once as a group with a repeating texture
         // e.g. 
         // grass=0, dirt=1
@@ -820,11 +820,11 @@
         let gridW = 25;
         let gridH = 25;
 
-        let data = this.drawableTextureInstances.map(texId => ({id: texId, processed: false}));
+        let data = this.drawableTextureInstances.map(texId => ({ id: texId, processed: false }));
         this.optimizedDrawableTextureInstance = new Map();
 
         let counter = 0;
-        while (++counter < 25*25) { 
+        while (++counter < 25 * 25) {
             // run through the array until we find the first unprocessed element
             let firstEle = null;
             for (let i = 0; i < data.length; ++i) {
@@ -878,14 +878,14 @@
             let w = x - posX + 1;
             let h = y - posY + 1;
 
-            if (!this.optimizedDrawableTextureInstance.has(textureId)) 
+            if (!this.optimizedDrawableTextureInstance.has(textureId))
                 this.optimizedDrawableTextureInstance.set(textureId, []);
 
             this.optimizedDrawableTextureInstance.get(textureId).push({
-                x: (~~(firstEle%gridW) * 32), 
-                y: (~~(firstEle/gridW) * 32), 
-                w: w * 32, 
-                h: h * 32, 
+                x: (~~(firstEle % gridW) * 32),
+                y: (~~(firstEle / gridW) * 32),
+                w: w * 32,
+                h: h * 32,
                 textureId: textureId
             });
         }
@@ -894,7 +894,7 @@
         this.saveGroundTexturesToCanvas();
     };
 
-    Room.prototype.saveGroundTexturesToCanvas = function() {
+    Room.prototype.saveGroundTexturesToCanvas = function () {
         let ctx = this.groundTextureCtx;
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         // take the ground texture with the most instances and draw it first as the entire background
@@ -928,11 +928,11 @@
         }
     };
 
-    Room.prototype.compileDrawableSceneryMap = function(xview, yview) {
+    Room.prototype.compileDrawableSceneryMap = function (xview, yview) {
         this.drawableSceneryMap = this.sceneryInstances;
     };
 
-    Room.prototype.refreshGroundItems = function(obj) {
+    Room.prototype.refreshGroundItems = function (obj) {
         // {tileId: [itemId, itemId, itemId, ...]}
         // {31221: [55, 27, ...]}
 
@@ -944,6 +944,6 @@
         }
         this.groundItems = groundItems;
     }
-	
-	Game.Room = new Room();
+
+    Game.Room = new Room();
 })();

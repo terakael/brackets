@@ -22,9 +22,10 @@
 
 
 window.Game = {
-    ip: "192.168.1.2", 
+    // ip: "192.168.1.11",
+    ip: "danscape.bearded-quail.ts.net",
     // ip: "192.168.2.107", 
-    port: "45555", 
+    port: "45555",
     resourcePort: "45556",
 
     worldTileWidth: 46325,
@@ -48,12 +49,12 @@ window.Game = {
     enableSmoothing: false,
     responseQueue: [],
 
-    worldSegmentWidth: function() {
+    worldSegmentWidth: function () {
         return this.worldTileWidth / this.segmentWidth;
     },
     calculateMousePos: function (e) {
-        this.mousePos = Game.boundingRect 
+        this.mousePos = Game.boundingRect
             ? { x: e.clientX - Game.boundingRect.left, y: e.clientY - Game.boundingRect.top }
-            : {x: 0, y: 0};
+            : { x: 0, y: 0 };
     }
 };

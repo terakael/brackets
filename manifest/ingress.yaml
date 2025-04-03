@@ -1,0 +1,42 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    tailscale.com/funnel: "true"
+  name: danscape
+spec:
+  ingressClassName: tailscale
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: danscape-server-service
+            port:
+              name: http-ws-main
+        path: /game
+        pathType: Prefix
+      - backend:
+          service:
+            name: danscape-server-service
+            port:
+              name: http-ws-res
+        path: /resources
+        pathType: Prefix
+      - backend:
+          service:
+            name: danscape-frontend-service
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - danscape
+status:
+  loadBalancer:
+    ingress:
+    - hostname: danscape.bearded-quail.ts.net
+      ports:
+      - port: 443
+        protocol: TCP
